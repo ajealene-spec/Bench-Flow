@@ -1,15 +1,27 @@
 import Dexie, { type Table } from 'dexie';
 import type {
+  Animal,
+  AppSettings,
+  Cage,
   Experiment,
   ExecutionEvent,
+  EphysRecord,
   Folder,
+  GlossaryTerm,
+  ImagingRecord,
   InventoryItem,
+  Photo,
   Procedure,
   ProtocolTemplate,
+  ProtocolVersion,
   ReagentUsage,
   RunState,
   RunValue,
+  SampleSheet,
+  StepExplanation,
   StepRecord,
+  StereotaxTarget,
+  TargetComment,
   Timer,
 } from '../types';
 
@@ -28,6 +40,18 @@ export class LabCompanionDB extends Dexie {
   inventoryUsage!: Table<ReagentUsage, [string, string, string]>;
   executionEvents!: Table<ExecutionEvent, string>;
   runValues!: Table<RunValue, [string, string, string]>;
+  settings!: Table<AppSettings, string>;
+  explanations!: Table<StepExplanation, string>;
+  glossary!: Table<GlossaryTerm, string>;
+  animals!: Table<Animal, string>;
+  cages!: Table<Cage, string>;
+  ephysRecords!: Table<EphysRecord, string>;
+  imagingRecords!: Table<ImagingRecord, string>;
+  photos!: Table<Photo, string>;
+  samples!: Table<SampleSheet, string>;
+  protocolVersions!: Table<ProtocolVersion, string>;
+  comments!: Table<TargetComment, string>;
+  stereotaxTargets!: Table<StereotaxTarget, string>;
 
   constructor(name = 'lab-companion') {
     super(name);
@@ -159,6 +183,23 @@ export class LabCompanionDB extends Dexie {
     this.version(6).stores({
       executionEvents: 'id, experimentId, [experimentId+at]',
       runValues: '[experimentId+stepId+varId]',
+    });
+
+    // Version 7: the lab notebook. New tables only; no existing row changes. Records that belong to a run
+    // are indexed by experiment and by time, so a run's log loads in order without a full scan.
+    this.version(7).stores({
+      settings: 'id',
+      explanations: 'templateStepId',
+      glossary: 'id, term',
+      animals: 'id, cageId, label, species',
+      cages: 'id, room',
+      ephysRecords: 'id, experimentId, at, [experimentId+at], [experimentId+stepId]',
+      imagingRecords: 'id, experimentId, at, [experimentId+at], [experimentId+stepId]',
+      photos: 'id, experimentId, at, [experimentId+at], [experimentId+stepId]',
+      samples: 'id, experimentId',
+      protocolVersions: 'id, templateId, [templateId+version]',
+      comments: 'id, [targetType+targetId], createdAt',
+      stereotaxTargets: 'id, name, atlas',
     });
   }
 }

@@ -9,6 +9,7 @@ import { ExpiryBadge } from './ExpiryBadge';
 import { InventoryForm } from './InventoryForm';
 import { expiringItems } from './expiry';
 import { extractReagents, toInventoryInput, type ExtractedReagent } from './extractReagents';
+import { EmptyState } from '../../app/EmptyState';
 
 const KIND_LABELS: Record<InventoryKind, string> = { antibody: 'Antibody', reagent: 'Reagent', buffer: 'Buffer', kit: 'Kit' };
 
@@ -95,7 +96,13 @@ export default function InventoryPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-base text-slate-600 dark:text-slate-400">No items yet. Add one, or import reagents from a protocol.</p>
+        <EmptyState
+          title="No reagents or antibodies yet"
+          primary={{ label: 'Add item', onClick: () => setEditing('new') }}
+          secondary={{ label: 'Import from protocol', onClick: () => setShowImport(true) }}
+        >
+          Keep lots, expiry dates and antibody host species in one place. Add an item by hand, or import the reagents a protocol lists.
+        </EmptyState>
       ) : filtered.length === 0 ? (
         <p className="text-base text-slate-600 dark:text-slate-400">Nothing matches that search.</p>
       ) : (

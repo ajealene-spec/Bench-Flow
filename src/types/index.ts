@@ -57,8 +57,23 @@ export interface ProtocolTemplate {
   sourceText?: string;
   /** Free-text notes, including accepted literature suggestions. */
   notes?: string;
+  /** Set when this template was copied from someone else's protocol. */
+  forkedFrom?: ForkSource;
+  /** License the template is shared under, for example "MIT" or "CC-BY-4.0". */
+  license?: string;
+  authors?: string[];
+  /** True for templates shipped with the app (starter protocols). */
+  isStarter?: boolean;
   createdAt: number;
   updatedAt: number;
+}
+
+/** Where a forked protocol came from. */
+export interface ForkSource {
+  title: string;
+  author?: string;
+  url?: string;
+  doi?: string;
 }
 
 /** One item of the pre-run safety checklist. */
@@ -260,4 +275,195 @@ export interface ReagentUsage {
   inventoryItemId: string;
   stepId: string;
   usedAt: number;
+}
+
+// ---------- Lab notebook (schema v7) ----------
+
+export type ResearchField = 'neuroscience' | 'molecular' | 'cell_bio' | 'other';
+export type ExperienceMode = 'beginner' | 'advanced';
+export type ThemePreference = 'light' | 'dark' | 'system';
+
+/**
+ * App-wide preferences. There is exactly one row, keyed by SETTINGS_ID. The Anthropic key lives here
+ * too: it stays in this browser's IndexedDB and is sent only to the app's own /api routes as a header.
+ */
+export interface AppSettings {
+  id: string;
+  mode: ExperienceMode;
+  field: ResearchField | null;
+  techniques: string[];
+  /** Set when the first-run welcome is finished (or skipped). Unset means the welcome is still shown. */
+  onboardedAt?: number;
+  theme: ThemePreference;
+  dyslexiaFont: boolean;
+  voiceEnabled: boolean;
+  /** Bring-your-own Anthropic key. Local only; never synced and never logged. */
+  apiKey?: string;
+}
+
+/** A cached explanation for one template step (why it matters, common mistakes, reading links). */
+export interface StepExplanation {
+  templateStepId: string;
+  why: string;
+  mistakes: string[];
+  links: ExplanationLink[];
+}
+
+export interface ExplanationLink {
+  title: string;
+  url: string;
+}
+
+/** A term the user keeps for their own reference. */
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type AnimalSex = 'male' | 'female' | 'unknown';
+
+export type AnimalEventKind = 'weight' | 'surgery' | 'injection' | 'post_op_check';
+
+/** A dated entry in an animal's record. `value` and `unit` are used for weights and doses. */
+export interface AnimalEvent {
+  id: string;
+  kind: AnimalEventKind;
+  /** Wall-clock ms. */
+  at: number;
+  value?: number;
+  unit?: string;
+  note?: string;
+}
+
+export interface Animal {
+  id: string;
+  label: string;
+  cageId?: string;
+  species: string;
+  strain: string;
+  genotype: string;
+  sex: AnimalSex;
+  /** ISO date (YYYY-MM-DD). */
+  dob: string;
+  notes?: string;
+  /** Research Resource Identifier, for example "RRID:IMSR_JAX:000664". */
+  rrid?: string;
+  events: AnimalEvent[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Cage {
+  id: string;
+  label: string;
+  room: string;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Whole-cell patch clamp measurements. Rm and Ra in MOhm, Cm in pF, holding in mV. */
+export interface EphysRecord {
+  id: string;
+  experimentId: string;
+  stepId?: string;
+  cellId: string;
+  Rm: number;
+  Ra: number;
+  Cm: number;
+  holding: number;
+  notes?: string;
+  /** Wall-clock ms. */
+  at: number;
+}
+
+export interface ImagingRecord {
+  id: string;
+  experimentId: string;
+  stepId?: string;
+  microscope: string;
+  objective: string;
+  /** Laser line and power, free text, for example "488 nm, 5%". */
+  laser: string;
+  /** Exposure or dwell settings, free text, for example "200 ms". */
+  exposure: string;
+  gain: number;
+  channels: string[];
+  /** Image file name or path the acquisition was saved to. */
+  file?: string;
+  /** Wall-clock ms. */
+  at: number;
+}
+
+/** A pin or label placed on a photo. x and y are fractions (0 to 1) of the image size. */
+export interface PhotoAnnotation {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+}
+
+export interface Photo {
+  id: string;
+  experimentId: string;
+  stepId?: string;
+  blob: Blob;
+  annotations: PhotoAnnotation[];
+  caption: string;
+  /** Wall-clock ms. */
+  at: number;
+}
+
+export type SampleFormat = '96' | '24' | 'list';
+
+export interface SampleWell {
+  sampleId: string;
+  label: string;
+  group: string;
+}
+
+/** A plate map or sample sheet. Wells are keyed by position, for example "A1", or by sample for lists. */
+export interface SampleSheet {
+  id: string;
+  experimentId: string;
+  format: SampleFormat;
+  wells: Record<string, SampleWell>;
+}
+
+/** An immutable snapshot of a template, kept each time its protocol is saved as a new version. */
+export interface ProtocolVersion {
+  id: string;
+  templateId: string;
+  version: number;
+  snapshot: ProtocolTemplate;
+  createdAt: number;
+  note?: string;
+}
+
+export type CommentTargetType = 'template' | 'step' | 'experiment';
+
+/** A review comment on a template, a step or an experiment. */
+export interface TargetComment {
+  id: string;
+  targetType: CommentTargetType;
+  targetId: string;
+  author: string;
+  text: string;
+  createdAt: number;
+  resolved: boolean;
+}
+
+/** A stereotaxic coordinate set. ap, ml and dv are in mm from bregma (or the atlas origin). angle in degrees. */
+export interface StereotaxTarget {
+  id: string;
+  name: string;
+  atlas: string;
+  ap: number;
+  ml: number;
+  dv: number;
+  angle?: number;
+  notes?: string;
 }

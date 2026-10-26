@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Light-only look. The dark: variant only applies under a .dark class, which the app never sets. */
+/* The dark: variant applies under a .dark class on the root element, which applyAppearance() sets from Settings. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -14,9 +14,26 @@
   color-scheme: light;
 }
 
+:root.dark {
+  color-scheme: dark;
+}
+
 body {
   background: #fafafa;
   color: #111827;
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* User preferences set by applyAppearance() on the root element (Settings page). */
+html.dark body {
+  background: #0f1115;
+  color: #e5e7eb;
+}
+
+html.font-dyslexia {
+  --font-sans: Verdana, "Trebuchet MS", Arial, sans-serif;
+  letter-spacing: 0.03em;
+  word-spacing: 0.08em;
+  line-height: 1.6;
 }

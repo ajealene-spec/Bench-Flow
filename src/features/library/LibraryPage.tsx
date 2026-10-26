@@ -6,6 +6,7 @@ import { deleteTemplate, listTemplates } from '../../db/templates';
 import type { ProtocolTemplate } from '../../types';
 import { formatDate } from '../../app/format';
 import { StartExperimentForm } from './StartExperimentForm';
+import { EmptyState } from '../../app/EmptyState';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
@@ -40,9 +41,10 @@ export default function LibraryPage() {
       </header>
 
       {templates.length === 0 ? (
-        <p className="text-slate-600 dark:text-slate-400">
-          No protocols yet. Tap “New protocol” to paste or upload one.
-        </p>
+        <EmptyState title="No protocols yet" primary={{ label: 'New protocol', to: '/library/new' }} secondary={{ label: 'Go to Home', to: '/' }}>
+          A protocol is a reusable, step-by-step procedure. Paste the text of a manual or your notes, or upload a PDF, and it becomes steps
+          with timers, reagents and cautions.
+        </EmptyState>
       ) : (
         <>
           <label className="flex flex-col gap-1 sm:max-w-xs">

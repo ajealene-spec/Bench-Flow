@@ -18,6 +18,7 @@ import { formatDate } from './format';
 import { listRecentActivity, listWorkspaceEntries, type WorkspaceEntry } from './commandCenterData';
 import { StartExperimentForm } from '../features/library/StartExperimentForm';
 import { formatRemaining, remainingSec } from '../features/timers/timeMath';
+import { EmptyState } from './EmptyState';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = {
   draft: 'Draft',
@@ -84,7 +85,9 @@ export function Workspace() {
         <h2 className="text-xl font-semibold text-slate-900">Active workspace</h2>
         {workspace === undefined && <p className="text-slate-500">Loading…</p>}
         {workspace?.length === 0 && (
-          <p className="text-slate-600">Nothing in progress. Start an experiment to see it here.</p>
+          <EmptyState title="Nothing is running" primary={{ label: 'Browse protocols', to: '/library' }}>
+            When you start an experiment, it appears here with its current step and any timers still running.
+          </EmptyState>
         )}
         {workspace && workspace.length > 0 && (
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -97,7 +100,9 @@ export function Workspace() {
 
       <section aria-label="Recent activity" className="flex flex-col gap-3">
         <h2 className="text-xl font-semibold text-slate-900">Recent activity</h2>
-        {recent?.length === 0 && <p className="text-slate-600">No finished or opened experiments yet.</p>}
+        {recent?.length === 0 && (
+          <p className="text-slate-600">Experiments you open or finish will be listed here.</p>
+        )}
         {recent && recent.length > 0 && (
           <ul className="grid gap-3 md:grid-cols-2">
             {recent.map(({ experiment, at }) => (
@@ -136,7 +141,13 @@ export function Workspace() {
         {summaries === undefined && <p className="text-slate-500">Loading experiments…</p>}
 
         {summaries?.length === 0 && (
-          <p className="text-slate-600">No experiments yet. Use “New experiment” above to start one.</p>
+          <EmptyState
+            title="No experiments yet"
+            primary={{ label: 'New experiment', onClick: () => setPicking(true) }}
+            secondary={{ label: 'Draft a protocol', to: '/library/new' }}
+          >
+            An experiment is one run of a protocol. It keeps your timers, numbers, photos and notes together, and you can file runs into folders.
+          </EmptyState>
         )}
 
         {folders?.map((folder) => (
@@ -234,7 +245,11 @@ function TemplatePicker({ onDone }: { onDone: () => void }) {
 
       {templates === undefined && <p className="text-slate-500">Loading protocols…</p>}
 
-      {templates?.length === 0 && <p className="text-slate-600">The library is empty. Draft a protocol, or start blank.</p>}
+      {templates?.length === 0 && (
+        <EmptyState title="Your library is empty" primary={{ label: 'Draft a protocol', to: '/library/new' }}>
+          Paste the text of a protocol or upload a PDF to make a reusable one. You can also start blank above.
+        </EmptyState>
+      )}
 
       {chosen ? (
         <StartExperimentForm template={chosen} onDone={() => setChosen(null)} />
@@ -355,7 +370,7 @@ function FolderSection({ folder, items }: { folder: Folder; items: ExperimentSum
           </>
         )}
       </div>
-      <Cards items={items} emptyText="No experiments in this folder yet." />
+      <Cards items={items} emptyText="No experiments in this folder yet. Move one here from its page." />
     </section>
   );
 }
@@ -364,7 +379,7 @@ function Section({ title, items }: { title: string; items: ExperimentSummary[] }
   return (
     <section aria-label={title} className="flex flex-col gap-3">
       <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-      <Cards items={items} emptyText="Nothing unfiled." />
+      <Cards items={items} emptyText="Every experiment is in a folder." />
     </section>
   );
 }
