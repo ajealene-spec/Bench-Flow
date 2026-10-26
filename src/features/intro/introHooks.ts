@@ -69,8 +69,27 @@ export function useRevealOnScroll(reduced: boolean): void {
       { rootMargin: '0px 0px -5% 0px', threshold: 0.02 },
     );
     targets.forEach((el) => observer.observe(el));
+    // A fast scroll can jump past a block without it ever intersecting, so also reveal
+    // anything whose top is already above the bottom of the viewport.
+    let frame = 0;
+    const sweep = () => {
+      frame = 0;
+      for (const el of targets) {
+        if (el.classList.contains('reveal-in')) continue;
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add('reveal-in');
+          observer.unobserve(el);
+        }
+      }
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(sweep);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
       root.classList.remove('reveal-armed');
     };
   }, [reduced]);

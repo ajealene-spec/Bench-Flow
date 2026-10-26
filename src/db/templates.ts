@@ -82,3 +82,20 @@ export async function deleteTemplate(id: string, database: LabCompanionDB = defa
     await database.templates.delete(id);
   });
 }
+
+/**
+ * Deletes a protocol and returns an Undo function. Undo restores the protocol and re-links the experiments
+ * that pointed at it. Experiments keep their own step snapshots either way.
+ */
+export async function deleteTemplateWithUndo(id: string, database: LabCompanionDB = defaultDb): Promise<() => Promise<void>> {
+  const template = await database.templates.get(id);
+  const linked = await database.experiments.where('templateId').equals(id).primaryKeys();
+  await deleteTemplate(id, database);
+  return async () => {
+    if (!template) return;
+    await database.transaction('rw', database.templates, database.experiments, async () => {
+      await database.templates.put(template);
+      if (linked.length > 0) await database.experiments.where('id').anyOf(linked).modify({ templateId: id });
+    });
+  };
+}

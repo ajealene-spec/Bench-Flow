@@ -1,9 +1,9 @@
-import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { db } from '../../db';
-import { deleteTemplate, getTemplate, listCategories, updateTemplate } from '../../db/templates';
+import { deleteTemplateWithUndo, getTemplate, listCategories, updateTemplate } from '../../db/templates';
+import { askConfirm, notify } from '../../app/feedback';
 import type { Hazard, MaterialItem, ProtocolOverview, ProtocolPhase, ProtocolTemplate, Step } from '../../types';
 import { EMPTY_OVERVIEW, MaterialsCard, OverviewCard, TimelineCard } from '../plan/PlanCards';
 import { prepareSteps, ReviewSection } from '../import/ImportPage';
@@ -12,8 +12,7 @@ import { LiteraturePrompt } from '../assist/LiteraturePrompt';
 import { TemplateExtras } from '../share/TemplateExtras';
 import { TemplateSourceEditor } from './TemplateSourceEditor';
 
-const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
-const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
+const BUTTON_SECONDARY = 'btn btn-secondary';
 const INPUT =
 'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 
@@ -71,8 +70,9 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   async function remove() {
     const ok = await askConfirm({ title: `Delete the protocol “${template.title}”?`, message: 'Experiments started from it keep their own steps and records.', confirmLabel: 'Delete protocol', danger: true });
     if (!ok) return;
-    await deleteTemplate(template.id, db);
+    const undo = await deleteTemplateWithUndo(template.id, db);
     navigate('/library');
+    notify(`Deleted “${template.title}”.`, { actionLabel: 'Undo', onAction: () => void undo() });
   }
 
   return (
@@ -86,7 +86,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
         </button>
       </header>
 
-      <h1 className="text-2xl font-semibold">Edit protocol</h1>
+      <h1 className="t-h1">Edit protocol</h1>
 
       <div className="flex flex-wrap items-center gap-2">
         <ProtocolsIoExportButtons source={template} />

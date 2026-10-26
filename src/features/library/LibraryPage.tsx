@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../../db';
-import { deleteTemplate, listTemplates } from '../../db/templates';
+import { deleteTemplateWithUndo, listTemplates } from '../../db/templates';
+import { notify } from '../../app/feedback';
 import type { ProtocolTemplate } from '../../types';
 import { formatDate } from '../../app/format';
 import { StartExperimentForm } from './StartExperimentForm';
@@ -98,7 +99,9 @@ function TemplateCard({ template }: { template: ProtocolTemplate }) {
 
   async function remove() {
     const ok = await askConfirm({ title: `Delete the protocol “${template.title}”?`, message: 'Experiments started from it keep their own steps and records.', confirmLabel: 'Delete protocol', danger: true });
-    if (ok) await deleteTemplate(template.id, db);
+    if (!ok) return;
+    const undo = await deleteTemplateWithUndo(template.id, db);
+    notify(`Deleted “${template.title}”.`, { actionLabel: 'Undo', onAction: () => void undo() });
   }
 
   return (

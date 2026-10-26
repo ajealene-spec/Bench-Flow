@@ -8,9 +8,8 @@ import { testApiKey, type KeyTestResult } from './apiKey';
 import StarterLoader from '../features/library/StarterLoader';
 import { PageHeader } from './ui';
 
-const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium disabled:opacity-50';
-const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
-const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
+const BUTTON_PRIMARY = 'btn btn-primary';
+const BUTTON_SECONDARY = 'btn btn-secondary';
 const INPUT =
 'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 const CARD ='flex flex-col gap-4 rounded-2xl border border-border bg-surface shadow-card p-4 sm:p-6';

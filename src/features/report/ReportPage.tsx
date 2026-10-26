@@ -26,9 +26,8 @@ import { CommentThread } from '../share/CommentThread';
 import { ReproducibilityBadge } from '../insights/ReproducibilityBadge';
 import './report.css';
 
-const BUTTON =
-'inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-surface shadow-card px-4 font-medium text-text active:bg-surface-2';
-const SECTION ='report-section mt-8 border-t border-border pt-4';
+const BUTTON = 'btn btn-secondary';
+const SECTION = 'report-section mt-8 border-t border-border pt-4';
 const SECTION_BREAK = `${SECTION} report-section--break`;
 
 /** Loads everything the report needs for one experiment. Resolves to null when the experiment does not exist. */
@@ -175,7 +174,7 @@ function ReportView({ data }: { data: ReportData }) {
         </div>
         <header>
           <p className="text-sm uppercase tracking-wide text-text-muted">Experiment report</p>
-          <h1 className="mt-1 text-2xl font-semibold leading-tight sm:text-3xl">{report.title}</h1>
+          <h1 className="t-h1 mt-1">{report.title}</h1>
           <div className="mt-2">
             <ReproducibilityBadge experimentId={report.experimentId} />
           </div>
@@ -191,7 +190,7 @@ function ReportView({ data }: { data: ReportData }) {
         </header>
 
         <section className={SECTION} aria-labelledby="report-safety">
-          <h2 id="report-safety" className="text-xl font-semibold">Safety</h2>
+          <h2 id="report-safety" className="t-h2">Safety</h2>
           <p className="mt-1 text-base">
             Checklist confirmed: {formatTimestamp(report.safety.confirmedAt) || 'not confirmed'}
           </p>
@@ -217,7 +216,7 @@ function ReportView({ data }: { data: ReportData }) {
         </section>
 
         <section className={SECTION_BREAK} aria-labelledby="report-steps">
-          <h2 id="report-steps" className="text-xl font-semibold">Steps</h2>
+          <h2 id="report-steps" className="t-h2">Steps</h2>
           {report.steps.length === 0 && <p className="mt-2 text-base">This experiment has no steps.</p>}
           {report.steps.map((step) => (
             <div key={step.stepId} className="report-step mt-5">

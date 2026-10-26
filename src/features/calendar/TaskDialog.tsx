@@ -1,8 +1,8 @@
-import { askConfirm } from '../../app/feedback';
+import { askConfirm, notify } from '../../app/feedback';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
-import { createTask, deleteTask, setTaskDone, updateTask } from '../../db/tasks';
+import { createTask, deleteTaskWithUndo, setTaskDone, updateTask } from '../../db/tasks';
 import type { Experiment, Task, TaskRecurrence } from '../../types';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER, INPUT, LABEL } from './ui';
 
@@ -85,7 +85,8 @@ export function TaskDialog({ date, task, onClose }: TaskDialogProps) {
   async function remove() {
     if (!task) return;
     if (!await askConfirm({ title: `Delete “${task.title}”?`, confirmLabel: 'Delete', danger: true })) return;
-    await deleteTask(task.id);
+    const undo = await deleteTaskWithUndo(task.id);
+    notify('Task deleted.', { actionLabel: 'Undo', onAction: () => void undo() });
     onClose();
   }
 

@@ -70,3 +70,12 @@ function cleanTask<T extends Partial<Task>>(task: T): T {
   if (!out.recurrence || out.recurrence === 'none') delete out.recurrence;
   return out as T;
 }
+
+/** Deletes a task and returns a function that puts it back exactly as it was (for an Undo action). */
+export async function deleteTaskWithUndo(id: string, database: LabCompanionDB = defaultDb): Promise<() => Promise<void>> {
+  const task = await database.tasks.get(id);
+  await deleteTask(id, database);
+  return async () => {
+    if (task) await database.tasks.put(task);
+  };
+}

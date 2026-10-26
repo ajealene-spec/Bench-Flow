@@ -75,6 +75,11 @@ let activeConfirm: ConfirmFn | null = null;
  * Promise-based confirm for event handlers that are not inside a component (or that would need a hook).
  * Replaces window.confirm everywhere. Without a mounted provider it resolves to false, so nothing is deleted silently.
  */
+let activeToast: ToastApi['toast'] | null = null;
+
+/** Shows a toast from anywhere, including event handlers outside components. Does nothing without a provider. */
+export const notify: ToastApi['toast'] = (message, options) => (activeToast ? activeToast(message, options) : -1);
+
 export const askConfirm: ConfirmFn = (options) => (activeConfirm ? activeConfirm(options) : Promise.resolve(false));
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
@@ -112,6 +117,13 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     pending?.resolve(ok);
     setPending(null);
   };
+
+  useEffect(() => {
+    activeToast = toast;
+    return () => {
+      if (activeToast === toast) activeToast = null;
+    };
+  }, [toast]);
 
   useEffect(() => {
     activeConfirm = confirm;
