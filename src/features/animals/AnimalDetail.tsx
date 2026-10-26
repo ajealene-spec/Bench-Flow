@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Link } from 'react-router-dom';
 import { db } from '../../db';
-import { deleteAnimal, putAnimal } from '../../db/animals';
+import { deleteAnimal, listExperimentsForAnimal, putAnimal } from '../../db/animals';
+import { formatDate } from '../../app/format';
 import type { Animal, AnimalEventKind } from '../../types';
 import { BUTTON_LINK, BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
 import { parseNumber } from '../data/parseNumbers';
@@ -25,6 +28,8 @@ export function AnimalDetail({ animal, cageLabel }: { animal: Animal; cageLabel:
     .filter((e) => e.kind === 'post_op_check' && e.value !== undefined && surgery !== undefined && e.at >= surgery.at)
     .map((e) => ({ day: e.value as number, at: e.at }));
   const checklist = surgery ? postOpChecklist(surgery.at, checks, Date.now()) : [];
+
+  const experiments = useLiveQuery(() => listExperimentsForAnimal(animal.id, db), [animal.id], []);
 
   async function add(kind: AnimalEventKind, value: number | undefined, unit: string | undefined, note: string) {
     await putAnimal(withEvent(animal, { kind, at: Date.now(), value, unit, note: note.trim() || undefined }), db);
@@ -102,6 +107,24 @@ export function AnimalDetail({ animal, cageLabel }: { animal: Animal; cageLabel:
           </ul>
         </section>
       )}
+
+      <section aria-label="Experiments using this animal" className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Experiments</h3>
+        {experiments.length === 0 ? (
+          <p className="text-base text-text-muted">Not linked to any experiment yet. Link it from an experiment page.</p>
+        ) : (
+          <ul className="flex flex-col gap-2 text-base">
+            {experiments.map((e) => (
+              <li key={e.id}>
+                <Link to={`/experiment/${e.id}`} className="inline-flex min-h-12 w-full items-center justify-between rounded-xl border border-border px-3 underline underline-offset-4">
+                  <span>{e.name}</span>
+                  <span className="text-sm text-text-muted">{formatDate(e.startedAt ?? e.createdAt)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section aria-label="Event log" className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Event log</h3>

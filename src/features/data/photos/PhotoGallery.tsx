@@ -4,6 +4,7 @@ import { db } from '../../../db';
 import { deletePhoto, listPhotos, putPhoto } from '../../../db/photos';
 import type { Photo } from '../../../types';
 import { BUTTON_LINK, BUTTON_SECONDARY } from '../fieldStyles';
+import { AnnotationOverlay } from './AnnotationOverlay';
 import { PhotoEditor } from './PhotoEditor';
 import { useObjectUrl } from './objectUrl';
 
@@ -37,13 +38,7 @@ function PhotoTile({ photo, onEdit }: { photo: Photo; onEdit: () => void }) {
     <li className="flex flex-col gap-2 rounded-xl border border-border p-2">
       <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-surface-2">
         {url && <img src={url} alt={photo.caption || 'Recorded photo'} className="h-full w-full object-cover" />}
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
-          {photo.annotations.map((a) => (
-            <text key={a.id} x={a.x * 100} y={a.y * 100} fontSize="5" textAnchor="middle" dominantBaseline="middle" fill="#fff" stroke="#0f172a" strokeWidth="1.2" paintOrder="stroke">
-              {a.text}
-            </text>
-          ))}
-        </svg>
+        <AnnotationOverlay annotations={photo.annotations} />
       </div>
       <span className="text-sm text-text-muted">{TIME.format(photo.at)}</span>
       <CaptionField photo={photo} />

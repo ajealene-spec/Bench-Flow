@@ -9,6 +9,7 @@ import { BUTTON_LINK, BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../d
 import { computeAge, formatAge, parseIsoDate } from './ageMath';
 import { AnimalDetail } from './AnimalDetail';
 import { CageCard } from './CageCard';
+import { RridField } from '../neuro/RridField';
 
 const SEX_LABEL: Record<AnimalSex, string> = { male: 'Male', female: 'Female', unknown: 'Unknown' };
 
@@ -225,8 +226,9 @@ function AnimalForm({ cages }: { cages: Cage[] }) {
         <span className="text-sm font-medium text-text-muted">Date of birth</span>
         <input type="date" className={FIELD_INPUT} value={dob} onChange={(e) => setDob(e.target.value)} />
       </label>
-      {/* TODO: replace with RridField from src/features/assist once it exists. */}
-      <TextField label="RRID" value={rrid} onChange={setRrid} placeholder="RRID:IMSR_JAX:000664" />
+      <div className="sm:col-span-2">
+        <RridField id="animal-rrid" searchName={label || species} value={rrid} onChange={setRrid} />
+      </div>
       <TextField label="Notes" value={notes} onChange={setNotes} className="sm:col-span-2" />
       {error && <p role="alert" className="text-base text-rose-700 dark:text-rose-300 sm:col-span-2">{error}</p>}
       <button type="submit" className={`${BUTTON_PRIMARY} sm:col-span-2 sm:w-fit`}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractRridFromNotes, rridSearchLinks, setRridInNotes, validateRrid } from './rrid';
+import { rridSearchLinks, validateRrid } from './rrid';
 
 describe('validateRrid', () => {
   it('accepts antibody, mouse, Addgene and tool RRIDs', () => {
@@ -33,24 +33,5 @@ describe('rridSearchLinks', () => {
 
   it('returns nothing for a blank name', () => {
     expect(rridSearchLinks('   ')).toEqual([]);
-  });
-});
-
-describe('notes storage', () => {
-  it('saves the RRID as the first line and reads it back', () => {
-    const notes = setRridInNotes('Stored in fridge 2', 'RRID:AB_2298772');
-    expect(notes).toBe('RRID: RRID:AB_2298772\nStored in fridge 2');
-    expect(extractRridFromNotes(notes)).toBe('RRID:AB_2298772');
-  });
-
-  it('replaces an earlier RRID and keeps other notes', () => {
-    const first = setRridInNotes('Keep cold', 'RRID:AB_1');
-    const second = setRridInNotes(first, 'RRID:AB_2');
-    expect(second).toBe('RRID: RRID:AB_2\nKeep cold');
-  });
-
-  it('removes the RRID line when cleared', () => {
-    expect(setRridInNotes('RRID: RRID:AB_1\nKeep cold', '')).toBe('Keep cold');
-    expect(extractRridFromNotes('Keep cold')).toBe('');
   });
 });

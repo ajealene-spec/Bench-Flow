@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { readLegacyAuthorName, splitRridFromNotes } from './migrationV8';
 import type {
   Animal,
   AppSettings,
@@ -27,6 +28,9 @@ import type {
 
 /** Category given to templates that were created from existing experiments by the version 3 upgrade. */
 export const UNCATEGORIZED = 'Uncategorized';
+
+/** Primary key of the one settings row. Matches SETTINGS_ID in settings.ts. */
+const SETTINGS_ROW_ID = 'settings';
 
 export class LabCompanionDB extends Dexie {
   experiments!: Table<Experiment, string>;
@@ -200,6 +204,29 @@ export class LabCompanionDB extends Dexie {
       protocolVersions: 'id, templateId, [templateId+version]',
       comments: 'id, [targetType+targetId], createdAt',
       stereotaxTargets: 'id, name, atlas',
+    });
+
+    // Version 8: RRIDs move from the notes field into their own inventory field, the user's name moves
+    // from localStorage into settings, and experiments, photos and settings gain optional fields
+    // (animalIds, arrows, thumbnail, userName). Only existing rows that need it are changed.
+    this.version(8).upgrade(async (tx) => {
+      await tx.table('inventory').toCollection().modify((item: Record<string, unknown>) => {
+        if (typeof item.rrid === 'string' && item.rrid) return;
+        const split = splitRridFromNotes(item.notes as string | undefined);
+        if (!split) return;
+        item.rrid = split.rrid;
+        if (split.notes === undefined) delete item.notes;
+        else item.notes = split.notes;
+      });
+
+      const legacyName = readLegacyAuthorName();
+      if (legacyName) {
+        const settings = tx.table('settings');
+        const row = (await settings.get(SETTINGS_ROW_ID)) as Record<string, unknown> | undefined;
+        if (!row?.userName) {
+          await settings.put({ ...(row ?? {}), id: SETTINGS_ROW_ID, userName: legacyName });
+        }
+      }
     });
   }
 }

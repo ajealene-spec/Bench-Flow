@@ -65,9 +65,23 @@ export function reportToMarkdown(report: Report): string {
   if (report.reagents.length === 0) push('None listed.', '');
   for (const r of report.reagents) {
     const amount = amountText(r.amount, r.unit);
-    push(`- ${r.name}${amount ? `: ${amount}` : ''} (steps ${r.stepNumbers.join(', ')})`);
+    push(`- ${r.name}${amount ? `: ${amount}` : ''} (steps ${r.stepNumbers.join(', ')})${r.rrid ? ` [${r.rrid}]` : ''}`);
   }
   if (report.reagents.length) push('');
+
+  push('## Animals', '');
+  if (report.animals.length === 0) push('None linked.', '');
+  for (const a of report.animals) {
+    push(`- ${a.label}: ${[a.species, a.strain, a.genotype, a.sex].filter(Boolean).join(', ') || 'no details'}${a.rrid ? ` [${a.rrid}]` : ''}`);
+  }
+  if (report.animals.length) push('');
+
+  push('## Comments', '');
+  if (report.comments.length === 0) push('None.', '');
+  for (const c of report.comments) {
+    push(`- ${c.author} (${when(c.createdAt)}${c.resolved ? ', resolved' : ''}): ${c.text}`);
+  }
+  if (report.comments.length) push('');
 
   push('## Notes', '');
   push(report.notes || 'None.', '');

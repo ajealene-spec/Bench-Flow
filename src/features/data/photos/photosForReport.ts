@@ -13,6 +13,8 @@ export interface ReportPhoto {
   at: number;
   annotations: string;
   blob: Blob;
+  /** Small copy for the report. Falls back to blob when the photo has none. */
+  thumbnail?: Blob;
 }
 
 export async function photosForReport(experimentId: string, database: LabCompanionDB = defaultDb): Promise<ReportPhoto[]> {
@@ -24,5 +26,6 @@ export async function photosForReport(experimentId: string, database: LabCompani
     at: p.at,
     annotations: serializeAnnotations(p.annotations),
     blob: p.blob,
+    thumbnail: p.thumbnail,
   }));
 }

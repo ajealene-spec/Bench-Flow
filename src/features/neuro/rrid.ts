@@ -1,5 +1,5 @@
 /*
- * RRID (Research Resource Identifier) helpers. Pure: validation, search links and note storage.
+ * RRID (Research Resource Identifier) helpers. Pure: validation and search links. The identifier is stored in its own `rrid` field.
  */
 
 export type RridKind = 'antibody' | 'mouse' | 'plasmid' | 'tool' | 'cell_line' | 'software' | 'drosophila' | 'zebrafish';
@@ -41,21 +41,4 @@ export function rridSearchLinks(name: string): Array<{ label: string; url: strin
     { label: 'SciCrunch RRID portal', url: `https://scicrunch.org/resources/search?q=${q}` },
     { label: 'Antibody Registry', url: `https://www.antibodyregistry.org/search?q=${q}` },
   ];
-}
-
-const NOTE_LINE = /^RRID: (RRID:[^\s]+)\s*$/m;
-
-/** Reads the RRID saved in the notes field, or '' when none. */
-export function extractRridFromNotes(notes: string | undefined): string {
-  const m = NOTE_LINE.exec(notes ?? '');
-  return m ? m[1] : '';
-}
-
-/** Saves an RRID as a line in the notes field, replacing any earlier one. Empty removes it. */
-export function setRridInNotes(notes: string | undefined, rrid: string): string {
-  const base = (notes ?? '').replace(new RegExp(`^RRID: RRID:[^\\s]+\\s*\\n?`, 'm'), '').replace(/\n+$/, '');
-  const value = rrid.trim();
-  if (!value) return base;
-  const line = `RRID: ${value}`;
-  return base ? `${line}\n${base}` : line;
 }

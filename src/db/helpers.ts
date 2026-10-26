@@ -66,6 +66,7 @@ export async function updateExperiment(
       | 'materialsChecked'
       | 'pausedAtPhaseId'
       | 'pausedAt'
+      | 'animalIds'
     >
   >,
   database: LabCompanionDB = defaultDb,

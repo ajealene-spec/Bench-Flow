@@ -28,7 +28,16 @@ export interface PackagePhoto {
   stepNumber?: number;
   mimeType: string;
   bytes: Uint8Array;
+  /** Small JPEG copy, when the photo has one. Written to photos/thumbnails/. */
+  thumbnailBytes?: Uint8Array;
+  /** Plain-text labels and arrow captions. */
   annotations: string[];
+}
+
+/** A creator of the record. Only the name is required; the others help when deposited elsewhere. */
+export interface PackageCreator {
+  name: string;
+  orcid?: string;
 }
 
 export interface ResearchPackageInput {
@@ -41,8 +50,12 @@ export interface ResearchPackageInput {
   records: StepRecord[];
   reagents: PackageReagent[];
   photos: PackagePhoto[];
-  /** Names for the creators field. Protocol authors are used when none are given. */
-  creators?: string[];
+  /** Names for the creators field. The user's name comes first; protocol authors follow. */
+  creators?: Array<string | PackageCreator>;
+  /** Experiment-level comments, oldest first. Written to comments.csv. */
+  comments?: Array<{ author: string; text: string; createdAt: number; resolved: boolean }>;
+  /** Animals used in the run. Written to animals.csv. */
+  animals?: Array<{ label: string; species: string; strain: string; genotype: string; sex: string; rrid?: string }>;
   generatedAt: number;
 }
 
@@ -124,7 +137,9 @@ function readme(input: ResearchPackageInput, title: string): string {
     '- events.csv: every logged event with its time, planned and actual values.',
     '- recorded-data.csv: numbers and timers recorded per step.',
     '- reagents.csv: reagents and antibodies used, with lot, catalog number and RRID where known.',
-    '- photos/: photos taken during the run, with photos/index.csv describing each one.',
+    '- photos/: photos taken during the run, with photos/index.csv describing each one. photos/thumbnails/ holds the small copies.',
+    '- comments.csv: comments left on the run, with author and status (when there are any).',
+    '- animals.csv: animals used in the run, with RRIDs (when there are any).',
     '- methods.txt: a past-tense Methods paragraph built from the log.',
     '- metadata.json: DataCite-style description of the record (title, creators, dates, license, keywords, related identifiers).',
     '- .zenodo.json: the same description in Zenodo deposit form, for reference when you upload.',
@@ -149,7 +164,13 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
   const { experiment, executionLog, events, procedure, template, records } = input;
   const title = experiment.name;
   const license = licenseOption(template?.license ?? DEFAULT_LICENSE);
-  const creators = input.creators && input.creators.length > 0 ? input.creators : template?.authors?.length ? template.authors : ['Unknown'];
+  const creatorList: PackageCreator[] = (
+    input.creators && input.creators.length > 0
+      ? input.creators
+      : template?.authors?.length
+        ? template.authors
+        : ['Unknown']
+  ).map((c) => (typeof c === 'string' ? { name: c } : c));
   const protocolTitle = procedure?.title ?? template?.title ?? 'Unknown protocol';
   const keywords = [...new Set([template?.category, 'laboratory protocol', 'experiment record'].filter((k): k is string => !!k))];
 
@@ -190,7 +211,7 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
     identifier: { identifier: experiment.id, identifierType: 'UUID' },
     titles: [{ title }],
     title,
-    creators: creators.map((name) => ({ name, nameType: 'Personal' })),
+    creators: creatorList.map((c) => ({ name: c.name, nameType: 'Personal', ...(c.orcid ? { nameIdentifiers: [{ nameIdentifier: c.orcid, nameIdentifierScheme: 'ORCID' }] } : {}) })),
     publisher: 'Bench Flow (local export)',
     publicationYear: new Date(input.generatedAt).getUTCFullYear(),
     resourceType: { resourceTypeGeneral: 'Dataset', resourceType: 'Laboratory run record' },
@@ -213,7 +234,7 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
     title,
     upload_type: 'dataset',
     description,
-    creators: creators.map((name) => ({ name })),
+    creators: creatorList.map((c) => ({ name: c.name, ...(c.orcid ? { orcid: c.orcid } : {}) })),
     keywords,
     version: '1',
     access_right: license.zenodoId ? 'open' : 'closed',
@@ -237,8 +258,10 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
   ]);
 
   const photoRows = input.photos.map((p, i) => {
-    const name = `photos/photo-${String(i + 1).padStart(2, '0')}.${extensionFor(p.mimeType)}`;
-    return { name, row: [name, new Date(p.at).toISOString(), p.stepNumber ?? '', p.caption, p.annotations.join('; ')] };
+    const stem = `photo-${String(i + 1).padStart(2, '0')}`;
+    const name = `photos/${stem}.${extensionFor(p.mimeType)}`;
+    const thumb = p.thumbnailBytes ? `photos/thumbnails/${stem}.jpg` : '';
+    return { name, thumb, row: [name, thumb, new Date(p.at).toISOString(), p.stepNumber ?? '', p.caption, p.annotations.join('; ')] };
   });
 
   const files: ZipEntry[] = [
@@ -257,10 +280,21 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
     { path: '.zenodo.json', data: JSON.stringify(zenodo, null, 2) },
   ];
 
+  if (input.comments && input.comments.length > 0) {
+    const rows = input.comments.map((c) => [new Date(c.createdAt).toISOString(), c.author, c.resolved ? 'resolved' : 'open', c.text]);
+    files.push({ path: 'comments.csv', data: csv(['Created at', 'Author', 'Status', 'Comment'], rows) });
+  }
+
+  if (input.animals && input.animals.length > 0) {
+    const rows = input.animals.map((a) => [a.label, a.species, a.strain, a.genotype, a.sex, a.rrid ?? '']);
+    files.push({ path: 'animals.csv', data: csv(['Animal ID', 'Species', 'Strain', 'Genotype', 'Sex', 'RRID'], rows) });
+  }
+
   if (photoRows.length > 0) {
-    files.push({ path: 'photos/index.csv', data: csv(['File', 'Taken at', 'Step', 'Caption', 'Annotations'], photoRows.map((p) => p.row)) });
+    files.push({ path: 'photos/index.csv', data: csv(['File', 'Thumbnail', 'Taken at', 'Step', 'Caption', 'Annotations'], photoRows.map((p) => p.row)) });
     input.photos.forEach((photo, i) => {
       files.push({ path: photoRows[i].name, data: photo.bytes });
+      if (photo.thumbnailBytes) files.push({ path: photoRows[i].thumb, data: photo.thumbnailBytes });
     });
   }
   return files;

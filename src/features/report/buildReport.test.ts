@@ -197,3 +197,41 @@ describe('buildReport', () => {
     expect(report.generatedAt).toBe(999);
   });
 });
+
+describe('buildReport RRIDs, animals and comments', () => {
+  const exp: Experiment = { id: 'e9', name: 'Stain 9', status: 'done', folderId: null, createdAt: 1, updatedAt: 1 };
+  const procedure: Procedure = {
+    id: 'p9',
+    experimentId: 'e9',
+    title: 'IF',
+    steps: [step('s1', 'Block', { reagents: [{ name: 'Anti-GFAP' }, { name: 'PBS' }] })],
+    createdAt: 1,
+    updatedAt: 1,
+  };
+
+  it('attaches the inventory RRID to a matching reagent and leaves the others without one', () => {
+    const report = buildReport({ experiment: exp, procedure, reagentRrids: { 'anti-gfap': 'RRID:AB_2298772' } });
+    expect(report.reagents).toEqual([
+      expect.objectContaining({ name: 'Anti-GFAP', rrid: 'RRID:AB_2298772' }),
+      expect.objectContaining({ name: 'PBS' }),
+    ]);
+    expect(report.reagents[1].rrid).toBeUndefined();
+  });
+
+  it('carries animals and experiment comments into the report', () => {
+    const report = buildReport({
+      experiment: exp,
+      procedure,
+      animals: [{ label: 'M-07', species: 'Mouse', strain: 'C57BL/6J', genotype: 'WT', sex: 'female' }],
+      comments: [{ author: 'Ana', text: 'Good signal', createdAt: 5, resolved: true }],
+    });
+    expect(report.animals).toHaveLength(1);
+    expect(report.comments).toEqual([{ author: 'Ana', text: 'Good signal', createdAt: 5, resolved: true }]);
+  });
+
+  it('has empty animals and comments when none are given', () => {
+    const report = buildReport({ experiment: exp, procedure });
+    expect(report.animals).toEqual([]);
+    expect(report.comments).toEqual([]);
+  });
+});

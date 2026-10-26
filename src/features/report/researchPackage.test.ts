@@ -244,3 +244,39 @@ describe('helpers', () => {
     expect(md).toContain('Caution: Wear gloves');
   });
 });
+
+describe('research package additions', () => {
+  it('writes comments and animals when there are some, and skips the files when there are not', () => {
+    const withData = readZip(
+      buildZip(
+        buildResearchPackage(
+          input({
+            comments: [{ author: 'Ana Lee', text: 'Repeat the wash', createdAt: Date.UTC(2026, 2, 12, 11), resolved: false }],
+            animals: [{ label: 'M-07', species: 'Mouse', strain: 'C57BL/6J', genotype: 'WT', sex: 'female', rrid: 'RRID:IMSR_JAX:000664' }],
+          }),
+        ),
+      ),
+    );
+    expect(text(withData.get('comments.csv'))).toContain('Ana Lee,open,Repeat the wash');
+    expect(text(withData.get('animals.csv'))).toContain('M-07,Mouse,C57BL/6J,WT,female,RRID:IMSR_JAX:000664');
+
+    const without = readZip(buildZip(buildResearchPackage(input())));
+    expect(without.has('comments.csv')).toBe(false);
+    expect(without.has('animals.csv')).toBe(false);
+  });
+
+  it('puts the user name first among the creators and writes thumbnails beside the photos', () => {
+    const base = input({ creators: [{ name: 'Ana Lee', orcid: '0000-0002-1825-0097' }, 'Ben Ko'] });
+    const files = buildResearchPackage({
+      ...base,
+      photos: [{ ...base.photos[0], thumbnailBytes: new Uint8Array([1, 2]) }],
+    });
+    const metadata = JSON.parse(files.find((f) => f.path === 'metadata.json')!.data as string);
+    expect(metadata.creators[0]).toMatchObject({ name: 'Ana Lee', nameIdentifiers: [{ nameIdentifier: '0000-0002-1825-0097' }] });
+    expect(metadata.creators[1]).toEqual({ name: 'Ben Ko', nameType: 'Personal' });
+
+    const entries = readZip(buildZip(files));
+    expect([...entries.get('photos/thumbnails/photo-01.jpg')!]).toEqual([1, 2]);
+    expect(text(entries.get('photos/index.csv'))).toContain('photos/thumbnails/photo-01.jpg');
+  });
+});

@@ -25,6 +25,8 @@ const COUNTDOWN_SEC = 3;
 export interface FocusModeProps {
   experimentId: string;
   step: Step;
+  /** Title of the protocol this run follows. Sent with the step for explanations. */
+  protocolTitle?: string;
   index: number;
   total: number;
   isCompleted: boolean;
@@ -42,7 +44,7 @@ export interface FocusModeProps {
  * here, and a finished timer rings until it is dismissed.
  */
 export function FocusMode(props: FocusModeProps) {
-  const { experimentId, step, index, total, isCompleted, hazards, isLast, done, onBack, onNext, onComplete, onSkip } =
+  const { experimentId, step, protocolTitle, index, total, isCompleted, hazards, isLast, done, onBack, onNext, onComplete, onSkip } =
     props;
 
   return (
@@ -66,7 +68,7 @@ export function FocusMode(props: FocusModeProps) {
       )}
 
       <StepText step={step} experimentId={experimentId} textClassName="text-2xl leading-relaxed" />
-      <StepAids step={step} />
+      <StepAids step={step} protocolTitle={protocolTitle} />
 
       {step.cautions.length > 0 && (
         <section

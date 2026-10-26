@@ -20,8 +20,11 @@ export const TECHNIQUE_OPTIONS: string[] = [
   'Flow cytometry',
 ];
 
-/** Whether the first-run welcome must be shown before this route. Welcome and About are always open. */
+/** Pages that never need onboarding: the welcome itself, plus the About and shared-protocol pages. */
+export const PUBLIC_PATHS: readonly string[] = ['/welcome', '/about', '/shared'];
+
+/** Whether the first-run welcome must be shown before this route. Public pages are always open. */
 export function needsWelcome(pathname: string, onboardedAt: number | undefined): boolean {
   if (onboardedAt !== undefined) return false;
-  return pathname !== '/welcome' && pathname !== '/about';
+  return !PUBLIC_PATHS.includes(pathname.replace(/\/+$/, '') || '/');
 }

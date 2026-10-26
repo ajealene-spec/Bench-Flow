@@ -94,6 +94,8 @@ export interface Experiment {
   safetyChecklist?: SafetyChecklistItem[];
   /** Set when every safety checklist item has been checked. */
   safetyConfirmedAt?: number;
+  /** Ids of the animals this run used (from the Animals page). */
+  animalIds?: string[];
   /** Ids of materials (from the run snapshot) the user has checked off on the bench. */
   materialsChecked?: string[];
   /** Run-mode resume point, set when the user pauses a run. */
@@ -260,6 +262,8 @@ export interface InventoryItem {
   conjugate?: string;
   isotype?: string;
   reactivity?: string[];
+  /** Research Resource Identifier, for example "RRID:AB_2298772". Checked with validateRrid before saving. */
+  rrid?: string;
   /** ISO date (YYYY-MM-DD). */
   expiresOn?: string;
   location?: string;
@@ -299,6 +303,8 @@ export interface AppSettings {
   voiceEnabled: boolean;
   /** Bring-your-own Anthropic key. Local only; never synced and never logged. */
   apiKey?: string;
+  /** The user's name, shown on comments and as the creator in research packages. */
+  userName?: string;
 }
 
 /** A cached explanation for one template step (why it matters, common mistakes, reading links). */
@@ -398,19 +404,37 @@ export interface ImagingRecord {
   at: number;
 }
 
-/** A pin or label placed on a photo. x and y are fractions (0 to 1) of the image size. */
-export interface PhotoAnnotation {
+/** A text label placed on a photo. x and y are fractions (0 to 1) of the image size. */
+export interface PhotoLabel {
   id: string;
+  /** Missing on labels saved before arrows existed. Treated as a label. */
+  type?: 'label';
   x: number;
   y: number;
   text: string;
 }
+
+/** An arrow drawn on a photo. Start and end points are fractions (0 to 1) of the image size. */
+export interface PhotoArrow {
+  id: string;
+  type: 'arrow';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  /** Optional caption shown next to the arrow. */
+  text?: string;
+}
+
+export type PhotoAnnotation = PhotoLabel | PhotoArrow;
 
 export interface Photo {
   id: string;
   experimentId: string;
   stepId?: string;
   blob: Blob;
+  /** Small JPEG copy for lists and reports. Missing on photos saved before thumbnails existed. */
+  thumbnail?: Blob;
   annotations: PhotoAnnotation[];
   caption: string;
   /** Wall-clock ms. */

@@ -434,6 +434,7 @@ export default function RunPage() {
               <FocusMode
                 experimentId={id}
                 step={step}
+                protocolTitle={procedure.title}
                 index={index}
                 total={total}
                 isCompleted={isCompleted}
@@ -470,7 +471,7 @@ export default function RunPage() {
                 )}
 
                 <StepText step={step} experimentId={id} />
-                <StepAids step={step} />
+                <StepAids step={step} protocolTitle={procedure.title} />
 
                 {step.cautions.length > 0 && (
                   <section

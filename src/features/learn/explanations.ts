@@ -4,6 +4,7 @@
  */
 
 import type { ExplanationLink, StepExplanation } from '../../types';
+import { validateExplainResult } from './explainPrompts';
 
 export interface GenericExplanation {
   keyword: string;
@@ -151,21 +152,12 @@ export function genericOrFallback(title: string, instructions: string): GenericR
   return genericExplanation(title, instructions) ?? { keyword: 'general', why: FALLBACK_WHY, mistakes: ['Skipping a step or doing it out of order', 'Using a reagent that has not been checked for lot and expiry'], links: learnMoreLinks(title || 'lab protocol'), generic: true };
 }
 
-const MAX_WHY = 800;
-const MAX_MISTAKES = 6;
-const MAX_MISTAKE_CHARS = 200;
-
-/** Checks an AI-generated explanation. Returns the cleaned fields, or null if the shape is wrong. */
-export function validateExplanationResponse(data: unknown): { why: string; mistakes: string[] } | null {
-  if (!data || typeof data !== 'object') return null;
-  const why = (data as { why?: unknown }).why;
-  const mistakes = (data as { mistakes?: unknown }).mistakes;
-  if (typeof why !== 'string' || why.trim() === '') return null;
-  if (!Array.isArray(mistakes) || !mistakes.every((m) => typeof m === 'string')) return null;
-  return {
-    why: why.trim().slice(0, MAX_WHY),
-    mistakes: mistakes.map((m) => m.trim().slice(0, MAX_MISTAKE_CHARS)).filter(Boolean).slice(0, MAX_MISTAKES),
-  };
+/**
+ * Checks an AI-generated explanation. Returns the cleaned fields, or null if the shape is wrong.
+ * Links are kept only when they are https URLs with a title.
+ */
+export function validateExplanationResponse(data: unknown): { why: string; mistakes: string[]; links: ExplanationLink[] } | null {
+  return validateExplainResult(data);
 }
 
 /** Builds the cache row for a step from text and links. */

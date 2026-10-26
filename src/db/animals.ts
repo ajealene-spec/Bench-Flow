@@ -1,5 +1,5 @@
 import { db as defaultDb, type LabCompanionDB } from './index';
-import type { Animal } from '../types';
+import type { Animal, Experiment } from '../types';
 
 /** Animals sorted by label. Pass a cage id to list only the animals housed in that cage. */
 export async function listAnimals(cageId?: string, database: LabCompanionDB = defaultDb): Promise<Animal[]> {
@@ -17,6 +17,19 @@ export async function putAnimal(animal: Animal, database: LabCompanionDB = defau
   await database.animals.put(animal);
 }
 
+/** Experiments that used this animal, newest first. */
+export async function listExperimentsForAnimal(animalId: string, database: LabCompanionDB = defaultDb): Promise<Experiment[]> {
+  const experiments = await database.experiments.filter((e) => e.animalIds?.includes(animalId) ?? false).toArray();
+  return experiments.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Deletes an animal and unlinks it from any experiment that used it. */
 export async function deleteAnimal(id: string, database: LabCompanionDB = defaultDb): Promise<void> {
-  await database.animals.delete(id);
+  await database.transaction('rw', [database.animals, database.experiments], async () => {
+    const linked = await listExperimentsForAnimal(id, database);
+    for (const experiment of linked) {
+      await database.experiments.update(experiment.id, { animalIds: (experiment.animalIds ?? []).filter((a) => a !== id) });
+    }
+    await database.animals.delete(id);
+  });
 }

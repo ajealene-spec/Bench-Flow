@@ -14,8 +14,12 @@ interface Shown {
   source: 'saved' | 'ai' | 'offline';
 }
 
-/** Expandable "Why this step?" panel. Open by default in beginner mode, collapsed in advanced mode. */
-export function WhyThisStep({ step }: { step: Step }) {
+/**
+ * Expandable "Why this step?" panel. Open by default in beginner mode, collapsed in advanced mode.
+ * Shows the general notes at once. When online with a saved key, the AI explanation replaces them and is
+ * cached for the step, so it is only requested once.
+ */
+export function WhyThisStep({ step, protocolTitle = 'Lab protocol' }: { step: Step; protocolTitle?: string }) {
   const beginner = useIsBeginner();
   const [expanded, setExpanded] = useState<boolean | null>(null);
   const isOpen = expanded ?? beginner;
@@ -34,16 +38,18 @@ export function WhyThisStep({ step }: { step: Step }) {
       if (!navigator.onLine) return;
       const headers = await apiKeyHeaders(db);
       if (!headers[API_KEY_HEADER]) return;
-      const res = await requestExplanation({ stepId: step.id, title: step.title, instructions: step.instructions });
+      const res = await requestExplanation({ protocolTitle, title: step.title, instructions: step.instructions });
       if (!res.ok || cancelled) return;
-      const links = learnMoreLinks(generic.keyword === 'general' ? step.title : generic.keyword);
+      // The model's links come first; the general search links follow, without repeats.
+      const searchLinks = learnMoreLinks(generic.keyword === 'general' ? step.title : generic.keyword);
+      const links = [...res.value.links, ...searchLinks.filter((l) => !res.value.links.some((m) => m.url === l.url))];
       await putExplanation(toStepExplanation(step.id, res.value.why, res.value.mistakes, links), db).catch(() => undefined);
       if (!cancelled) setShown({ why: res.value.why, mistakes: res.value.mistakes, links, source: 'ai' });
     })();
     return () => {
       cancelled = true;
     };
-  }, [step.id, step.title, step.instructions]);
+  }, [step.id, step.title, step.instructions, protocolTitle]);
 
   return (
     <section aria-label="Why this step" className="rounded-2xl border border-border">

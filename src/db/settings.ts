@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Omit<AppSettings, 'id'> = {
   dyslexiaFont: false,
   voiceEnabled: false,
   apiKey: undefined,
+  userName: undefined,
 };
 
 /** Current settings, with defaults filled in for anything not saved yet. */

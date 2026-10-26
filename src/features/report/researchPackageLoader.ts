@@ -1,10 +1,14 @@
 import { db as defaultDb, type LabCompanionDB } from '../../db';
+import { getAnimal } from '../../db/animals';
+import { listComments } from '../../db/comments';
 import { getExperiment } from '../../db/helpers';
 import { getInventoryItem, listInventoryUsageForExperiment } from '../../db/inventory';
-import { listPhotos } from '../../db/photos';
+import { getSettings } from '../../db/settings';
 import { getTemplate } from '../../db/templates';
 import type { Procedure } from '../../types';
-import { buildResearchPackage, findRrid, type PackagePhoto, type PackageReagent } from './researchPackage';
+import { describeAnnotations, parseAnnotations } from '../data/photos/annotations';
+import { photosForReport } from '../data/photos/photosForReport';
+import { buildResearchPackage, findRrid, type PackageCreator, type PackagePhoto, type PackageReagent } from './researchPackage';
 import type { ReportData } from './reportData';
 import { buildZip } from './zip';
 
@@ -17,6 +21,7 @@ export async function buildResearchPackageZip(
   const experiment = await getExperiment(experimentId, database);
   if (!experiment) throw new Error('This experiment no longer exists.');
   const template = experiment.templateId ? await getTemplate(experiment.templateId, database) : null;
+  const settings = await getSettings(database);
 
   const stepNumber = (procedure: Procedure | undefined, stepId: string | undefined): number | undefined => {
     if (!stepId || !procedure) return undefined;
@@ -36,7 +41,7 @@ export async function buildResearchPackageZip(
       catalogNumber: item.catalogNumber,
       lotNumber: item.lotNumber,
       expiresOn: item.expiresOn,
-      rrid: findRrid(item.name, item.notes, item.catalogNumber),
+      rrid: item.rrid ?? findRrid(item.name, item.notes, item.catalogNumber),
       stepNumbers: [],
     };
     const n = stepNumber(data.procedure, usage.stepId);
@@ -44,7 +49,7 @@ export async function buildResearchPackageZip(
     byItem.set(item.id, existing);
   }
 
-  const photos = await listPhotos(experimentId, database);
+  const photos = await photosForReport(experimentId, database);
   const packagePhotos: PackagePhoto[] = [];
   for (const photo of photos) {
     packagePhotos.push({
@@ -54,8 +59,27 @@ export async function buildResearchPackageZip(
       stepNumber: stepNumber(data.procedure, photo.stepId),
       mimeType: photo.blob.type || 'application/octet-stream',
       bytes: new Uint8Array(await photo.blob.arrayBuffer()),
-      annotations: photo.annotations.map((a) => a.text).filter(Boolean),
+      thumbnailBytes: photo.thumbnail ? new Uint8Array(await photo.thumbnail.arrayBuffer()) : undefined,
+      annotations: describeAnnotations(parseAnnotations(photo.annotations)),
     });
+  }
+
+  const animals = [];
+  for (const id of experiment.animalIds ?? []) {
+    const animal = await getAnimal(id, database);
+    if (animal) {
+      animals.push({ label: animal.label, species: animal.species, strain: animal.strain, genotype: animal.genotype, sex: animal.sex, rrid: animal.rrid });
+    }
+  }
+
+  const comments = await listComments({ targetType: 'experiment', targetId: experimentId }, database);
+
+  // The user's name leads the creators list; protocol authors follow without repeating it.
+  const creators: PackageCreator[] = [];
+  const userName = settings.userName?.trim();
+  if (userName) creators.push({ name: userName });
+  for (const author of template?.authors ?? []) {
+    if (author.trim() && !creators.some((c) => c.name === author)) creators.push({ name: author });
   }
 
   const entries = buildResearchPackage({
@@ -68,6 +92,9 @@ export async function buildResearchPackageZip(
     records: data.records,
     reagents: [...byItem.values()],
     photos: packagePhotos,
+    creators: creators.length > 0 ? creators : undefined,
+    comments: comments.map((c) => ({ author: c.author, text: c.text, createdAt: c.createdAt, resolved: c.resolved })),
+    animals,
     generatedAt: Date.now(),
   });
   return buildZip(entries);

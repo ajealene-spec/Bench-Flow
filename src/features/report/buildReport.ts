@@ -34,6 +34,12 @@ export interface BuildReportInput {
   /** Every step record for the experiment. Records for steps no longer in the procedure are not shown per step. */
   records?: StepRecord[];
   calculatorResults?: CalculatorResult[];
+  /** RRIDs from the inventory, keyed by lower-case reagent name. Reagents with a match carry it into the report. */
+  reagentRrids?: Record<string, string>;
+  /** Animals used in the run (from the Animals page). Listed in the report. */
+  animals?: ReportAnimal[];
+  /** Experiment-level comments, oldest first. */
+  comments?: ReportComment[];
   /** Timestamp to stamp on the report. Passed in so the builder stays pure. */
   generatedAt?: number;
 }
@@ -81,9 +87,28 @@ export interface ReportReagent {
   name: string;
   amount?: string;
   unit?: string;
+  /** Research Resource Identifier from the inventory, when the reagent is in it with one. */
+  rrid?: string;
   /** Step numbers that use this reagent, in procedure order, without repeats. */
   stepNumbers: number[];
 }
+
+export interface ReportAnimal {
+  label: string;
+  species: string;
+  strain: string;
+  genotype: string;
+  sex: string;
+  rrid?: string;
+}
+
+export interface ReportComment {
+  author: string;
+  text: string;
+  createdAt: number;
+  resolved: boolean;
+}
+
 
 export interface ReportHazard {
   name: string;
@@ -117,6 +142,8 @@ export interface Report {
   notes: string;
   deviations: Deviation[];
   reagents: ReportReagent[];
+  animals: ReportAnimal[];
+  comments: ReportComment[];
   recordCount: number;
   generatedAt?: number;
 }
@@ -150,7 +177,9 @@ export function buildReport(input: BuildReportInput): Report {
     steps: reportSteps,
     notes: experiment.notes?.trim() ?? '',
     deviations: buildDeviations(reportSteps),
-    reagents: collectReagents(steps),
+    reagents: collectReagents(steps, input.reagentRrids ?? {}),
+    animals: input.animals ?? [],
+    comments: input.comments ?? [],
     recordCount: records.length,
     generatedAt,
   };
@@ -250,7 +279,7 @@ function buildDeviations(steps: ReportStep[]): Deviation[] {
 }
 
 /** Reagents from every step, merged by name (case-insensitive), in order of first use. */
-function collectReagents(steps: Step[]): ReportReagent[] {
+function collectReagents(steps: Step[], rrids: Record<string, string>): ReportReagent[] {
   const byName = new Map<string, ReportReagent>();
   steps.forEach((step, index) => {
     const stepNumber = index + 1;
@@ -260,7 +289,7 @@ function collectReagents(steps: Step[]): ReportReagent[] {
       const key = name.toLowerCase();
       let entry = byName.get(key);
       if (!entry) {
-        entry = { name, amount: reagent.amount, unit: reagent.unit, stepNumbers: [] };
+        entry = { name, amount: reagent.amount, unit: reagent.unit, rrid: rrids[key], stepNumbers: [] };
         byName.set(key, entry);
       }
       if (!entry.stepNumbers.includes(stepNumber)) entry.stepNumbers.push(stepNumber);

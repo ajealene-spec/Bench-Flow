@@ -8,6 +8,7 @@ import {
 } from './assistPrompts';
 import { apiKeyHeaders } from '../../app/apiKey';
 import { validateExplanationResponse } from '../learn/explanations';
+import type { ExplainResult } from '../learn/explainPrompts';
 
 export type AssistCall<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -59,19 +60,21 @@ export async function requestLiterature(req: LiteratureRequest): Promise<AssistC
 
 
 export interface ExplainRequest {
-  stepId: string;
+  protocolTitle: string;
   title: string;
   instructions: string;
 }
 
-export interface ExplainResult {
-  why: string;
-  mistakes: string[];
-}
+export type { ExplainResult };
 
 /** Asks for a beginner explanation of one step. The key travels in the header, as for the other calls. */
 export async function requestExplanation(req: ExplainRequest): Promise<AssistCall<ExplainResult>> {
-  const res = await post('/api/assist', { kind: 'explain', title: req.title, instructions: req.instructions });
+  const res = await post('/api/assist', {
+    kind: 'explain',
+    protocolTitle: req.protocolTitle,
+    title: req.title,
+    instructions: req.instructions,
+  });
   if ('error' in res) return { ok: false, error: 'offline' };
   if (res.status !== 200) return { ok: false, error: errorOf(res.data, 'explanation_unavailable') };
   const parsed = validateExplanationResponse(res.data);

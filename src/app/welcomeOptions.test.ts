@@ -12,4 +12,16 @@ describe('needsWelcome', () => {
     expect(needsWelcome('/welcome', undefined)).toBe(false);
     expect(needsWelcome('/about', undefined)).toBe(false);
   });
+
+  it('keeps the shared-protocol page open too, and ignores a trailing slash', () => {
+    expect(needsWelcome('/shared', undefined)).toBe(false);
+    expect(needsWelcome('/about/', undefined)).toBe(false);
+    expect(needsWelcome('/library/', undefined)).toBe(true);
+  });
+
+  it('does not trap a user who has finished onboarding on any route', () => {
+    for (const path of ['/', '/animals', '/experiment/abc/report', '/welcome']) {
+      expect(needsWelcome(path, 1)).toBe(false);
+    }
+  });
 });

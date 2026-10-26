@@ -2,29 +2,11 @@ import { db as defaultDb, type LabCompanionDB } from '../../db';
 import { deleteComment, getComment, putComment } from '../../db/comments';
 import type { CommentTargetType, TargetComment } from '../../types';
 
-const AUTHOR_KEY = 'benchflow.authorName';
 export const DEFAULT_AUTHOR = 'Me';
 
-/**
- * The name shown on comments. Settings have no name field yet, so the name is remembered in this
- * browser only. Falls back to "Me" when storage is blocked or nothing was set.
- */
-export function getAuthorName(): string {
-  try {
-    return window.localStorage.getItem(AUTHOR_KEY)?.trim() || DEFAULT_AUTHOR;
-  } catch {
-    return DEFAULT_AUTHOR;
-  }
-}
-
-export function setAuthorName(name: string): void {
-  try {
-    const trimmed = name.trim();
-    if (trimmed) window.localStorage.setItem(AUTHOR_KEY, trimmed);
-    else window.localStorage.removeItem(AUTHOR_KEY);
-  } catch {
-    // Storage blocked: the name simply is not remembered.
-  }
+/** The name shown on comments: the name from Settings, or "Me" when none is set. */
+export function authorNameFrom(userName: string | undefined): string {
+  return userName?.trim() || DEFAULT_AUTHOR;
 }
 
 export interface NewComment {
@@ -42,7 +24,7 @@ export async function addComment(input: NewComment, database: LabCompanionDB = d
     id: crypto.randomUUID(),
     targetType: input.targetType,
     targetId: input.targetId,
-    author: input.author.trim() || DEFAULT_AUTHOR,
+    author: authorNameFrom(input.author),
     text,
     createdAt: Date.now(),
     resolved: false,

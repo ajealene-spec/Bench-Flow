@@ -27,6 +27,7 @@ function cleanInput(input: InventoryInput): InventoryInput {
     expiresOn: blankToUndefined(input.expiresOn),
     location: blankToUndefined(input.location),
     quantity: blankToUndefined(input.quantity),
+    rrid: blankToUndefined(input.rrid),
     notes: blankToUndefined(input.notes),
   };
 }

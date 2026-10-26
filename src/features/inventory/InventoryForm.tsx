@@ -4,7 +4,6 @@ import { createInventoryItem, updateInventoryItem, type InventoryInput } from '.
 import type { InventoryItem, InventoryKind } from '../../types';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
 import { RridField } from '../neuro/RridField';
-import { extractRridFromNotes, setRridInNotes } from '../neuro/rrid';
 
 const KINDS: Array<{ value: InventoryKind; label: string }> = [
   { value: 'antibody', label: 'Antibody' },
@@ -35,6 +34,7 @@ function toFormState(item?: InventoryItem): FormState {
   const state: FormState = { kind: item?.kind ?? 'antibody', reactivity: item?.reactivity?.join(', ') ?? '' } as FormState;
   for (const { key } of TEXT_FIELDS) state[key] = (item?.[key] as string | undefined) ?? '';
   state.notes = item?.notes ?? '';
+  state.rrid = item?.rrid ?? '';
   return state;
 }
 
@@ -79,6 +79,7 @@ export function InventoryForm({
       location: form.location,
       quantity: form.quantity,
       notes: form.notes,
+      rrid: form.rrid,
     };
     setSaving(true);
     try {
@@ -131,7 +132,7 @@ export function InventoryForm({
           />
         </label>
       </div>
-      <RridField id="inventory-rrid" searchName={form.name} value={extractRridFromNotes(form.notes)} onChange={(r) => set('notes', setRridInNotes(form.notes, r))} />
+      <RridField id="inventory-rrid" searchName={form.name} value={form.rrid} onChange={(r) => set('rrid', r)} />
       {error && (
         <p role="alert" className="text-base text-red-700 dark:text-red-300">
           {error}

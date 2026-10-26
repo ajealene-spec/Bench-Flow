@@ -5,12 +5,12 @@ import { ToolPanel } from '../neuro/ToolsPage';
 import { WhyThisStep } from './WhyThisStep';
 
 /** Everything extra under a step: the "Why this step?" panel and any bench tools the step needs. */
-export function StepAids({ step }: { step: Step }) {
+export function StepAids({ step, protocolTitle }: { step: Step; protocolTitle?: string }) {
   const hints = detectToolHints(`${step.title}\n${step.instructions}`);
   const [active, setActive] = useState<ToolId | null>(null);
   return (
     <div className="flex flex-col gap-3">
-      <WhyThisStep step={step} />
+      <WhyThisStep step={step} protocolTitle={protocolTitle} />
       {hints.length > 0 && (
         <div aria-label="Tools for this step" className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">

@@ -5,11 +5,17 @@ import { db } from '../../db';
 import { getExperiment, getProcedureForExperiment, getRunState, listStepRecords } from '../../db/helpers';
 import { listExecutionEvents } from '../../db/executionLog';
 import { getInventoryItem, listInventoryUsageForExperiment } from '../../db/inventory';
+import { getAnimal } from '../../db/animals';
+import { listComments } from '../../db/comments';
 import { getTemplate } from '../../db/templates';
 import type { RunValue } from '../../types';
 import { formatElapsed, formatTimestamp } from '../data/time';
+import { photosForReport, type ReportPhoto } from '../data/photos/photosForReport';
+import { AnnotationOverlay } from '../data/photos/AnnotationOverlay';
+import { parseAnnotations } from '../data/photos/annotations';
+import { useObjectUrl } from '../data/photos/objectUrl';
 import { buildExecutionLog, type ReagentLot } from './buildExecutionLog';
-import { buildReport } from './buildReport';
+import { buildReport, type ReportAnimal } from './buildReport';
 import { reportToCSV, reportToEventsCSV, reportToJSON, reportToMarkdown } from './reportText';
 import type { ReportData } from './reportData';
 import { ResearchPackageButton } from './ResearchPackageButton';
@@ -35,6 +41,26 @@ async function loadReportData(experimentId: string): Promise<ReportData | null> 
     db.runValues.filter((rv: RunValue) => rv.experimentId === experimentId).toArray(),
     listInventoryUsageForExperiment(experimentId, db),
   ]);
+  const inventory = await db.inventory.toArray();
+  const reagentRrids: Record<string, string> = {};
+  for (const item of inventory) {
+    if (item.rrid) reagentRrids[item.name.trim().toLowerCase()] = item.rrid;
+  }
+  const animals: ReportAnimal[] = [];
+  for (const id of experiment.animalIds ?? []) {
+    const animal = await getAnimal(id, db);
+    if (animal) {
+      animals.push({ label: animal.label, species: animal.species, strain: animal.strain, genotype: animal.genotype, sex: animal.sex, rrid: animal.rrid });
+    }
+  }
+  const comments = (await listComments({ targetType: 'experiment', targetId: experimentId }, db)).map((c) => ({
+    author: c.author,
+    text: c.text,
+    createdAt: c.createdAt,
+    resolved: c.resolved,
+  }));
+  const photos = await photosForReport(experimentId, db);
+
   const lots: ReagentLot[] = [];
   for (const usage of usages) {
     const item = await getInventoryItem(usage.inventoryItemId, db);
@@ -54,9 +80,12 @@ async function loadReportData(experimentId: string): Promise<ReportData | null> 
     template: template ?? null,
     runState,
     records,
+    reagentRrids,
+    animals,
+    comments,
     generatedAt: Date.now(),
   });
-  return { report, procedure, records, events, executionLog };
+  return { report, procedure, records, events, executionLog, photos };
 }
 
 /** Printable report for one experiment. Print, CSV, JSON and plain-text export. */
@@ -79,7 +108,7 @@ export default function ReportPage() {
 }
 
 function ReportView({ data }: { data: ReportData }) {
-  const { report, procedure, records, events, executionLog } = data;
+  const { report, procedure, records, events, executionLog, photos } = data;
   const [message, setMessage] = useState('');
 
   const fileBase = slugify(report.title);
@@ -318,7 +347,52 @@ function ReportView({ data }: { data: ReportData }) {
                 <li key={r.name} className="report-row">
                   <strong>{r.name}</strong>
                   {r.amount || r.unit ? `: ${[r.amount, r.unit].filter(Boolean).join(' ')}` : ''} (steps{' '}
-                  {r.stepNumbers.join(', ')})
+                  {r.stepNumbers.join(', ')}){r.rrid ? ` · ${r.rrid}` : ''}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className={SECTION} aria-labelledby="report-animals">
+          <h2 id="report-animals" className="text-xl font-semibold">Animals</h2>
+          {report.animals.length === 0 ? (
+            <p className="mt-2 text-base">No animals linked to this run.</p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-base">
+              {report.animals.map((a) => (
+                <li key={a.label} className="report-row">
+                  <strong>{a.label}</strong> · {[a.species, a.strain, a.genotype, a.sex].filter(Boolean).join(' · ') || 'no details'}
+                  {a.rrid ? ` · ${a.rrid}` : ''}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className={SECTION_BREAK} aria-labelledby="report-photos">
+          <h2 id="report-photos" className="text-xl font-semibold">Photos</h2>
+          {photos.length === 0 ? (
+            <p className="mt-2 text-base">No photos taken during this run.</p>
+          ) : (
+            <ol className="report-photos mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {photos.map((photo, i) => (
+                <ReportPhotoFigure key={photo.id} photo={photo} number={i + 1} stepNumber={report.steps.find((s) => s.stepId === photo.stepId)?.number} />
+              ))}
+            </ol>
+          )}
+        </section>
+
+        <section className={SECTION} aria-labelledby="report-comments">
+          <h2 id="report-comments" className="text-xl font-semibold">Comments</h2>
+          {report.comments.length === 0 ? (
+            <p className="mt-2 text-base">No comments on this run.</p>
+          ) : (
+            <ul className="mt-2 space-y-2 text-base">
+              {report.comments.map((c, i) => (
+                <li key={`${c.createdAt}-${i}`} className="report-row">
+                  <strong>{c.author}</strong> · {formatTimestamp(c.createdAt)}{c.resolved ? ' · resolved' : ''}
+                  <p className="whitespace-pre-line">{c.text}</p>
                 </li>
               ))}
             </ul>
@@ -343,6 +417,28 @@ function ReportView({ data }: { data: ReportData }) {
       </section>
       <ZenodoHelp />
     </div>
+  );
+}
+
+/** One photo for the report: thumbnail (or full image) with its annotations and caption. Prints in colour or grey. */
+function ReportPhotoFigure({ photo, number, stepNumber }: { photo: ReportPhoto; number: number; stepNumber?: number }) {
+  const url = useObjectUrl(photo.thumbnail ?? photo.blob);
+  const annotations = parseAnnotations(photo.annotations);
+  return (
+    <li className="report-photo flex flex-col gap-1 break-inside-avoid">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-surface-2">
+        {url && <img src={url} alt={photo.caption || `Photo ${number}`} className="h-full w-full object-contain" />}
+        <AnnotationOverlay annotations={annotations} />
+      </div>
+      <p className="text-sm">
+        <strong>Figure {number}.</strong> {photo.caption || 'No caption.'}
+        <span className="text-text-muted">
+          {' '}
+          {stepNumber !== undefined ? `(step ${stepNumber}, ` : '('}
+          {formatTimestamp(photo.at)})
+        </span>
+      </p>
+    </li>
   );
 }
 

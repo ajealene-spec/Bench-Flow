@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getSettings, putSettings } from '../db/settings';
@@ -37,6 +37,38 @@ export default function SettingsPage() {
   );
 }
 
+/** Your name. Shown on comments and as the creator in research packages. Saved when the field loses focus. */
+function UserNameField({ savedName }: { savedName: string | undefined }) {
+  const [value, setValue] = useState(savedName ?? '');
+  const [saved, setSaved] = useState(false);
+  useEffect(() => setValue(savedName ?? ''), [savedName]);
+
+  async function save() {
+    const trimmed = value.trim();
+    if (trimmed === (savedName ?? '')) return;
+    await putSettings({ userName: trimmed || undefined });
+    setSaved(true);
+  }
+
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="font-medium text-text">Your name</span>
+      <input
+        className={INPUT}
+        value={value}
+        maxLength={80}
+        placeholder="For example Ana Lee"
+        onChange={(e) => {
+          setSaved(false);
+          setValue(e.target.value);
+        }}
+        onBlur={() => void save()}
+      />
+      <span className="text-sm text-text-muted">{saved ? 'Saved. ' : ''}Shown on comments and as the creator in research packages.</span>
+    </label>
+  );
+}
+
 function PreferencesCard({ settings }: { settings: AppSettings }) {
   const update = (changes: Partial<Omit<AppSettings, 'id'>>) => void putSettings(changes);
 
@@ -45,6 +77,8 @@ function PreferencesCard({ settings }: { settings: AppSettings }) {
       <h2 id="prefs-heading" className="text-lg font-semibold text-text">
         Preferences
       </h2>
+
+      <UserNameField savedName={settings.userName} />
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 font-medium text-text">Experience</legend>

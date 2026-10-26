@@ -4,12 +4,11 @@ import { db } from '../../db';
 import { listComments } from '../../db/comments';
 import type { CommentTargetType } from '../../types';
 import { formatTimestamp } from '../data/time';
-import { addComment, getAuthorName, removeComment, setAuthorName, setCommentResolved } from './comments';
+import { getSettings } from '../../db/settings';
+import { addComment, authorNameFrom, removeComment, setCommentResolved } from './comments';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
-const INPUT =
-'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 
 interface CommentThreadProps {
   targetType: CommentTargetType;
@@ -22,7 +21,9 @@ interface CommentThreadProps {
 export function CommentThread({ targetType, targetId, label }: CommentThreadProps) {
   const comments = useLiveQuery(() => listComments({ targetType, targetId }, db), [targetType, targetId]);
   const [text, setText] = useState('');
-  const [name, setName] = useState(() => getAuthorName());
+  // The author is the name from Settings. It is read live, so a change there applies to the next comment.
+  const settings = useLiveQuery(() => getSettings(db), []);
+  const author = authorNameFrom(settings?.userName);
   const [error, setError] = useState<string | null>(null);
 
   if (comments === undefined) return <p className="text-sm text-text-muted">Loading comments…</p>;
@@ -31,8 +32,7 @@ export function CommentThread({ targetType, targetId, label }: CommentThreadProp
   async function add() {
     setError(null);
     try {
-      setAuthorName(name);
-      await addComment({ targetType, targetId, author: name || getAuthorName(), text }, db);
+      await addComment({ targetType, targetId, author, text }, db);
       setText('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add the comment.');
@@ -84,10 +84,9 @@ export function CommentThread({ targetType, targetId, label }: CommentThreadProp
       </ul>
 
       <div className="flex flex-col gap-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-text-muted">Your name</span>
-          <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} onBlur={() => setAuthorName(name)} placeholder="Me" />
-        </label>
+        <p className="text-sm text-text-muted">
+          Commenting as <strong className="text-text">{author}</strong>. Change your name in Settings.
+        </p>
         <label className="flex flex-col gap-1">
           <span className="text-sm text-text-muted">New comment on {label}</span>
           <textarea

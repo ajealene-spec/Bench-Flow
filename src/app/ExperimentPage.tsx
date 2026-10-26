@@ -20,6 +20,7 @@ import { RecordedDataSummary } from '../features/data/RecordedDataSummary';
 import { ExperimentCapture } from '../features/data/ExperimentCapture';
 import { ExperimentReagentsPanel } from '../features/inventory/ExperimentReagentsPanel';
 import { TroubleshootPanel } from '../features/assist/TroubleshootPanel';
+import { ExperimentAnimalsPanel } from '../features/animals/ExperimentAnimalsPanel';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
@@ -129,6 +130,7 @@ export default function ExperimentPage() {
       <RecordedDataSummary experimentId={experiment.id} experimentName={experiment.name} />
       <ExperimentCapture experimentId={experiment.id} experimentName={experiment.name} />
       <ExperimentReagentsPanel experimentId={experiment.id} />
+      <ExperimentAnimalsPanel experiment={experiment} />
       <TroubleshootPanel experimentId={experiment.id} />
     </main>
   );

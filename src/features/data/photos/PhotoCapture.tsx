@@ -3,6 +3,7 @@ import { db } from '../../../db';
 import { putPhoto } from '../../../db/photos';
 import { newId } from '../../../db/helpers';
 import { BUTTON_PRIMARY } from '../fieldStyles';
+import { thumbnailForFile } from './thumbnail';
 
 /**
  * Camera or file picker for photos. On phones and tablets `capture="environment"` opens the back camera;
@@ -23,8 +24,10 @@ export function PhotoCapture({ experimentId, stepId }: { experimentId: string; s
           setError('Only image files can be added.');
           continue;
         }
+        // The thumbnail is best effort: a photo that cannot be decoded is still saved at full size.
+        const thumbnail = await thumbnailForFile(file);
         await putPhoto(
-          { id: newId(), experimentId, stepId, blob: file, annotations: [], caption: '', at: Date.now() },
+          { id: newId(), experimentId, stepId, blob: file, ...(thumbnail ? { thumbnail } : {}), annotations: [], caption: '', at: Date.now() },
           db,
         );
       }

@@ -40,6 +40,7 @@ describe('validateExplanationResponse', () => {
     expect(validateExplanationResponse({ why: '  Keeps background low. ', mistakes: [' Too short '] })).toEqual({
       why: 'Keeps background low.',
       mistakes: ['Too short'],
+      links: [],
     });
   });
 
@@ -53,5 +54,20 @@ describe('validateExplanationResponse', () => {
   it('caps the number of mistakes', () => {
     const r = validateExplanationResponse({ why: 'x', mistakes: Array.from({ length: 10 }, (_, i) => `m${i}`) });
     expect(r?.mistakes).toHaveLength(6);
+  });
+
+  it('keeps only https links with a title', () => {
+    const r = validateExplanationResponse({
+      why: 'x',
+      mistakes: [],
+      links: [
+        { title: 'Good', url: 'https://example.org/protocol' },
+        { title: 'Plain http', url: 'http://example.org' },
+        { title: '', url: 'https://example.org/empty-title' },
+        { title: 'Not a URL', url: 'javascript:alert(1)' },
+        { title: 'Broken', url: 'https://' },
+      ],
+    });
+    expect(r?.links).toEqual([{ title: 'Good', url: 'https://example.org/protocol' }]);
   });
 });

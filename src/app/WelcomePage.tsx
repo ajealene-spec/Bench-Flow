@@ -16,6 +16,7 @@ export default function WelcomePage() {
   const [field, setField] = useState<ResearchField | null>(null);
   const [experience, setExperience] = useState<ExperienceMode>('beginner');
   const [techniques, setTechniques] = useState<string[]>([]);
+  const [userName, setUserName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,7 +30,7 @@ export default function WelcomePage() {
     try {
       // Starter content first: if it fails, onboarding stays open so the user can try again or start empty.
       if (loadStarter) await seedStarterContent();
-      await putSettings({ field, mode: experience, techniques, onboardedAt: Date.now() });
+      await putSettings({ field, mode: experience, techniques, userName: userName.trim() || undefined, onboardedAt: Date.now() });
       navigate('/', { replace: true });
     } catch {
       setError(
@@ -108,6 +109,19 @@ export default function WelcomePage() {
             </label>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-lg font-semibold text-text">4. Your name (optional)</legend>
+        <label className="flex flex-col gap-1">
+          <span className="text-sm text-text-muted">Shown on comments and as the creator in research packages.</span>
+          <input
+            className="min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text"
+            value={userName}
+            maxLength={80}
+            onChange={(e) => setUserName(e.target.value)}
+          />
+        </label>
       </fieldset>
 
       <section aria-label="Finish setup" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface shadow-card p-4 sm:p-5">
