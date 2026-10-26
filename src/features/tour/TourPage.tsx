@@ -21,42 +21,42 @@ interface TourStep {
 const STEPS: TourStep[] = [
   {
     title: 'Paste a protocol, get steps',
-    blurb: 'Paste the text of a protocol and Bench Flow turns it into steps you can follow at the bench. This is sample text.',
+    blurb: 'Paste a protocol and Bench Flow turns it into phases and steps you can follow at the bench. The sample text is a calcium imaging protocol.',
     render: () => <StepPaste />,
   },
   {
     title: 'Check safety before you start',
-    blurb: 'Every hazard and piece of PPE from the protocol goes on a checklist. The first step stays locked until every item is checked.',
+    blurb: 'Hazards and PPE from the protocol go on a checklist. Fluo-4 AM in DMSO, glutamate and iPSC-derived cells each say to check your SDS.',
     render: () => <StepSafety />,
   },
   {
     title: 'Focus mode with a calculator and timer',
-    blurb: 'Each step can carry its own calculator and timer. Change the final volume and the antibody volume updates. The timer here runs 60 times faster than real time.',
+    blurb: 'Change the loading volume and the Fluo-4 AM stock volume updates. The 1 hour loading timer starts by itself. The tour runs it 60 times faster.',
     render: () => <StepFocus />,
   },
   {
-    title: 'Record the numbers as you go',
-    blurb: 'Counts go into the step as they are measured, per animal and per region. These NeuN+ counts are made-up sample numbers.',
+    title: 'Record peak ΔF/F0 and AUC per cell',
+    blurb: 'Each ROI gets a peak ΔF/F0 and an AUC. Three coverslips of 10 ROIs make 30 cells per group.',
     render: () => <StepRecord />,
   },
   {
     title: 'Deviations are logged for you',
-    blurb: 'The block timer ran 7 minutes over plan. When it stopped, the app logged the difference with no extra typing.',
+    blurb: 'Fluo-4 AM was loaded at 4.17 µM instead of the planned 5 µM. The app logged planned against actual with no extra typing.',
     render: () => <StepDeviation />,
   },
   {
-    title: 'See the results and the run',
-    blurb: 'Means and standard deviations for each region, with every animal shown as a dot, and a timeline of planned against actual times.',
+    title: 'Dot plot, means and an example trace',
+    blurb: 'Each dot is one cell, grouped by condition with APOE3 and APOE4 side by side. Switch between peak and AUC. The trace shows baseline, treatment and response.',
     render: () => <StepResults />,
   },
   {
     title: 'A documentation score',
-    blurb: 'The ring counts how completely the run is documented: steps, timers, deviations, lots, RRIDs, safety and methods. It does not grade the science.',
+    blurb: 'The ring counts how completely the run is documented: steps, timers, deviations, lots, safety and methods. It does not grade the science.',
     render: (demoId) => <StepScore demoId={demoId} />,
   },
   {
     title: 'Methods, written from the run',
-    blurb: 'The Methods paragraph is drafted from what was recorded. Then download the report and the data package for the run.',
+    blurb: 'The Methods paragraph is drafted from what was recorded, including the 4.17 µM loading. Then download the report and data package.',
     render: (demoId) => <StepMethods demoId={demoId} />,
   },
 ];
@@ -212,7 +212,7 @@ function EndCard({
           That is the whole loop
         </h2>
         <p className="max-w-3xl text-lg leading-relaxed text-text-muted">
-          Paste, check, follow with timers and calculators, record, log deviations, see results, score the documentation, and export. The demo experiment keeps all of it, with sample numbers, so you can look around.
+          Paste, check safety, calculate, time, record, log deviations, see results, score the documentation, and export. The demo experiment keeps all of it, with sample data for demonstration. It is not real results.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

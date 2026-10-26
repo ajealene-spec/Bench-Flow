@@ -4,8 +4,8 @@ import { STARTER_SPECS, STARTER_TEMPLATES } from './index';
 import { VERIFY_NOTE } from './build';
 
 describe('starter protocol library', () => {
-  it('ships the 15 planned protocols with unique titles', () => {
-    expect(STARTER_TEMPLATES).toHaveLength(15);
+  it('ships the 16 planned protocols with unique titles', () => {
+    expect(STARTER_TEMPLATES).toHaveLength(16);
     const titles = STARTER_TEMPLATES.map((t) => t.title);
     expect(new Set(titles).size).toBe(titles.length);
   });

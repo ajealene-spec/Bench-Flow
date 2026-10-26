@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { parseLocal } from '../import/localParse';
 import { buildSafetyChecklist } from '../run/safety';
-import { detectHazards } from '../import/hazards';
 import { SafetyGate } from '../run/SafetyGate';
-import type { SafetyChecklistItem, Step } from '../../types';
+import type { Hazard, SafetyChecklistItem, Step } from '../../types';
 import { useSequence, useTourReducedMotion, useTyped } from './useTourMotion';
 import { SAMPLE_PROTOCOL_TEXT } from './sampleData';
 import { TOUR_CARD } from './tourShared';
@@ -12,6 +11,37 @@ import { TOUR_CARD } from './tourShared';
 function parseSample(): Step[] {
   return parseLocal(SAMPLE_PROTOCOL_TEXT).steps;
 }
+
+/**
+ * Hazards for the sample protocol. The reason text is general on purpose: it tells you to check the SDS
+ * for your own lots, rather than stating hazard data for a specific product.
+ */
+export const SAMPLE_HAZARDS: Hazard[] = [
+  {
+    id: 'fluo4-dmso',
+    name: 'Fluo-4 AM in DMSO',
+    kind: 'chemical',
+    reason: 'DMSO carries dissolved compounds through the skin. Check your SDS for Fluo-4 AM and DMSO.',
+    ppe: [],
+    stepIds: [],
+  },
+  {
+    id: 'glutamate',
+    name: 'Glutamate',
+    kind: 'chemical',
+    reason: 'Check your SDS for glutamate before you handle the treatment solutions.',
+    ppe: [],
+    stepIds: [],
+  },
+  {
+    id: 'ipsc-cells',
+    name: 'iPSC-derived cells',
+    kind: 'biological',
+    reason: 'Handle human cell cultures in a cell culture hood, with aseptic technique.',
+    ppe: [],
+    stepIds: [],
+  },
+];
 
 /** Types the sample protocol, then shows the steps the parser found, one card at a time. */
 export function StepPaste() {
@@ -44,7 +74,7 @@ export function StepPaste() {
                 <span className="font-semibold text-text">{step.title}</span>
                 {step.instructions && <span className="text-sm leading-relaxed text-text-muted">{step.instructions}</span>}
                 {step.durationSec !== undefined && (
-                  <span className="text-sm text-accent-text">Timer: {Math.round(step.durationSec / 60)} min</span>
+                  <span className="text-sm text-accent-text">Timer: {step.durationSec < 60 ? `${step.durationSec} s` : `${Math.round(step.durationSec / 60)} min`}</span>
                 )}
               </div>
             </li>
@@ -58,7 +88,7 @@ export function StepPaste() {
 /** The safety and PPE checklist for the sample protocol. Items tick themselves in the tour; you can tap them too. */
 export function StepSafety() {
   const reduced = useTourReducedMotion();
-  const [items, setItems] = useState<SafetyChecklistItem[]>(() => buildSafetyChecklist(detectHazards(parseSample())));
+  const [items, setItems] = useState<SafetyChecklistItem[]>(() => buildSafetyChecklist(SAMPLE_HAZARDS));
   const [autoIndex, setAutoIndex] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
 

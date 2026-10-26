@@ -7,6 +7,7 @@ import { loadDemoReportData } from './demoReportData';
 import { sampleMethodsParagraph } from './tourText';
 import { useTourReducedMotion, useTyped } from './useTourMotion';
 import { TOUR_CARD } from './tourShared';
+import { SAMPLE_CAPTION } from './sampleData';
 
 const RING_R = 54;
 const RING_C = 2 * Math.PI * RING_R;
@@ -98,6 +99,7 @@ export function StepScore({ demoId }: { demoId: string | null }) {
         <span className="text-sm text-text-muted">
           How completely this run was written down. It does not judge the science.
         </span>
+        <span className="text-xs text-text-muted">{SAMPLE_CAPTION}</span>
       </div>
 
       <div className={TOUR_CARD}>
@@ -165,6 +167,7 @@ export function StepMethods({ demoId }: { demoId: string | null }) {
     <div className="grid gap-5 lg:grid-cols-[1fr_minmax(220px,320px)]">
       <div className={TOUR_CARD}>
         <span className="text-sm font-semibold text-text-muted">Methods, written from the run</span>
+        <span className="text-xs text-text-muted">{SAMPLE_CAPTION}</span>
         <p className="tour-methods text-base leading-relaxed text-text" aria-live="polite">
           {typed}
           {!done && !reduced && <span className="tour-caret" aria-hidden="true">|</span>}
@@ -174,7 +177,7 @@ export function StepMethods({ demoId }: { demoId: string | null }) {
         <div className="flex flex-col gap-2">
           <span className="text-lg font-semibold text-text">Take it with you</span>
           <span className="text-sm text-text-muted">
-            The zip holds the report (Markdown and JSON), the step records, the event log, and a CSV of the numbers. It is the sample run, so the numbers are made up.
+            The zip holds the report (Markdown and JSON), the step records, the event log, and a CSV of the per-cell numbers. It is the sample run, so the numbers are made up.
           </span>
         </div>
         <button

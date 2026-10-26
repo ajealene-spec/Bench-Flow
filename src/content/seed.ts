@@ -1,13 +1,35 @@
 import { db as defaultDb, type LabCompanionDB } from '../db';
-import { addStepRecord, getProcedureForExperiment, startExperimentFromTemplate } from '../db/helpers';
+import { addStepRecord, deleteExperiment, getProcedureForExperiment, newId, startExperimentFromTemplate } from '../db/helpers';
 import { logEvent, type ExecutionEventInput } from '../db/executionLog';
 import { createInventoryItem, linkInventoryUsage } from '../db/inventory';
-import type { Procedure, RunValue } from '../types';
+import type { Procedure, RunValue, StepRecord } from '../types';
 import { STARTER_TEMPLATES } from './protocols';
-import { SAMPLE_ANIMALS, SAMPLE_COUNTS, SAMPLE_COUNT_UNIT, SAMPLE_REGIONS, sampleCountLabel } from '../features/tour/sampleData';
+import {
+  CELL_METRIC_UNIT,
+  FLUO4_ACTUAL_UM,
+  FLUO4_PLANNED_UM,
+  GENOTYPES,
+  ROIS_PER_COVERSLIP,
+  SAMPLE_CONDITIONS,
+  SAMPLE_DEMO_NOTE,
+  SAMPLE_CELLS,
+  SAMPLE_LOADING_VOLUME_ML,
+  type CellMetric,
+  sampleCellLabel,
+} from '../features/tour/sampleData';
 
-export const DEMO_EXPERIMENT_NAME = 'Example: IF staining of mouse hippocampus';
-const DEMO_TEMPLATE_TITLE = 'Immunofluorescence on free-floating brain sections';
+export const DEMO_EXPERIMENT_NAME = 'Example: Fluo-4 calcium imaging in APOE3 vs APOE4 astrocytes';
+const DEMO_TEMPLATE_TITLE = 'Fluo-4 AM calcium imaging in iPSC-derived astrocytes';
+/** The demo this app seeded before. Removed on the next seed, but only when it is still untouched. */
+const LEGACY_DEMO_NAME = 'Example: IF staining of mouse hippocampus';
+const LEGACY_DEMO_NOTES =
+  'Sections from the dorsal hippocampus. The block ran about 7 minutes over. The primary antibody volume was raised from 4 to 5 µL because the stock had settled.';
+const LEGACY_DEMO_ITEM_NAMES = [
+  'Rabbit anti-NeuN (example)',
+  'Donkey anti-rabbit Alexa Fluor 488 (example)',
+  'DAPI stock (example)',
+  'Antifade mounting medium (example)',
+];
 const MINUTE = 60_000;
 
 export interface SeedResult {
@@ -45,42 +67,10 @@ async function seedOnce(database: LabCompanionDB, options: SeedOptions): Promise
     titles.add(template.title);
     templatesAdded += 1;
   }
+  await removeUntouchedLegacyDemo(database);
   const demoAdded = await seedDemoExperiment(database);
-  await addMissingSampleCounts(database);
+  await addMissingSampleCells(database);
   return { templatesAdded, demoAdded };
-}
-
-/**
- * Adds the SAMPLE NeuN+ counts (per region, per animal) to the demo run. Runs for demos created before
- * the counts existed too. Skips any count already present, so repeated calls add nothing.
- */
-async function addMissingSampleCounts(database: LabCompanionDB): Promise<void> {
-  const demo = await database.experiments.filter((e) => e.name === DEMO_EXPERIMENT_NAME).first();
-  if (!demo) return;
-  const existing = await database.stepRecords.where('experimentId').equals(demo.id).toArray();
-  const have = new Set(existing.map((r) => r.label));
-  const missing = SAMPLE_REGIONS.flatMap((region) =>
-    SAMPLE_ANIMALS.map((animal, i) => ({ region, animal, value: SAMPLE_COUNTS[region][i] })),
-  ).filter((c) => !have.has(sampleCountLabel(c.region, c.animal)));
-  if (missing.length === 0) return;
-  const procedure = await getProcedureForExperiment(demo.id, database);
-  if (!procedure) return;
-  // The counts belong to the imaging step, which is the one that produces the sections.
-  const stepId = stepIdByTitle(procedure, 'Mount');
-  for (const c of missing) {
-    await addStepRecord(
-      {
-        experimentId: demo.id,
-        stepId,
-        kind: 'number',
-        label: sampleCountLabel(c.region, c.animal),
-        value: c.value,
-        unit: SAMPLE_COUNT_UNIT,
-        note: 'Sample data for the tour. Made-up numbers, not a measurement.',
-      },
-      database,
-    );
-  }
 }
 
 /** The starter templates to add, in the requested order. */
@@ -90,7 +80,70 @@ function selectStarters(wanted: readonly string[] | undefined) {
   return wanted.map((title) => byTitle.get(title)).filter((t): t is (typeof STARTER_TEMPLATES)[number] => t !== undefined);
 }
 
-/** A finished IF run with timer and value deviations, recorded data, reagent lots and notes. */
+/** The sample cells are stored with the run, so the report and the data package carry them. */
+function sampleCellRecords(experimentId: string, stepId: string, existing: Set<string>): StepRecord[] {
+  const records: StepRecord[] = [];
+  const createdAt = Date.now();
+  for (const metric of ['peak', 'auc'] as CellMetric[]) {
+    for (const genotype of GENOTYPES) {
+      for (const condition of SAMPLE_CONDITIONS) {
+        const values = SAMPLE_CELLS[genotype][condition.id][metric];
+        values.forEach((value, i) => {
+          const coverslip = Math.floor(i / ROIS_PER_COVERSLIP) + 1;
+          const roi = (i % ROIS_PER_COVERSLIP) + 1;
+          const label = sampleCellLabel(metric, genotype, condition.id, coverslip, roi);
+          if (existing.has(label)) return;
+          records.push({
+            id: newId(),
+            experimentId,
+            stepId,
+            kind: 'number',
+            label,
+            value,
+            unit: CELL_METRIC_UNIT[metric],
+            note: SAMPLE_DEMO_NOTE,
+            createdAt,
+          });
+        });
+      }
+    }
+  }
+  return records;
+}
+
+/** Adds the sample cells (peak ΔF/F0 and AUC for every ROI) to the demo run. Skips any already present. */
+async function addMissingSampleCells(database: LabCompanionDB): Promise<void> {
+  const demo = await database.experiments.filter((e) => e.name === DEMO_EXPERIMENT_NAME).first();
+  if (!demo) return;
+  const procedure = await getProcedureForExperiment(demo.id, database);
+  if (!procedure) return;
+  const existing = new Set(
+    (await database.stepRecords.where('experimentId').equals(demo.id).toArray()).map((r) => r.label),
+  );
+  const records = sampleCellRecords(demo.id, stepIdByTitle(procedure, 'Analyze in FIJI'), existing);
+  if (records.length > 0) await database.stepRecords.bulkAdd(records);
+}
+
+/** Deletes the old IF demo only when it is still the untouched seeded copy: same notes, never edited after seeding. */
+async function removeUntouchedLegacyDemo(database: LabCompanionDB): Promise<void> {
+  const legacy = await database.experiments.filter((e) => e.name === LEGACY_DEMO_NAME).toArray();
+  for (const run of legacy) {
+    if (run.notes !== LEGACY_DEMO_NOTES || run.updatedAt !== run.endedAt) continue;
+    const usages = await database.inventoryUsage.filter((u) => u.experimentId === run.id).toArray();
+    await deleteExperiment(run.id, database);
+    await database.executionEvents.filter((e) => e.experimentId === run.id).delete();
+    await database.runValues.filter((v) => v.experimentId === run.id).delete();
+    await database.inventoryUsage.filter((u) => u.experimentId === run.id).delete();
+    // Remove the example reagents only when nothing else still uses them.
+    for (const itemId of new Set(usages.map((u) => u.inventoryItemId))) {
+      const item = await database.inventory.get(itemId);
+      const stillUsed = await database.inventoryUsage.filter((u) => u.inventoryItemId === itemId).count();
+      if (item && LEGACY_DEMO_ITEM_NAMES.includes(item.name) && stillUsed === 0) await database.inventory.delete(itemId);
+    }
+  }
+}
+
+/** A finished calcium imaging run with a planned-against-actual loading concentration, sample cells, reagent lots and notes. */
 async function seedDemoExperiment(database: LabCompanionDB): Promise<boolean> {
   const exists = await database.experiments.filter((e) => e.name === DEMO_EXPERIMENT_NAME).first();
   if (exists) return false;
@@ -101,143 +154,127 @@ async function seedDemoExperiment(database: LabCompanionDB): Promise<boolean> {
   const procedure = await getProcedureForExperiment(experiment.id, database);
   if (!procedure) return false;
 
-  // Timeline, in minutes from the start of the run.
+  // Timeline, in minutes from the start of the run. Sample data.
   const base = Date.now() - 3 * 24 * 60 * MINUTE;
   const at = (minutes: number) => base + minutes * MINUTE;
   const idOf = (title: string) => stepIdByTitle(procedure, title);
   const log = (partial: Omit<ExecutionEventInput, 'experimentId'>) =>
     logEvent({ experimentId: experiment.id, ...partial }, database);
 
-  const blockId = idOf('Permeabilize and block');
-  const primaryId = idOf('Primary antibody');
-  const secondaryId = idOf('Secondary antibody');
-  const mountId = idOf('Mount');
+  const coatId = idOf('Coat coverslips');
+  const loadId = idOf('Load Fluo-4 AM at 37 °C');
+  const roomId = idOf('Room temperature incubation');
+  const imagingId = idOf('Set up live imaging');
+  const treatId = idOf('Add treatment and record');
+  const analysisId = idOf('Analyze in FIJI');
 
-  // Step 1: wash sections.
-  await log({ type: 'step_start', stepId: idOf('Wash sections'), at: at(0) });
-  await log({ type: 'step_complete', stepId: idOf('Wash sections'), at: at(32) });
+  await log({ type: 'step_start', stepId: coatId, at: at(0) });
+  await log({ type: 'step_complete', stepId: coatId, at: at(20) });
+  await log({ type: 'step_start', stepId: idOf('Culture to 80% confluency'), at: at(20) });
+  await log({ type: 'step_complete', stepId: idOf('Culture to 80% confluency'), at: at(1460) });
 
-  // Step 2: block ran 7 minutes over its 60 minute timer.
-  await log({ type: 'step_start', stepId: blockId, at: at(35) });
-  await log({ type: 'timer_start', stepId: blockId, planned: 3600, unit: 's', at: at(36) });
-  await log({
-    type: 'timer_stop',
-    stepId: blockId,
-    planned: 3600,
-    actual: 4020,
-    unit: 's',
-    at: at(103),
-    deviation: { kind: 'timer', delta: 420, tolerance: 60 },
-  });
-  await log({ type: 'step_complete', stepId: blockId, at: at(104) });
-  await addStepRecord(
-    { experimentId: experiment.id, stepId: blockId, kind: 'timer', label: 'Block timer', startedAt: at(36), stoppedAt: at(103), elapsedSec: 4020 },
-    database,
-  );
-
-  // Step 3: primary antibody. The volume was raised from 4 to 5 µL because the stock had settled.
-  const primaryVar = template.steps
-    .find((s) => s.title === 'Primary antibody')
-    ?.variables?.find((v) => v.token === 'Primary antibody volume');
-  await log({ type: 'step_start', stepId: primaryId, at: at(110) });
+  // Loading: 1 h at 37 °C on time, with the Fluo-4 AM loaded at 4.17 µM instead of the planned 5 µM.
+  await log({ type: 'step_start', stepId: loadId, at: at(1470) });
+  await log({ type: 'timer_start', stepId: loadId, planned: 3600, unit: 's', at: at(1470) });
+  await log({ type: 'timer_stop', stepId: loadId, planned: 3600, actual: 3600, unit: 's', at: at(1530) });
   await log({
     type: 'value_change',
-    stepId: primaryId,
-    planned: 4,
-    actual: 5,
-    unit: 'µL',
-    note: 'Primary antibody volume',
-    at: at(112),
-    deviation: { kind: 'value', delta: 1 },
+    stepId: loadId,
+    planned: FLUO4_PLANNED_UM,
+    actual: FLUO4_ACTUAL_UM,
+    unit: 'µM',
+    note: 'Fluo-4 AM loading concentration',
+    at: at(1531),
+    deviation: { kind: 'value', delta: Number((FLUO4_ACTUAL_UM - FLUO4_PLANNED_UM).toFixed(2)) },
   });
-  await log({
-    type: 'note',
-    stepId: primaryId,
-    note: 'Stock had settled, so it was mixed by inversion before pipetting. Volume raised to 5 µL.',
-    at: at(113),
-  });
-  if (primaryVar) {
-    const value: RunValue = { experimentId: experiment.id, stepId: primaryId, varId: primaryVar.id, value: 5, unit: 'µL', editedAt: at(112) };
+  await log({ type: 'step_complete', stepId: loadId, at: at(1532) });
+  await addStepRecord(
+    { experimentId: experiment.id, stepId: loadId, kind: 'timer', label: 'Load timer', startedAt: at(1470), stoppedAt: at(1530), elapsedSec: 3600 },
+    database,
+  );
+
+  // Room temperature: 30 minutes, on time.
+  await log({ type: 'step_start', stepId: roomId, at: at(1533) });
+  await log({ type: 'timer_start', stepId: roomId, planned: 1800, unit: 's', at: at(1533) });
+  await log({ type: 'timer_stop', stepId: roomId, planned: 1800, actual: 1800, unit: 's', at: at(1563) });
+  await log({ type: 'step_complete', stepId: roomId, at: at(1563) });
+
+  await log({ type: 'step_start', stepId: imagingId, at: at(1570) });
+  await log({ type: 'step_complete', stepId: imagingId, at: at(1575) });
+  await log({ type: 'step_start', stepId: treatId, at: at(1580) });
+  await log({ type: 'step_complete', stepId: treatId, at: at(1700) });
+
+  await log({ type: 'step_start', stepId: analysisId, at: at(1800) });
+  await addStepRecord(
+    { experimentId: experiment.id, stepId: analysisId, kind: 'number', label: 'ROIs analyzed', value: 240, unit: 'cells' },
+    database,
+  );
+  await log({ type: 'step_complete', stepId: analysisId, at: at(2400) });
+
+  // The stock volume that matches the actual 4.17 µM loading: 4.17 µM × 2 mL / 1 mM = 8.34 µL.
+  const stockVar = template.steps
+    .find((s) => s.title === 'Load Fluo-4 AM at 37 °C')
+    ?.variables?.find((v) => v.token === 'Stock to add');
+  if (stockVar) {
+    const value: RunValue = {
+      experimentId: experiment.id,
+      stepId: loadId,
+      varId: stockVar.id,
+      value: Number(((FLUO4_ACTUAL_UM * SAMPLE_LOADING_VOLUME_ML * 1000) / 1000).toFixed(2)),
+      unit: 'µL',
+      editedAt: at(1531),
+    };
     await database.runValues.put(value);
   }
-  await log({ type: 'step_complete', stepId: primaryId, at: at(1100) });
-
-  // Day 2: wash, secondary, counterstain and mount.
-  await log({ type: 'step_start', stepId: idOf('Wash after primary'), at: at(1110) });
-  await log({ type: 'step_complete', stepId: idOf('Wash after primary'), at: at(1140) });
-
-  await log({ type: 'step_start', stepId: secondaryId, at: at(1150) });
-  await addStepRecord(
-    { experimentId: experiment.id, stepId: secondaryId, kind: 'number', label: 'Secondary solution made', value: 9, unit: 'mL' },
-    database,
-  );
-  await log({ type: 'step_complete', stepId: secondaryId, at: at(1280) });
-
-  await log({ type: 'step_start', stepId: idOf('Wash and counterstain'), at: at(1290) });
-  await log({ type: 'step_complete', stepId: idOf('Wash and counterstain'), at: at(1305) });
-
-  await log({ type: 'step_start', stepId: mountId, at: at(1310) });
-  await addStepRecord(
-    { experimentId: experiment.id, stepId: mountId, kind: 'number', label: 'Sections imaged', value: 12, unit: 'sections' },
-    database,
-  );
-  await log({ type: 'step_complete', stepId: mountId, at: at(1340) });
 
   // Reagents with lots. Names and lots are examples, not real stock.
-  const primaryAb = await createInventoryItem(
-    {
-      name: 'Rabbit anti-NeuN (example)',
-      kind: 'antibody',
-      vendor: 'Example vendor',
-      catalogNumber: 'EX-1001',
-      lotNumber: 'LOT 2041-B',
-      concentration: '1 mg/mL',
-      hostSpecies: 'rabbit',
-      target: 'NeuN',
-      reactivity: ['mouse'],
-      expiresOn: '2027-06-30',
-      location: 'Freezer B, shelf 2',
-      notes: 'Example entry for the demo run.',
-    },
+  const fluo4 = await createInventoryItem(
+    { name: 'Fluo-4 AM (example)', kind: 'reagent', vendor: 'Example vendor', catalogNumber: 'EX-4401', lotNumber: 'LOT FL-2208', concentration: '1 mM in DMSO', expiresOn: '2027-04-30', location: 'Freezer A, shelf 1' },
     database,
   );
-  const secondaryAb = await createInventoryItem(
-    {
-      name: 'Donkey anti-rabbit Alexa Fluor 488 (example)',
-      kind: 'antibody',
-      vendor: 'Example vendor',
-      catalogNumber: 'EX-2002',
-      lotNumber: 'LOT 7720-A',
-      hostSpecies: 'donkey',
-      conjugate: 'Alexa Fluor 488',
-      reactivity: ['rabbit'],
-      expiresOn: '2027-03-31',
-      location: 'Freezer B, shelf 3',
-    },
+  const dmso = await createInventoryItem(
+    { name: 'DMSO, anhydrous (example)', kind: 'reagent', lotNumber: 'LOT DM-4417', expiresOn: '2028-01-31' },
     database,
   );
-  const dapi = await createInventoryItem(
-    { name: 'DAPI stock (example)', kind: 'reagent', lotNumber: 'LOT D-0912', concentration: '5 mg/mL', expiresOn: '2027-09-01' },
+  const matrigel = await createInventoryItem(
+    { name: 'Matrigel (example)', kind: 'reagent', vendor: 'Example vendor', lotNumber: 'LOT MG-1190', location: 'Freezer B, shelf 2', expiresOn: '2027-02-28' },
     database,
   );
-  const mounting = await createInventoryItem(
-    { name: 'Antifade mounting medium (example)', kind: 'reagent', lotNumber: 'LOT M-3305', expiresOn: '2027-12-31' },
+  const laminin = await createInventoryItem(
+    { name: 'Laminin (example)', kind: 'reagent', lotNumber: 'LOT LN-0631', expiresOn: '2027-08-31' },
     database,
   );
-  await linkInventoryUsage(experiment.id, primaryAb.id, primaryId, database);
-  await linkInventoryUsage(experiment.id, secondaryAb.id, secondaryId, database);
-  await linkInventoryUsage(experiment.id, dapi.id, idOf('Wash and counterstain'), database);
-  await linkInventoryUsage(experiment.id, mounting.id, mountId, database);
+  const glutamate = await createInventoryItem(
+    { name: 'Glutamate (example)', kind: 'reagent', lotNumber: 'LOT GL-7302', concentration: '5 µM working', expiresOn: '2028-05-31' },
+    database,
+  );
+  const alphaSyn = await createInventoryItem(
+    { name: 'Alpha-synuclein, monomeric (example)', kind: 'reagent', lotNumber: 'LOT AS-0915', concentration: '100 nM and 500 nM working', location: 'Freezer A, shelf 3' },
+    database,
+  );
+  const tris = await createInventoryItem(
+    { name: 'Tris-HCl buffer (example)', kind: 'buffer', lotNumber: 'LOT TR-2290', expiresOn: '2028-03-31' },
+    database,
+  );
+  await linkInventoryUsage(experiment.id, matrigel.id, coatId, database);
+  await linkInventoryUsage(experiment.id, laminin.id, coatId, database);
+  await linkInventoryUsage(experiment.id, fluo4.id, loadId, database);
+  await linkInventoryUsage(experiment.id, dmso.id, loadId, database);
+  await linkInventoryUsage(experiment.id, tris.id, treatId, database);
+  await linkInventoryUsage(experiment.id, glutamate.id, treatId, database);
+  await linkInventoryUsage(experiment.id, alphaSyn.id, treatId, database);
+
+  await addMissingSampleCells(database);
 
   await database.experiments.update(experiment.id, {
     status: 'done',
     createdAt: base,
     startedAt: at(0),
-    endedAt: at(1340),
-    updatedAt: at(1340),
-    lastOpenedAt: at(1340),
+    endedAt: at(2400),
+    updatedAt: at(2400),
+    lastOpenedAt: at(2400),
     notes:
-      'Sections from the dorsal hippocampus. The block ran about 7 minutes over. The primary antibody volume was raised from 4 to 5 µL because the stock had settled.',
+      'Sample data for demonstration. Fluo-4 AM was loaded at 4.17 µM instead of the planned 5 µM, so 8.34 µL of stock was used for a 2 mL load instead of 10 µL. The sample numbers are not results.',
   });
 
   return true;
