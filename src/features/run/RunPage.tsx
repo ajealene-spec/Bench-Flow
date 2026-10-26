@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { getProcedureForExperiment, getRunState, markRunStarted, saveRunState, setExperimentStatus, updateExperiment } from '../../db/helpers';
 import type { Procedure } from '../../types';
 import { StepTimerButtons } from '../timers/StepTimerButtons';
+import { StepDataPanel } from '../data/StepDataPanel';
 import {
   completeCurrentStep,
   goBack,
@@ -182,8 +183,16 @@ export default function RunPage() {
           </section>
         )}
 
-        <StepTimerButtons timers={step.timers} />
+        <StepTimerButtons timers={step.timers} experimentId={id} />
       </article>
+
+      <StepDataPanel key={step.id} experimentId={id} step={step} />
+
+      {completedCount === total && (
+        <Link to={`/experiment/${id}#recorded-data`} className="inline-flex min-h-16 items-center justify-center rounded-2xl border-2 border-teal-700 px-5 text-lg font-semibold text-teal-800 dark:border-teal-400 dark:text-teal-200">
+          View all recorded data
+        </Link>
+      )}
 
       <nav aria-label="Step navigation" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <button

@@ -1,4 +1,5 @@
 import type { DataField, Reagent, Step, Timer } from '../../types';
+import { cleanStepTitle } from './localParse';
 
 /**
  * Validates the JSON returned by the AI parser and turns it into Step objects.
@@ -42,8 +43,9 @@ export function validateParsedProcedure(raw: unknown): ValidationResult {
   for (let i = 0; i < raw.steps.length; i++) {
     const item = raw.steps[i];
     if (!isObj(item)) return { ok: false, error: `Step ${i + 1} is not an object` };
-    const title = str(item.title);
-    if (!title) return { ok: false, error: `Step ${i + 1} has no title` };
+    const rawTitle = str(item.title);
+    if (!rawTitle) return { ok: false, error: `Step ${i + 1} has no title` };
+    const title = cleanStepTitle(rawTitle);
 
     const id = crypto.randomUUID();
 
@@ -102,5 +104,6 @@ export function validateParsedProcedure(raw: unknown): ValidationResult {
     });
   }
 
-  return { ok: true, title: str(raw.title), steps };
+  const procedureTitle = str(raw.title);
+  return { ok: true, title: procedureTitle ? cleanStepTitle(procedureTitle) : undefined, steps };
 }

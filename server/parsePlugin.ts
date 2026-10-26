@@ -1,5 +1,6 @@
 import { loadEnv, type Plugin } from 'vite';
 import { extractJson, validateParsedProcedure } from '../src/features/import/validateSteps';
+import { clipForModel, SYSTEM_PROMPT } from '../src/features/import/parsePrompt';
 
 /**
  * Dev-server endpoint that turns lab text into structured steps with the Claude Messages API.
@@ -11,31 +12,7 @@ import { extractJson, validateParsedProcedure } from '../src/features/import/val
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 const DEFAULT_MODEL = 'claude-sonnet-5-5';
-const MAX_INPUT_CHARS = 60_000;
-const MAX_BODY_BYTES = 200_000;
-
-const SYSTEM_PROMPT = `You convert laboratory procedures (neuroscience and molecular biology) into structured steps.
-The user message is raw text: numbered steps, bullet points, a PDF lab manual excerpt, or messy notes.
-Return ONLY a JSON object, no prose and no code fence, with this shape:
-{
-  "title": string (short procedure name, or "" if unknown),
-  "steps": [
-    {
-      "title": string (2-8 words, imperative, e.g. "Block membrane"),
-      "instructions": string (the full action in the source's own wording, lightly cleaned up),
-      "durationSec": integer or omitted (total hands-off time for the step in seconds; use the upper bound of a range; "overnight" = 57600),
-      "timers": [ { "label": string, "durationSec": integer } ] (one per timed phase; [] if none),
-      "reagents": [ { "name": string, "amount": string, "unit": string } ] (omit amount/unit if not stated),
-      "dataFields": [ { "label": string, "unit": string, "type": "number" | "text" } ] (values the user should record, e.g. "Absorbance at 600 nm"; [] if none),
-      "cautions": [ string ] (safety warnings or critical notes, quoted or paraphrased from the source; [] if none)
-    }
-  ]
-}
-Rules:
-- Keep the source order. Do not invent steps, reagents, volumes or durations that are not in the text.
-- Convert every time to seconds. Ignore temperatures (e.g. 95 C) when reading durations.
-- Split compound actions into separate steps only when the source already separates them.
-- If the text is not a procedure, still return one step summarising it.`;
+const MAX_BODY_BYTES = 1_000_000;
 
 interface Req {
   method?: string;
@@ -135,13 +112,9 @@ async function handleParse(req: Req, res: Res, env: Record<string, string>): Pro
       send(res, 400, { error: 'empty_text' });
       return;
     }
-    if (text.length > MAX_INPUT_CHARS) {
-      send(res, 413, { error: 'text_too_long', max: MAX_INPUT_CHARS });
-      return;
-    }
-
+    // Long PDFs are cut to the model input limit; the start of a protocol carries the steps.
     const model = env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
-    const modelText = await callClaude(apiKey, model, text);
+    const modelText = await callClaude(apiKey, model, clipForModel(text));
 
     let parsed: unknown;
     try {

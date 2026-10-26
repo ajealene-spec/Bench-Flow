@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getExperiment, getProcedureForExperiment, newId, saveProcedure, updateExperiment } from '../../db/helpers';
 import type { Experiment, Procedure, Step } from '../../types';
 import { extractPdfText } from './pdfText';
-import { parseProcedure, type ParseOutcome } from './parseProcedure';
+import { getParserStatus, parseProcedure, type ParseOutcome } from './parseProcedure';
 
 type Unit = 's' | 'min' | 'h';
 const UNIT_SECONDS: Record<Unit, number> = { s: 1, min: 60, h: 3600 };
@@ -55,11 +55,15 @@ export default function ImportPage() {
   const [busy, setBusy] = useState<'pdf' | 'parse' | 'save' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [review, setReview] = useState<ReviewState | null>(null);
+  const [aiReady, setAiReady] = useState<boolean | null>(null);
 
   useEffect(() => {
     let alive = true;
     getExperiment(id).then((found) => {
       if (alive) setExperiment(found ?? null);
+    });
+    void getParserStatus().then((ready) => {
+      if (alive) setAiReady(ready);
     });
     return () => {
       alive = false;
@@ -160,6 +164,15 @@ export default function ImportPage() {
 
       {!review ? (
         <section className="flex flex-col gap-4">
+          {aiReady === false && (
+            <div role="note" className="rounded-xl border border-amber-400 bg-amber-50 p-3 text-amber-950 dark:border-amber-600 dark:bg-amber-950/50 dark:text-amber-100">
+              <p className="font-semibold">For PDFs, add an Anthropic API key to .env for accurate steps.</p>
+              <p className="text-sm">
+                Add a line <code className="font-mono">ANTHROPIC_API_KEY=your-key</code> to a file named <code className="font-mono">.env</code> in the project folder, then restart <code className="font-mono">npm run dev</code>.
+              </p>
+            </div>
+          )}
+
           <label htmlFor="procedure-text" className="font-medium">
             Paste numbered steps or notes
           </label>
@@ -199,8 +212,8 @@ export default function ImportPage() {
             </button>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            The PDF text is read on this device. Parsing uses Claude when you are online and an API key is set; otherwise
-            the local parser is used.
+            The PDF text is read on this device. AI parsing (recommended for PDFs) uses Claude when you are online and an
+            API key is set; otherwise the local parser is used.
           </p>
         </section>
       ) : (

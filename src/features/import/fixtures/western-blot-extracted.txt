@@ -1,0 +1,58 @@
+[[page 1]]
+Western Blot Workflow Guide | Rev 3
+Protein Detection by Western Blot
+Western blotting separates proteins by size, moves them onto a membrane and detects one target with a specific antibody. This guide covers a standard workflow for cultured mammalian cells. Read the safety data sheets for every reagent before you begin.
+Background on the chemistry is summarised in the first chapter of the handbook.
+Figure 1. Typical transfer sandwich
+Materials
+Lysis and running buffers, membrane, antibodies and detection reagents are listed in the reagent table below.
+Reagent Stock Working Volume
+RIPA lysis buffer 10x 1x 200 µL per well
+Laemmli sample buffer 4x 1x 1 volume
+MES running buffer 20x 1x 1 L
+Transfer buffer 10x 1x 1 L
+TBST 10x 1x 1 L
+Blocking buffer 5% non-fat milk in TBST 10 mL per membrane
+ECL substrate ready to use 2 mL per membrane
+For updates visit www.example-protocols.com/westernblot
+© 2026 Sample Lab Co. All rights reserved.
+Page 1 of 3
+[[page 2]]
+Western Blot Workflow Guide | Rev 3
+Procedure
+Sample preparation
+1. Wash the cell monolayer twice with ice-cold PBS.
+2. Add 200 µL ice-cold RIPA lysis buffer per well of a 6-well plate, and scrape the cells.
+Caution: RIPA contains SDS and deoxycholate. Wear gloves and eye protection.
+3. Incubate the lysate on ice for 20 min, mixing gently.
+4. Centrifuge at 14,000 × g for 15 min at 4 °C and transfer the supernatant to a fresh tube.
+5. Measure protein concentration with a BCA assay. Record the concentration in µg/µL.
+Keep lysates on ice
+SDS-PAGE
+6. Mix 20 µg of protein with 4x Laemmli buffer and heat at 95 °C for 5 min.
+7. Load samples onto a 4–12% Bis-Tris gel and run at 150 V for 1 h in MES running buffer.
+Protein transfer
+8. Assemble the transfer sand-
+wich in the cassette and transfer to PVDF membrane at 30 V for 90 min in cold transfer buffer.
+9. Stain the membrane with Ponceau S for 5 min to check transfer, then rinse with TBST.
+Figure 2. Blot orientation
+[[page 3]]
+Western Blot Workflow Guide | Rev 3
+Blocking
+10. Block the membrane in 5% non-fat milk in TBST for 1 h at room temperature with gentle agitation.
+Antibody incubation
+11. Dilute the primary antibody 1:1000 in 5% BSA in TBST. Incubate the membrane overnight at 4 °C on a rocker.
+12. Wash the membrane 3 x 5 min in TBST.
+13. Dilute the HRP-conjugated secondary antibody 1:5000 in blocking buffer and incubate for 1 h at room temperature.
+14. Wash the membrane 3 x 5 min in TBST, then once for 5 min in TBS.
+Detection
+15. Incubate the membrane with ECL substrate for 1 min, then image with a chemiluminescence imager.
+16. Record the exposure time and band intensity values in the notebook.
+Troubleshooting
+Weak signal: increase the primary antibody concentration or the incubation time.
+High background: increase the number of washes or the blocking time.
+No bands: confirm transfer with Ponceau S and check the antibody datasheet.
+References
+1. Towbin H, Staehelin T, Gordon J. Electrophoretic transfer of proteins from polyacrylamide gels to nitrocellulose sheets. Proc Natl Acad Sci USA. 1979.
+Page 3 of 3
+© 2026 Sample Lab Co. All rights reserved.

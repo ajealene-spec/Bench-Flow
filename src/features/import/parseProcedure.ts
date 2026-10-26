@@ -9,6 +9,19 @@ export interface ParseOutcome {
   note: string;
 }
 
+/** Whether the dev server has an Anthropic API key. Null when the server cannot be reached. */
+export async function getParserStatus(): Promise<boolean | null> {
+  if (!navigator.onLine) return null;
+  try {
+    const res = await fetch('/api/parse');
+    if (!res.ok) return null;
+    const info = (await res.json()) as { configured?: boolean };
+    return Boolean(info.configured);
+  } catch {
+    return null;
+  }
+}
+
 /** Tries the AI parser when online and configured; otherwise falls back to the local parser. */
 export async function parseProcedure(text: string): Promise<ParseOutcome> {
   let note = '';

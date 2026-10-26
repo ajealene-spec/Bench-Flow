@@ -1,6 +1,7 @@
 import { db as defaultDb, type LabCompanionDB } from '../../db';
 import { deleteTimer as deleteTimerRow, newId, saveTimer } from '../../db/helpers';
 import type { Timer } from '../../types';
+import { logTimerRun } from '../data/timerRecords';
 import { finishTimer, isExpired, pauseTimer, resetTimer, startTimer } from './timeMath';
 
 /*
@@ -32,7 +33,8 @@ export async function startStepTimer(template: Timer, database: LabCompanionDB =
     startedAt: undefined,
     pausedRemainingSec: undefined,
   };
-  const running = startTimer(row, Date.now());
+  const now = Date.now();
+  const running: Timer = { ...startTimer(row, now), firstStartedAt: now };
   await saveTimer(running, database);
   return running;
 }
@@ -42,14 +44,21 @@ export function pauseStepTimer(id: string, database: LabCompanionDB = defaultDb)
 }
 
 export function resumeStepTimer(id: string, database: LabCompanionDB = defaultDb) {
-  return updateRow(id, (t, now) => startTimer(t, now), database);
+  return updateRow(id, (t, now) => ({ ...startTimer(t, now), firstStartedAt: t.firstStartedAt ?? now }), database);
 }
 
 export function resetStepTimer(id: string, database: LabCompanionDB = defaultDb) {
-  return updateRow(id, (t) => resetTimer(t), database);
+  // A reset discards the run in progress, so it is not logged when dismissed.
+  return updateRow(id, (t) => ({ ...resetTimer(t), firstStartedAt: undefined }), database);
 }
 
-export function dismissStepTimer(id: string, database: LabCompanionDB = defaultDb) {
+/**
+ * Removes a timer from the tray. A run that was still going (running or paused) is logged first.
+ * A finished run was already logged when it finished, so it is not logged again.
+ */
+export async function dismissStepTimer(id: string, database: LabCompanionDB = defaultDb) {
+  const current = await database.timers.get(id);
+  if (current && current.status !== 'done') await logTimerRun(current, Date.now(), database);
   return deleteTimerRow(id, database);
 }
 
@@ -65,5 +74,7 @@ export async function finishIfExpired(id: string, database: LabCompanionDB = def
     finished = finishTimer(current);
     await database.timers.put(finished);
   });
+  // Logged here, on the one transition that returns a value, so a run is recorded exactly once.
+  if (finished) await logTimerRun(finished, Date.now(), database);
   return finished;
 }

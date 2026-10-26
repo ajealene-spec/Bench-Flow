@@ -2,8 +2,12 @@ import type { Step, Timer } from '../../types';
 
 /**
  * Deterministic, offline procedure parser. Used when the AI parser is unavailable.
- * It splits numbered/bulleted lists (or line-per-action notes) into steps and
- * detects durations ("10 min", "1 h", "30 s", "overnight") as timers.
+ *
+ * - If the text has a procedure heading ("Procedure", "Protocol", "Method", "Steps", ...), only the
+ *   lines after it are parsed, until an end heading (Introduction, Reagents, Troubleshooting, References...).
+ * - Sub-headings such as "Sample preparation" or "Transfer" become a prefix on the step titles.
+ * - Continuation lines are folded into the step above; list items start new steps.
+ * - Durations ("10 min", "1 h", "30 s", "overnight") become timers.
  */
 
 export interface LocalParseResult {
@@ -16,10 +20,28 @@ export interface DetectedDuration {
   label: string;
 }
 
-// "1. x", "2) x", "Step 3: x", "(4) x", "- x", "* x", "• x", "– x" (marker must be followed by a space,
-// so "1.5 mL" is not treated as a list item).
-const ITEM_RE = /^\s*(?:step\s+\d{1,3}\s*[:.)]|\d{1,3}\s*[.)]|\(\d{1,3}\)|[-*•–])\s+(.+?)\s*$/i;
+export const TITLE_MAX = 60;
+
+// "1. x", "2) x", "Step 3: x", "Step 3 x", "(4) x", "- x", "* x", "• x", "– x". The marker must be followed by
+// a space, so "1.5 mL" is not a list item.
+const ITEM_RE = /^\s*(?:step\s+\d{1,3}\s*[:.)]\s*|step\s+\d{1,3}\s+|\d{1,3}\s*[.)]\s+|\(\d{1,3}\)\s+|[-*•–]\s+)(.+?)\s*$/i;
+const ITEM_MARKER_RE = /^(?:step\s+\d{1,3}\s*[:.)]?\s*|\d{1,3}\s*[.)]\s+|[a-z][.)]\s+|\(\d{1,3}\)\s+)/i;
+const NUMBERED_RE = /^\s*(?:step\s+)?\d{1,3}\s*[.):]\s/i;
 const INDENT_RE = /^(?:\s{2,}|\t)/;
+
+const PROCEDURE_HEADING_RE =
+  /^(?:[A-Z]\.\s+|\d+\.\s+)?(?:[A-Za-z-]+\s+){0,3}(?:procedure|protocol|method|methods|steps|step-by-step|instructions|workflow)\s*:?$/i;
+
+const END_HEADING_RE =
+  /^(?:[A-Z]\.\s+|\d+\.\s+)?(?:introduction|background|overview|materials(?:\s+and\s+equipment)?|equipment|reagents?(?:\s+(?:and|preparation|list)\b[\w\s,&-]{0,30})?|buffers?(?:\s+(?:and|recipes?|preparation)\b[\w\s,&-]{0,30})?|buffer recipes?|recipes?|solutions?|stock solutions?|troubleshooting|references?|bibliography|ordering information|ordering|product information|related products|appendix|about this (?:guide|protocol)|faq)\s*:?$/i;
+
+const KNOWN_GROUP_RE =
+  /^(?:sample (?:preparation|prep)|cell (?:lysis|culture)|lysis|protein (?:quantification|extraction|determination)|quantification|sds[- ]?page|gel (?:electrophoresis|preparation|loading)|electrophoresis|(?:wet |semi-dry |dry )?(?:protein )?(?:transfer|blotting)|membrane (?:blocking|preparation)|blocking|antibody (?:incubation|incubations?)|primary antibody(?: incubation)?|secondary antibody(?: incubation)?|washes|washing|wash(?: steps?)?|detection|imaging|stripping|reprobing)\s*:?$/i;
+
+const CAUTION_LABEL_RE = /^(?:caution|warning|danger|note|important|critical|attention|safety|hazard)\b\s*[:!-]?\s*/i;
+
+const CAUTION_RE =
+  /\b(caution|warning|danger|hazard\w*|toxic|carcinogen\w*|corrosive|flammable|wear\s+(?:gloves|goggles|a\s+lab\s+coat|ppe)|handle with care|do not|don't|never)\b/i;
 
 const DURATION_RE =
   /(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|—|to)\s*(\d+(?:[.,]\d+)?))?\s*(hours?|hrs?|h|minutes?|mins?|min|seconds?|secs?|sec|s)(?![A-Za-z])/gi;
@@ -45,9 +67,6 @@ const UNIT_SECONDS: Record<string, number> = {
 };
 
 const OVERNIGHT_SECONDS = 16 * 3600;
-
-const CAUTION_RE =
-  /\b(caution|warning|danger|hazard\w*|toxic|carcinogen\w*|corrosive|flammable|wear\s+(?:gloves|goggles|a\s+lab\s+coat|ppe)|handle with care|do not|don't|never)\b/i;
 
 function parseNumber(raw: string): number {
   return parseFloat(raw.replace(',', '.'));
@@ -97,24 +116,179 @@ function detectCautions(text: string): string[] {
   return text
     .split(/(?<=[.;!?])\s+/)
     .map((s) => s.trim())
-    .filter((s) => s && CAUTION_RE.test(s));
+    .filter((s) => s && (CAUTION_LABEL_RE.test(s) || CAUTION_RE.test(s)));
 }
 
-/** Short title from a step's text: the part before a colon, else the first sentence, else a word-trimmed prefix. */
-export function deriveTitle(text: string): string {
-  const colon = text.search(/:\s/);
-  if (colon > 0 && colon <= 60) return text.slice(0, colon).trim();
+function capitalize(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
 
-  const sentence = text.split(/(?<=[.!?])\s+/)[0] ?? text;
-  if (sentence.length <= 70) return sentence.replace(/[.!?]$/, '').trim();
-
-  if (text.length <= 70) return text;
-  const cut = text.slice(0, 60);
+/** Cuts text to at most `max` characters at a word boundary, adding an ellipsis when it is cut. */
+function cutAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
   const lastSpace = cut.lastIndexOf(' ');
-  return `${(lastSpace > 20 ? cut.slice(0, lastSpace) : cut).trim()}…`;
+  return `${(lastSpace > 20 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:]+$/, '')}…`;
 }
 
-function makeStep(text: string): Step {
+/**
+ * Title from one sentence: the text before a colon or semicolon when that is short, else the whole
+ * sentence, cut at a word boundary.
+ */
+function firstClause(sentence: string, max: number): string {
+  let s = sentence.replace(/\s+/g, ' ').trim().replace(/[.!?]+$/, '');
+  const colon = s.search(/:\s/);
+  if (colon > 0 && colon <= max) s = s.slice(0, colon);
+  const semi = s.split(/\s*;\s*|\s+[–—]\s+/)[0];
+  if (semi.length >= 12 && semi.length < s.length) s = semi;
+  return capitalize(cutAtWord(s, max));
+}
+
+/**
+ * Short step title. Caution, Note and similar labels are skipped, so a step never gets titled
+ * "Caution". The title is the first real clause of the step, prefixed by its section heading if any.
+ */
+export function deriveTitle(text: string, group?: string): string {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const main = sentences.find((s) => !CAUTION_LABEL_RE.test(s)) ?? sentences[0] ?? text.trim();
+  const stripped = main.replace(CAUTION_LABEL_RE, '');
+
+  if (!group) return firstClause(stripped, TITLE_MAX);
+  const budget = Math.max(20, TITLE_MAX - group.length - 2);
+  return `${group}: ${firstClause(stripped, budget)}`;
+}
+
+/** Cleans a title that came from elsewhere (for example the AI parser): strips caution labels and clamps length. */
+export function cleanStepTitle(title: string): string {
+  const stripped = title.trim().replace(CAUTION_LABEL_RE, '').trim();
+  return capitalize(cutAtWord(stripped || title.trim(), TITLE_MAX));
+}
+
+function toGroupName(line: string): string {
+  const name = line.replace(/:\s*$/, '').trim();
+  // "SAMPLE PREPARATION" becomes "Sample preparation"; acronyms such as "SDS-PAGE" keep their case.
+  const lower = name === name.toUpperCase() && name.includes(' ') ? name.toLowerCase() : name;
+  return capitalize(lower).slice(0, 40);
+}
+
+function isProcedureHeading(line: string): boolean {
+  return line.length <= 50 && PROCEDURE_HEADING_RE.test(line);
+}
+
+function isGenericGroupHeading(line: string, next: string): boolean {
+  if (line.length > 50 || /[.!?;]$/.test(line) || ITEM_RE.test(line)) return false;
+  const words = line.replace(/:$/, '').split(/\s+/);
+  if (words.length > 5) return false;
+  const capitalised = words.filter((w) => /^[A-Z]/.test(w)).length;
+  return capitalised / words.length >= 0.6 && NUMBERED_RE.test(next);
+}
+
+/** Folds an unlisted line into the sentence above when it looks like a wrapped line of the same sentence. */
+function continuesPrevious(prev: string, line: string): boolean {
+  return /^[a-z(]/.test(line) || (!/[.!?:]$/.test(prev) && prev.length >= 55);
+}
+
+interface Pending {
+  text: string;
+  group?: string;
+}
+
+export function parseLocal(input: string): LocalParseResult {
+  const lines = input.replace(/\r\n?/g, '\n').split('\n');
+  const hasList = lines.some((line) => ITEM_RE.test(line));
+  const hasProcedure = lines.some((line) => isProcedureHeading(line.trim()));
+
+  const items: Pending[] = [];
+  let inSection = !hasProcedure;
+  let open = false;
+  let blankBefore = true;
+  let group: string | undefined;
+  let title: string | undefined;
+  let firstLine: string | undefined;
+
+  const nextContent = (index: number): string => {
+    for (let j = index + 1; j < lines.length; j++) {
+      const t = lines[j].trim();
+      if (t) return t;
+    }
+    return '';
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.trim();
+    if (!line) {
+      blankBefore = true;
+      continue;
+    }
+    firstLine ??= line;
+
+    if (isProcedureHeading(line)) {
+      inSection = true;
+      open = false;
+      group = undefined;
+      blankBefore = true;
+      continue;
+    }
+    if (END_HEADING_RE.test(line)) {
+      inSection = false;
+      open = false;
+      group = undefined;
+      blankBefore = true;
+      continue;
+    }
+
+    const bare = line.replace(ITEM_MARKER_RE, '').trim();
+    if (
+      KNOWN_GROUP_RE.test(bare) ||
+      (items.length > 0 && isGenericGroupHeading(line, nextContent(i)))
+    ) {
+      inSection = true;
+      open = false;
+      group = toGroupName(bare);
+      blankBefore = true;
+      continue;
+    }
+
+    if (!inSection) continue;
+
+    const last = items[items.length - 1];
+    if (hasList) {
+      const match = ITEM_RE.exec(raw);
+      const indented = INDENT_RE.test(raw);
+      if (match && (!indented || !open)) {
+        items.push({ text: match[1], group });
+        open = true;
+      } else if (open && last) {
+        last.text += ` ${line}`;
+      } else if (!title && items.length === 0 && line.length <= 100) {
+        title = line;
+      }
+    } else if (open && last && !blankBefore && continuesPrevious(last.text, line)) {
+      last.text += ` ${line}`;
+    } else {
+      items.push({ text: line, group });
+      open = true;
+    }
+    blankBefore = false;
+  }
+
+  if (!title && hasList && firstLine && firstLine.length <= 80 && !/[.!?]$/.test(firstLine)) {
+    if (!ITEM_RE.test(firstLine) && !isProcedureHeading(firstLine) && !END_HEADING_RE.test(firstLine)) {
+      title = firstLine;
+    }
+  }
+
+  return {
+    title,
+    steps: items.map((item) => makeStep(item.text, item.group)),
+  };
+}
+
+function makeStep(text: string, group?: string): Step {
   const id = crypto.randomUUID();
   const durations = detectDurations(text);
   const timers: Timer[] = durations.map((d) => ({
@@ -127,51 +301,12 @@ function makeStep(text: string): Step {
 
   return {
     id,
-    title: deriveTitle(text),
+    title: deriveTitle(text, group),
     instructions: text,
     durationSec: durations[0]?.seconds,
     timers,
     reagents: [],
     dataFields: [],
     cautions: detectCautions(text),
-  };
-}
-
-export function parseLocal(input: string): LocalParseResult {
-  const lines = input.replace(/\r\n?/g, '\n').split('\n');
-  const hasList = lines.some((line) => ITEM_RE.test(line));
-
-  const texts: string[] = [];
-  let title: string | undefined;
-
-  if (hasList) {
-    let current: string | null = null;
-    for (const line of lines) {
-      const match = ITEM_RE.exec(line);
-      const indented = INDENT_RE.test(line);
-      if (match && (!indented || current === null)) {
-        if (current !== null) texts.push(current);
-        current = match[1];
-      } else if (line.trim()) {
-        // Continuation or indented sub-bullet: belongs to the step above.
-        if (current !== null) {
-          current += ` ${line.trim()}`;
-        } else if (!title && line.trim().length <= 100) {
-          title = line.trim();
-        }
-      }
-    }
-    if (current !== null) texts.push(current);
-  } else {
-    // Messy notes: one action per line.
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed) texts.push(trimmed);
-    }
-  }
-
-  return {
-    title,
-    steps: texts.map(makeStep),
   };
 }

@@ -34,6 +34,10 @@ export interface Timer {
   startedAt?: number;
   pausedRemainingSec?: number;
   status: TimerStatus;
+  /** Experiment this run belongs to. Set on runs started from the run page, so finished runs can be logged. */
+  experimentId?: string;
+  /** Wall-clock time of the first start of this run, before any pauses. Used for elapsed time. */
+  firstStartedAt?: number;
 }
 
 /** One recorded measurement or timer run, attached to a step of an experiment. */

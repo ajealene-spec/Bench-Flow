@@ -12,6 +12,7 @@ import {
 } from '../db/helpers';
 import type { ExperimentStatus } from '../types';
 import { formatDate } from './format';
+import { RecordedDataSummary } from '../features/data/RecordedDataSummary';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-teal-700 text-white active:bg-teal-800`;
@@ -88,15 +89,7 @@ export default function ExperimentPage() {
 
       <NotesField key={experiment.id} experimentId={experiment.id} initial={experiment.notes ?? ''} />
 
-      <section
-        aria-label="Recorded data"
-        className="flex flex-col gap-2 rounded-2xl border-2 border-dashed border-slate-400 p-5 dark:border-slate-600"
-      >
-        <h2 className="text-lg font-semibold">Recorded data</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          Placeholder: measurements and timer records for each step will appear here once data capture is built.
-        </p>
-      </section>
+      <RecordedDataSummary experimentId={experiment.id} experimentName={experiment.name} />
     </main>
   );
 }
