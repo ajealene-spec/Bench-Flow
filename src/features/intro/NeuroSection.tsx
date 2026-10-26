@@ -5,15 +5,15 @@ import { BAND, CARD, EYEBROW, INNER, SECTION_TITLE } from './introShared';
 export function NeuroSection() {
   return (
     <section id="tools" data-section="tools" aria-labelledby="tools-title" className={BAND}>
-      <div className={`${INNER} flex flex-col gap-8`}>
+      <div className={`${INNER} flex flex-col gap-10`}>
         <div data-reveal className="max-w-3xl">
           <p className={EYEBROW}>Tools for the bench</p>
           <h2 id="tools-title" className={SECTION_TITLE}>
-            Tools for the everyday bench, from cell culture to neuroscience.
+            Everyday bench tools, from cell culture to neuroscience.
           </h2>
         </div>
 
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((t, i) => (
             <li
               key={t.title}

@@ -5,7 +5,7 @@ import { BAND, CARD, EYEBROW, INNER, SECTION_TITLE } from './introShared';
 export function ProblemSection() {
   return (
     <section id="problem" data-section="problem" aria-labelledby="problem-title" className={BAND}>
-      <div className={`${INNER} flex flex-col gap-8`}>
+      <div className={`${INNER} flex flex-col gap-10`}>
         <div data-reveal className="max-w-3xl">
           <p className={EYEBROW}>The problem</p>
           <h2 id="problem-title" className={SECTION_TITLE}>
@@ -13,7 +13,7 @@ export function ProblemSection() {
           </h2>
         </div>
 
-        <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {PROBLEMS.map((card, i) => (
             <li
               key={card.problem}

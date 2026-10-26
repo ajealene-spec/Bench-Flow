@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { HOW_STEPS, OPEN_ITEMS, ORGANIZED, PROBLEMS, TOOLS } from './introContent';
+import { HOW_STEPS, MISSION_PILLARS, MISSION_SENTENCE, OPEN_ITEMS, ORGANIZED, PROBLEMS, TOOLS } from './introContent';
 
-const ALL_TEXT = JSON.stringify({ PROBLEMS, HOW_STEPS, TOOLS, OPEN_ITEMS, ORGANIZED });
+const ALL_TEXT = JSON.stringify({ MISSION_SENTENCE, MISSION_PILLARS, PROBLEMS, HOW_STEPS, TOOLS, OPEN_ITEMS, ORGANIZED });
 
 describe('intro copy', () => {
+  it('states the mission in one sentence with three pillars', () => {
+    expect(MISSION_SENTENCE).toMatch(/free and open to everyone/i);
+    expect(MISSION_SENTENCE).toMatch(/first-year students/);
+    expect(MISSION_SENTENCE).toMatch(/professional researchers/);
+    expect(MISSION_PILLARS).toEqual(['Free for everyone', 'Learn as you work', 'Share openly']);
+  });
+
   it('states three problems, each paired with a solution', () => {
     expect(PROBLEMS).toHaveLength(3);
     for (const card of PROBLEMS) {
@@ -16,6 +23,12 @@ describe('intro copy', () => {
     expect(HOW_STEPS).toHaveLength(4);
     expect(HOW_STEPS[3].title).toBe('Export a report and data package');
     expect(ALL_TEXT).not.toMatch(/FAIR/);
+  });
+
+  it('explains DOI and Zenodo in plain words', () => {
+    const citable = OPEN_ITEMS.find((item) => item.title === 'Citable archive');
+    expect(citable?.body).toBe('Get a permanent citable link (DOI) by archiving on Zenodo, a free research archive.');
+    expect(ALL_TEXT).not.toMatch(/Zenodo DOI|citable DOI/);
   });
 
   it('keeps the removed claims and the old neuroscience-only tiles out of the copy', () => {

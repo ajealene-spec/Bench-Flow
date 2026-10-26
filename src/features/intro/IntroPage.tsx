@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../db';
-import { demoReportPath } from '../../content/seed';
 import { useToast } from '../../app/feedback';
 import { BAND, CARD, EYEBROW, EnterLink, INNER } from './introShared';
 import { HeroHelix } from './HeroNetwork';
 import { HowItWorksSection } from './HowItWorksSection';
+import { MissionSection } from './MissionSection';
 import { NeuroSection } from './NeuroSection';
 import { OpenScienceSection } from './OpenScienceSection';
 import { ProblemSection } from './ProblemSection';
@@ -21,7 +20,7 @@ function DemoButton() {
   async function openDemo() {
     setBusy(true);
     try {
-      const path = await demoReportPath(db);
+      const path: string | null = '/demo';
       if (path) navigate(path);
       else toast('Could not open the demo experiment. Try again from the Protocol Library.', { tone: 'error' });
     } catch {
@@ -38,7 +37,7 @@ function DemoButton() {
       disabled={busy}
       className={`${HERO_BUTTON} border-border bg-surface text-text shadow-card active:bg-surface-2 disabled:opacity-60`}
     >
-      {busy ? 'Opening the demo…' : 'Try the demo experiment'}
+      {busy ? 'Opening the tour…' : 'Take the 2-minute tour'}
     </button>
   );
 }
@@ -47,6 +46,7 @@ export const REPO_URL = 'https://github.com/ajealene-spec/Bench-Flow';
 
 const SECTIONS = [
   { id: 'hero', label: 'Top' },
+  { id: 'mission', label: 'Mission' },
   { id: 'problem', label: 'The problem' },
   { id: 'how', label: 'How it works' },
   { id: 'tools', label: 'Tools for the bench' },
@@ -95,7 +95,7 @@ export default function IntroPage() {
               <h1 id="hero-title" className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
                 Bench Flow — the open lab notebook for every bench.
               </h1>
-              <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, offline-first, built for reproducible neuroscience.</p>
+              <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, works offline, built for reproducible neuroscience.</p>
               <div className="mt-8 flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
                 <EnterLink className="border-2 border-transparent leading-6" />
                 <DemoButton />
@@ -105,6 +105,7 @@ export default function IntroPage() {
           </div>
         </section>
 
+        <MissionSection reduced={reduced} />
         <ProblemSection />
         <HowItWorksSection />
         <NeuroSection />

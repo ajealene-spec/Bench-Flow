@@ -60,7 +60,7 @@ const SKETCHES: Array<() => ReactNode> = [
 export function HowItWorksSection() {
   return (
     <section id="how" data-section="how" aria-labelledby="how-title" className={`${BAND} bg-surface-2`}>
-      <div className={`${INNER} flex flex-col gap-8`}>
+      <div className={`${INNER} flex flex-col gap-10`}>
         <div data-reveal className="max-w-3xl">
           <p className={EYEBROW}>How it works</p>
           <h2 id="how-title" className={SECTION_TITLE}>
@@ -68,7 +68,7 @@ export function HowItWorksSection() {
           </h2>
         </div>
 
-        <ol className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {HOW_STEPS.map((step, i) => {
             const Sketch = SKETCHES[i];
             return (

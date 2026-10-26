@@ -1,0 +1,104 @@
+/* Tour motion. Every animation is switched off under reduced motion, so the final state shows at once. */
+
+.tour-enter {
+  animation: tour-enter 320ms ease-out both;
+}
+
+@keyframes tour-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tour-card-in {
+  animation: tour-card-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tour-caret {
+  display: inline-block;
+  margin-left: 1px;
+  animation: tour-blink 900ms steps(1) infinite;
+}
+
+@keyframes tour-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.tour-bar {
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1), background-color 200ms ease;
+}
+
+.tour-progress {
+  transition: width 400ms ease;
+}
+
+.tour-field {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+.tour-grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tour-grow.is-in {
+  transform: scaleY(1);
+}
+
+.tour-dot {
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.tour-dot.is-in {
+  opacity: 1;
+}
+
+.tour-value[data-changed='true'] {
+  animation: tour-pulse 500ms ease-out;
+}
+
+@keyframes tour-pulse {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.tour-range {
+  min-height: 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-root *,
+  .tour-root *::before,
+  .tour-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .tour-caret {
+    display: none;
+  }
+}

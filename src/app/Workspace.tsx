@@ -15,6 +15,7 @@ import { formatRemaining, remainingSec } from '../features/timers/timeMath';
 import { EmptyState } from './EmptyState';
 import { ThisWeekStrip } from '../features/calendar/ThisWeekStrip';
 import { PersonalizeCard } from './PersonalizeCard';
+import { TourCard } from '../features/tour/TourCard';
 import { InsightsPreviewCard } from '../features/insights/InsightsPreviewCard';
 import { greetingFor } from './personalization';
 import { PageHeader, ProgressRing } from './ui';
@@ -56,6 +57,8 @@ export function Workspace() {
       <PageHeader title="Command Center" subtitle={greetingFor(new Date().getHours(), settings?.userName)} />
 
       <PersonalizeCard />
+
+      <TourCard />
 
       <InsightsPreviewCard />
 

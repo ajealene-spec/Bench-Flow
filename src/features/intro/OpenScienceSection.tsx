@@ -5,7 +5,7 @@ import { BAND, CARD, EYEBROW, INNER, SECTION_TITLE } from './introShared';
 export function OpenScienceSection() {
   return (
     <section id="open" data-section="open" aria-labelledby="open-title" className={`${BAND} bg-surface-2`}>
-      <div className={`${INNER} flex flex-col gap-8`}>
+      <div className={`${INNER} flex flex-col gap-10`}>
         <div data-reveal className="max-w-3xl">
           <p className={EYEBROW}>Open science</p>
           <h2 id="open-title" className={SECTION_TITLE}>
@@ -13,7 +13,7 @@ export function OpenScienceSection() {
           </h2>
         </div>
 
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {OPEN_ITEMS.map((item, i) => (
             <li
               key={item.title}
@@ -27,9 +27,9 @@ export function OpenScienceSection() {
           ))}
         </ul>
 
-        <div data-reveal className="flex flex-col gap-4">
+        <div data-reveal className="flex flex-col gap-6">
           <h3 className="text-lg font-semibold">How the data is organized</h3>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {ORGANIZED.map((f) => (
               <li key={f.title} className="rounded-2xl border border-border bg-surface p-4">
                 <p className="font-semibold text-accent-text">{f.title}</p>

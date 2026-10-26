@@ -31,6 +31,7 @@ const ToolsPage = lazy(() => import('../features/neuro/ToolsPage'));
 const AnimalsPage = lazy(() => import('../features/animals/AnimalsPage'));
 const CalendarPage = lazy(() => import('../features/calendar/CalendarPage'));
 const InsightsPage = lazy(() => import('../features/insights/InsightsPage'));
+const TourPage = lazy(() => import('../features/tour/TourPage'));
 
 export type NavGroup = 'primary' | 'records' | 'app';
 
@@ -65,6 +66,7 @@ export const featureRoutes: FeatureRoute[] = [
   { path: '/settings', element: <SettingsPage />, nav: { label: 'Settings', group: 'app' } },
   { path: '/intro', element: <LazyRoute><IntroPage /></LazyRoute>, nav: { label: 'About', group: 'app' } },
   { path: '/about', element: <Navigate to="/intro" replace /> },
+  { path: '/demo', element: <LazyRoute><TourPage /></LazyRoute> },
   { path: '/shared', element: <SharedPage /> },
   { path: '/animals', element: <LazyRoute><AnimalsPage /></LazyRoute>, nav: { label: 'Animals', group: 'records' } },
   { path: '/glossary', element: <GlossaryPage />, nav: { label: 'Glossary', group: 'app' } },

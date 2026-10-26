@@ -4,6 +4,7 @@ import { logEvent, type ExecutionEventInput } from '../db/executionLog';
 import { createInventoryItem, linkInventoryUsage } from '../db/inventory';
 import type { Procedure, RunValue } from '../types';
 import { STARTER_TEMPLATES } from './protocols';
+import { SAMPLE_ANIMALS, SAMPLE_COUNTS, SAMPLE_COUNT_UNIT, SAMPLE_REGIONS, sampleCountLabel } from '../features/tour/sampleData';
 
 export const DEMO_EXPERIMENT_NAME = 'Example: IF staining of mouse hippocampus';
 const DEMO_TEMPLATE_TITLE = 'Immunofluorescence on free-floating brain sections';
@@ -45,7 +46,41 @@ async function seedOnce(database: LabCompanionDB, options: SeedOptions): Promise
     templatesAdded += 1;
   }
   const demoAdded = await seedDemoExperiment(database);
+  await addMissingSampleCounts(database);
   return { templatesAdded, demoAdded };
+}
+
+/**
+ * Adds the SAMPLE NeuN+ counts (per region, per animal) to the demo run. Runs for demos created before
+ * the counts existed too. Skips any count already present, so repeated calls add nothing.
+ */
+async function addMissingSampleCounts(database: LabCompanionDB): Promise<void> {
+  const demo = await database.experiments.filter((e) => e.name === DEMO_EXPERIMENT_NAME).first();
+  if (!demo) return;
+  const existing = await database.stepRecords.where('experimentId').equals(demo.id).toArray();
+  const have = new Set(existing.map((r) => r.label));
+  const missing = SAMPLE_REGIONS.flatMap((region) =>
+    SAMPLE_ANIMALS.map((animal, i) => ({ region, animal, value: SAMPLE_COUNTS[region][i] })),
+  ).filter((c) => !have.has(sampleCountLabel(c.region, c.animal)));
+  if (missing.length === 0) return;
+  const procedure = await getProcedureForExperiment(demo.id, database);
+  if (!procedure) return;
+  // The counts belong to the imaging step, which is the one that produces the sections.
+  const stepId = stepIdByTitle(procedure, 'Mount');
+  for (const c of missing) {
+    await addStepRecord(
+      {
+        experimentId: demo.id,
+        stepId,
+        kind: 'number',
+        label: sampleCountLabel(c.region, c.animal),
+        value: c.value,
+        unit: SAMPLE_COUNT_UNIT,
+        note: 'Sample data for the tour. Made-up numbers, not a measurement.',
+      },
+      database,
+    );
+  }
 }
 
 /** The starter templates to add, in the requested order. */
