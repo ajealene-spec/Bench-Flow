@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import ReportPage from '../features/report/ReportPage';
 import ImportPage from '../features/import/ImportPage';
 import InventoryPage from '../features/inventory/InventoryPage';
@@ -10,11 +11,15 @@ import ExperimentPage from './ExperimentPage';
 import ExperimentImportRedirect from './ExperimentImportRedirect';
 import SettingsPage from './SettingsPage';
 import WelcomePage from './WelcomePage';
-import AboutPage from './AboutPage';
+import IntroPage from '../features/intro/IntroPage';
+import { FirstVisitRedirect } from './FirstVisitRedirect';
 import GlossaryPage from '../features/learn/GlossaryPage';
 import ToolsPage from '../features/neuro/ToolsPage';
 import SharedPage from '../features/share/SharedPage';
 import AnimalsPage from '../features/animals/AnimalsPage';
+import CalendarPage from '../features/calendar/CalendarPage';
+import ExperimentsPage from '../features/experiments/ExperimentsPage';
+import InsightsPage from '../features/insights/InsightsPage';
 
 /**
  * Where a route appears in the navigation.
@@ -39,9 +44,11 @@ export interface FeatureRoute {
  * Paths are unique; keep the list in the order you want it to appear within a nav group.
  */
 export const featureRoutes: FeatureRoute[] = [
-  { path: '/', element: <Workspace />, nav: { label: 'Home', group: 'primary' } },
+  { path: '/', element: <FirstVisitRedirect><Workspace /></FirstVisitRedirect>, nav: { label: 'Home', group: 'primary' } },
   { path: '/library', element: <LibraryPage />, nav: { label: 'Protocol Library', group: 'primary' } },
   { path: '/inventory', element: <InventoryPage />, nav: { label: 'Inventory', group: 'primary' } },
+  { path: '/calendar', element: <CalendarPage />, nav: { label: 'Calendar', group: 'primary' } },
+  { path: '/experiments', element: <ExperimentsPage />, nav: { label: 'Experiments', group: 'primary' } },
   { path: '/library/new', element: <ImportPage /> },
   { path: '/library/:templateId', element: <TemplatePage /> },
   { path: '/experiment/:id', element: <ExperimentPage /> },
@@ -50,9 +57,11 @@ export const featureRoutes: FeatureRoute[] = [
   { path: '/experiment/:id/report', element: <ReportPage /> },
   { path: '/welcome', element: <WelcomePage /> },
   { path: '/settings', element: <SettingsPage />, nav: { label: 'Settings', group: 'app' } },
-  { path: '/about', element: <AboutPage />, nav: { label: 'About', group: 'app' } },
+  { path: '/intro', element: <IntroPage />, nav: { label: 'About', group: 'app' } },
+  { path: '/about', element: <Navigate to="/intro" replace /> },
   { path: '/shared', element: <SharedPage /> },
   { path: '/animals', element: <AnimalsPage />, nav: { label: 'Animals', group: 'records' } },
   { path: '/glossary', element: <GlossaryPage />, nav: { label: 'Glossary', group: 'app' } },
   { path: '/tools', element: <ToolsPage />, nav: { label: 'Bench tools', group: 'app' } },
+  { path: '/insights', element: <InsightsPage />, nav: { label: 'Insights', group: 'records' } },
 ];

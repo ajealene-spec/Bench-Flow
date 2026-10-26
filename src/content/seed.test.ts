@@ -79,3 +79,19 @@ describe('seedStarterContent', () => {
     expect(await database.experiments.count()).toBe(1);
   });
 });
+
+describe('seedStarterContent with a title list', () => {
+  it('adds only the listed starters, in the listed order', async () => {
+    const titles = [STARTER_TEMPLATES[4].title, STARTER_TEMPLATES[0].title];
+    const result = await seedStarterContent(database, { titles });
+    expect(result.templatesAdded).toBe(2);
+    const rows = await database.templates.orderBy('id').toArray();
+    expect(rows.map((t) => t.title).sort()).toEqual([...titles].sort());
+  });
+
+  it('ignores unknown titles', async () => {
+    const result = await seedStarterContent(database, { titles: ['Not a starter', STARTER_TEMPLATES[1].title] });
+    expect(result.templatesAdded).toBe(1);
+    expect(await database.templates.count()).toBe(1);
+  });
+});

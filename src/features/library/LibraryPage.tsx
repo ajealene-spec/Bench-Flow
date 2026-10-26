@@ -35,7 +35,7 @@ export default function LibraryPage() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:max-w-5xl">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col">
-          <span className="text-sm text-text-muted">Lab Companion</span>
+          <span className="text-sm text-text-muted">Bench Flow</span>
           <h1 className="text-2xl font-semibold">Protocol Library</h1>
         </div>
         <div className="flex flex-wrap items-start gap-2">

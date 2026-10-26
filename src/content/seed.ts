@@ -14,6 +14,14 @@ export interface SeedResult {
   demoAdded: boolean;
 }
 
+export interface SeedOptions {
+  /**
+   * Titles of the starters to add, in the order they should be added. Omit to add every starter.
+   * Unknown titles are ignored.
+   */
+  titles?: readonly string[];
+}
+
 /** Calls run one after another, so two taps cannot both add the same starter. */
 let queue: Promise<unknown> = Promise.resolve();
 
@@ -21,16 +29,16 @@ let queue: Promise<unknown> = Promise.resolve();
  * Loads the starter protocols and a finished demo experiment. Safe to call again: starters are
  * skipped when a template with the same title exists, and the demo is skipped when it exists.
  */
-export function seedStarterContent(database: LabCompanionDB = defaultDb): Promise<SeedResult> {
-  const run = queue.then(() => seedOnce(database));
+export function seedStarterContent(database: LabCompanionDB = defaultDb, options: SeedOptions = {}): Promise<SeedResult> {
+  const run = queue.then(() => seedOnce(database, options));
   queue = run.catch(() => undefined);
   return run;
 }
 
-async function seedOnce(database: LabCompanionDB): Promise<SeedResult> {
+async function seedOnce(database: LabCompanionDB, options: SeedOptions): Promise<SeedResult> {
   const titles = new Set((await database.templates.toArray()).map((t) => t.title));
   let templatesAdded = 0;
-  for (const template of STARTER_TEMPLATES) {
+  for (const template of selectStarters(options.titles)) {
     if (titles.has(template.title)) continue;
     await database.templates.add(structuredClone(template));
     titles.add(template.title);
@@ -38,6 +46,13 @@ async function seedOnce(database: LabCompanionDB): Promise<SeedResult> {
   }
   const demoAdded = await seedDemoExperiment(database);
   return { templatesAdded, demoAdded };
+}
+
+/** The starter templates to add, in the requested order. */
+function selectStarters(wanted: readonly string[] | undefined) {
+  if (!wanted) return STARTER_TEMPLATES;
+  const byTitle = new Map(STARTER_TEMPLATES.map((t) => [t.title, t]));
+  return wanted.map((title) => byTitle.get(title)).filter((t): t is (typeof STARTER_TEMPLATES)[number] => t !== undefined);
 }
 
 /** A finished IF run with timer and value deviations, recorded data, reagent lots and notes. */

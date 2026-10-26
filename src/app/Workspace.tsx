@@ -2,23 +2,21 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../db';
-import {
-  createExperiment,
-  createFolder,
-  deleteExperiment,
-  deleteFolder,
-  listExperimentSummaries,
-  listFolders,
-  renameFolder,
-  type ExperimentSummary,
-} from '../db/helpers';
+import { getSettings } from '../db/settings';
+import { createExperiment, listExperimentSummaries, listFolders } from '../db/helpers';
+import { rootFolders } from '../db/folderTree';
 import { listTemplates } from '../db/templates';
-import type { ExperimentStatus, Folder, ProtocolTemplate, Timer } from '../types';
+import type { ExperimentStatus, ProtocolTemplate, Timer } from '../types';
+import { folderPredicate } from '../features/experiments/folderRows';
 import { formatDate } from './format';
 import { listRecentActivity, listWorkspaceEntries, type WorkspaceEntry } from './commandCenterData';
 import { StartExperimentForm } from '../features/library/StartExperimentForm';
 import { formatRemaining, remainingSec } from '../features/timers/timeMath';
 import { EmptyState } from './EmptyState';
+import { ThisWeekStrip } from '../features/calendar/ThisWeekStrip';
+import { PersonalizeCard } from './PersonalizeCard';
+import { InsightsPreviewCard } from '../features/insights/InsightsPreviewCard';
+import { greetingFor } from './personalization';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = {
   draft: 'Draft',
@@ -35,8 +33,6 @@ const STATUS_CLASS: Record<ExperimentStatus, string> = {
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
 const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
-const INPUT =
-'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 const CARD ='flex flex-col gap-3 rounded-xl border border-border bg-surface shadow-card p-4 sm:p-5';
 
 export function Workspace() {
@@ -44,24 +40,27 @@ export function Workspace() {
   const folders = useLiveQuery(() => listFolders(db), []);
   const workspace = useLiveQuery(() => listWorkspaceEntries(db), []);
   const recent = useLiveQuery(() => listRecentActivity(5, db), []);
-  const [creatingFolder, setCreatingFolder] = useState(false);
+  const settings = useLiveQuery(() => getSettings(db).catch(() => null), []);
   const [picking, setPicking] = useState(false);
 
-  // Experiments whose folder was removed (for example on another device) fall back to Unfiled.
-  const folderIds = new Set(folders?.map((f) => f.id) ?? []);
-  const grouped = new Map<string | null, ExperimentSummary[]>();
-  for (const summary of summaries ?? []) {
-    const key = summary.experiment.folderId && folderIds.has(summary.experiment.folderId) ? summary.experiment.folderId : null;
-    grouped.set(key, [...(grouped.get(key) ?? []), summary]);
-  }
-  const unfiled = grouped.get(null) ?? [];
+  // Experiments whose folder was removed (for example on another device) count as Unfiled.
+  const allFolders = folders ?? [];
+  const folderIds = new Set(allFolders.map((f) => f.id));
+  const countIn = (inFolder: (folderId: string | null) => boolean) =>
+    (summaries ?? []).filter((s) => inFolder(s.experiment.folderId && folderIds.has(s.experiment.folderId) ? s.experiment.folderId : null)).length;
+  const unfiledCount = countIn((id) => id === null);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 p-4 pb-12 sm:p-6 md:max-w-4xl lg:max-w-6xl">
       <header className="flex flex-col gap-1">
-        <span className="text-sm text-text-muted">Lab Companion</span>
+        <span className="text-sm text-text-muted">Bench Flow</span>
         <h1 className="text-3xl font-semibold tracking-tight text-text">Command Center</h1>
+        <p className="text-lg text-text-muted">{greetingFor(new Date().getHours(), settings?.userName)}</p>
       </header>
+
+      <PersonalizeCard />
+
+      <InsightsPreviewCard />
 
       <section aria-label="Quick actions" className="grid gap-3 sm:grid-cols-2">
         <button
@@ -80,6 +79,8 @@ export function Workspace() {
       </section>
 
       {picking && <TemplatePicker onDone={() => setPicking(false)} />}
+
+      <ThisWeekStrip />
 
       <section aria-label="Active workspace" className="flex flex-col gap-3">
         <h2 className="text-xl font-semibold text-text">Active workspace</h2>
@@ -128,15 +129,13 @@ export function Workspace() {
         )}
       </section>
 
-      <section aria-label="Folders and experiments" className="flex flex-col gap-6">
+      <section aria-label="Folders and experiments" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-text">All experiments</h2>
-          <button type="button" onClick={() => setCreatingFolder((c) => !c)} className={BUTTON_SECONDARY}>
-            New folder
-          </button>
+          <h2 className="text-xl font-semibold text-text">Experiments</h2>
+          <Link to="/experiments" className={BUTTON_PRIMARY}>
+            Browse all experiments →
+          </Link>
         </div>
-
-        {creatingFolder && <FolderForm onDone={() => setCreatingFolder(false)} />}
 
         {summaries === undefined && <p className="text-text-muted">Loading experiments…</p>}
 
@@ -150,12 +149,18 @@ export function Workspace() {
           </EmptyState>
         )}
 
-        {folders?.map((folder) => (
-          <FolderSection key={folder.id} folder={folder} items={grouped.get(folder.id) ?? []} />
-        ))}
-
         {summaries && summaries.length > 0 && (
-          <Section title={folders && folders.length > 0 ? 'Unfiled' : 'Experiments'} items={unfiled} />
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {rootFolders(allFolders).map((folder) => (
+              <FolderLink
+                key={folder.id}
+                name={folder.name}
+                to={`/experiments?folder=${folder.id}`}
+                count={countIn(folderPredicate(folder.id, allFolders))}
+              />
+            ))}
+            <FolderLink name="Unfiled" to="/experiments?folder=unfiled" count={unfiledCount} />
+          </ul>
         )}
       </section>
     </main>
@@ -283,147 +288,16 @@ function TemplatePicker({ onDone }: { onDone: () => void }) {
   );
 }
 
-function FolderForm({ onDone }: { onDone: () => void }) {
-  const [name, setName] = useState('');
-  async function submit() {
-    await createFolder(name);
-    onDone();
-  }
+/** A folder or Unfiled on the Command Center, linking to the filtered Experiments page. */
+function FolderLink({ name, to, count }: { name: string; to: string; count: number }) {
   return (
-    <form
-      className={`${CARD} sm:flex-row`}
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-    >
-      <label className="flex flex-1 flex-col gap-1">
-        <span className="text-sm font-medium text-text-muted">Folder name</span>
-        <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-      </label>
-      <div className="flex gap-2 sm:items-end">
-        <button type="submit" className={BUTTON_PRIMARY}>
-          Create folder
-        </button>
-        <button type="button" className={BUTTON_SECONDARY} onClick={onDone}>
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function FolderSection({ folder, items }: { folder: Folder; items: ExperimentSummary[] }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(folder.name);
-
-  async function save() {
-    await renameFolder(folder.id, name);
-    setEditing(false);
-  }
-
-  async function remove() {
-    const ok = window.confirm(`Delete the folder “${folder.name}”? Its experiments will move to Unfiled.`);
-    if (ok) await deleteFolder(folder.id);
-  }
-
-  return (
-    <section aria-label={`Folder ${folder.name}`} className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {editing ? (
-          <form
-            className="flex flex-1 flex-wrap gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void save();
-            }}
-          >
-            <label className="flex-1">
-              <span className="sr-only">Folder name</span>
-              <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-            </label>
-            <button type="submit" className={BUTTON_PRIMARY}>
-              Save
-            </button>
-            <button type="button" className={BUTTON_SECONDARY} onClick={() => setEditing(false)}>
-              Cancel
-            </button>
-          </form>
-        ) : (
-          <>
-            <h3 className="text-lg font-semibold text-text">{folder.name}</h3>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className={BUTTON_SECONDARY}
-                onClick={() => {
-                  setName(folder.name);
-                  setEditing(true);
-                }}
-              >
-                Rename
-              </button>
-              <button type="button" className={BUTTON_SECONDARY} onClick={() => void remove()}>
-                Delete folder
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-      <Cards items={items} emptyText="No experiments in this folder yet. Move one here from its page." />
-    </section>
-  );
-}
-
-function Section({ title, items }: { title: string; items: ExperimentSummary[] }) {
-  return (
-    <section aria-label={title} className="flex flex-col gap-3">
-      <h3 className="text-lg font-semibold text-text">{title}</h3>
-      <Cards items={items} emptyText="Every experiment is in a folder." />
-    </section>
-  );
-}
-
-function Cards({ items, emptyText }: { items: ExperimentSummary[]; emptyText: string }) {
-  if (items.length === 0) return <p className="text-sm text-text-muted">{emptyText}</p>;
-  return (
-    <ul className="grid gap-3 sm:grid-cols-2">
-      {items.map(({ experiment, lastStepTitle }) => (
-        <li key={experiment.id} className="flex items-stretch gap-2">
-          <Link
-            to={`/experiment/${experiment.id}`}
-            className="flex min-h-12 flex-1 flex-col gap-2 rounded-xl border border-border bg-surface shadow-card p-4 active:bg-surface-2"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-lg font-medium text-text">{experiment.name}</span>
-              <span className={`shrink-0 rounded-full px-3 py-1 text-sm ${STATUS_CLASS[experiment.status]}`}>
-                {STATUS_LABEL[experiment.status]}
-              </span>
-            </div>
-            <span className="text-sm text-text-muted">
-              Started {formatDate(experiment.startedAt)} · Ended {formatDate(experiment.endedAt)}
-            </span>
-            <span className="text-sm text-text-muted">
-              {lastStepTitle ? `Last step: ${lastStepTitle}` : 'No steps yet'}
-            </span>
-          </Link>
-          <DeleteExperimentButton id={experiment.id} name={experiment.name} />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function DeleteExperimentButton({ id, name }: { id: string; name: string }) {
-  async function remove() {
-    const ok = window.confirm(
-      `Delete the experiment “${name}”? Its steps, timers and recorded data will be deleted. The protocol stays in the library.`,
-    );
-    if (ok) await deleteExperiment(id, db);
-  }
-  return (
-    <button type="button" className={`${BUTTON_SECONDARY} shrink-0 self-start`} onClick={() => void remove()}>
-      Delete
-    </button>
+    <li>
+      <Link to={to} className={`${CARD} min-h-24 active:bg-surface-2`}>
+        <span className="text-lg font-semibold text-text">{name}</span>
+        <span className="text-sm text-text-muted">
+          {count} experiment{count === 1 ? '' : 's'}
+        </span>
+      </Link>
+    </li>
   );
 }

@@ -7,6 +7,8 @@ export interface Folder {
   id: string;
   name: string;
   createdAt: number;
+  /** Parent folder for nested folders. Missing or null means top level. */
+  parentId?: string;
 }
 
 export type HazardKind = 'chemical' | 'biological' | 'physical' | 'radiological';
@@ -103,6 +105,12 @@ export interface Experiment {
   pausedAt?: number;
   /** null means unfiled. */
   folderId: string | null;
+  /** Free-form tags for filtering and grouping. */
+  tags?: string[];
+  /** Id of the run this one was duplicated from ("Run again"). */
+  duplicatedFrom?: string;
+  /** Planned start date as a timestamp, set by the user. */
+  plannedStart?: number;
   notes?: string;
   /** Set the first time the run is started. */
   startedAt?: number;
@@ -490,4 +498,21 @@ export interface StereotaxTarget {
   dv: number;
   angle?: number;
   notes?: string;
+}
+
+export type TaskRecurrence = 'none' | 'daily' | 'weekly';
+
+/** A calendar task. date is yyyy-mm-dd in local time; time is HH:mm. */
+export interface Task {
+  id: string;
+  title: string;
+  notes?: string;
+  date: string;
+  time?: string;
+  durationMin?: number;
+  done: boolean;
+  experimentId?: string;
+  color?: string;
+  recurrence?: TaskRecurrence;
+  createdAt: number;
 }

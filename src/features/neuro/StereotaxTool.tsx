@@ -5,6 +5,7 @@ import { deleteStereotaxTarget, listStereotaxTargets, putStereotaxTarget } from 
 import type { StereotaxTarget } from '../../types';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
 import { NumField, readNum } from './NumField';
+import { BrainAtlasPreview } from './BrainAtlasPreview';
 import { ATLAS_BREGMA_LAMBDA_MM, angledApproach, formatCoordinate, scaleAp, skullScale, StereotaxError } from './stereotax';
 
 interface Form {
@@ -97,6 +98,14 @@ export function StereotaxTool() {
         <NumField id="st-angle" label="Approach angle from vertical" unit="°" value={form.angle} onChange={(v) => set('angle', v)} />
       </div>
       {problem && <p role="alert" className="text-base text-red-700 dark:text-red-300">{problem}</p>}
+      <BrainAtlasPreview
+        ap={readNum(form.ap)}
+        ml={readNum(form.ml)}
+        dv={readNum(form.dv)}
+        angleDeg={readNum(form.angle) ?? 0}
+        scaledAp={result?.ap}
+        bregmaLambdaMm={readNum(form.measured)}
+      />
       {result && !problem && (
         <ul aria-label="Stereotaxic results" className="flex flex-col gap-2 rounded-xl border border-border p-4 text-lg">
           <li>Skull scale: {result.scale.toFixed(3)} × atlas</li>

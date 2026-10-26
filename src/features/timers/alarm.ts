@@ -68,7 +68,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 export function notifyTimerDone(timer: Pick<Timer, 'id' | 'label'>): void {
   try {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    new Notification(`${timer.label} done`, { body: 'Lab Companion timer finished.', tag: timer.id });
+    new Notification(`${timer.label} done`, { body: 'Bench Flow timer finished.', tag: timer.id });
   } catch {
     /* some platforms only allow notifications through a service worker */
   }

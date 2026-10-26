@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db';
+import { getSettings } from '../../db/settings';
+import { orderToolTiles } from '../../app/personalization';
 import { FIELD_INPUT } from '../data/fieldStyles';
 import { formatValue, solveDilution, molarityToMass, CalcError, type ConcUnit, type MassUnit, type MolarUnit, type VolumeUnit } from '../assist/calcMath';
 import { ACSF_RECIPE, checkOsmolarity, estimateOsmolarity, scaleRecipe, SolutionError } from './solutions';
@@ -21,12 +25,15 @@ export const TOOL_TILES: Array<{ id: ToolId | 'osmolarity'; title: string; blurb
 /** Bench tools page: a grid of tiles, with the chosen tool shown below. */
 export default function ToolsPage() {
   const [active, setActive] = useState<ToolId | 'osmolarity' | null>(null);
+  const settings = useLiveQuery(() => getSettings(db).catch(() => null), []);
+  // Tools that fit the survey answers come first. Without answers the order is unchanged.
+  const tiles = orderToolTiles(TOOL_TILES, { field: settings?.field ?? null, techniques: settings?.techniques ?? [] });
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4">
       <h1 className="text-3xl font-bold">Bench tools</h1>
       <p className="text-lg text-text-muted">Calculators for neuro and molecular work. Check every number against your protocol.</p>
       <ul className="grid gap-3 sm:grid-cols-2">
-        {TOOL_TILES.map((t) => (
+        {tiles.map((t) => (
           <li key={t.id}>
             <button
               type="button"

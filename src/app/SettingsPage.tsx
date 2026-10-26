@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { getSettings, putSettings } from '../db/settings';
 import type { AppSettings, ExperienceMode, ThemePreference } from '../types';
@@ -28,12 +29,34 @@ export default function SettingsPage() {
         <p className="text-text-muted">Loading settings…</p>
       ) : (
         <>
+          <PersonalizeSection />
           <PreferencesCard settings={settings} />
           <StarterLoader />
           <ApiKeyCard savedKey={settings.apiKey} />
         </>
       )}
     </main>
+  );
+}
+
+/** Reopens the personalization survey, with the saved answers filled in. Returns here when it is finished or skipped. */
+function PersonalizeSection() {
+  return (
+    <section aria-labelledby="personalize-heading" className={CARD}>
+      <div className="flex flex-col gap-1">
+        <h2 id="personalize-heading" className="text-lg font-semibold text-text">
+          Personalize
+        </h2>
+        <p className="text-base leading-relaxed text-text-muted">
+          Change your field, experience, techniques, devices and starter protocols. The survey shows your current answers.
+        </p>
+      </div>
+      <div>
+        <Link to="/welcome" state={{ from: '/settings' }} className={BUTTON_PRIMARY}>
+          Personalize
+        </Link>
+      </div>
+    </section>
   );
 }
 

@@ -1,17 +1,16 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { db } from '../db';
 import { getSettings } from '../db/settings';
 import { TimerTray } from '../features/timers/TimerTray';
 import { AppNav } from './AppNav';
 import { applyAppearance, watchSystemTheme } from './appearance';
-import { needsWelcome } from './welcomeOptions';
 
 /** Layout for every route: appearance, first-run gate, navigation and the timer tray. */
 export function AppShell() {
-  // A settings read that fails resolves to null, so a broken read never leaves the app on a blank screen
-  // or sends the user to the welcome again.
+  // A settings read that fails resolves to null, so a broken read never leaves the app on a blank screen.
+  // The personalization survey is never forced: the Command Center card and Settings offer it.
   const loaded = useLiveQuery(async () => ({ settings: await getSettings(db).catch(() => null) }), []);
   const settings = loaded?.settings ?? undefined;
 
@@ -30,7 +29,7 @@ export function AppShell() {
   }, [followSystem]);
 
   return (
-    <WelcomeGate onboardedAt={settings?.onboardedAt} ready={loaded !== undefined} unreadable={loaded?.settings === null}>
+    <>
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
@@ -41,26 +40,6 @@ export function AppShell() {
       <div id="main-content" tabIndex={-1} className="outline-none">
         <Outlet />
       </div>
-    </WelcomeGate>
+    </>
   );
-}
-
-/** Sends a user who has not finished the welcome to /welcome. Welcome and About are always reachable. */
-function WelcomeGate({
-  children,
-  onboardedAt,
-  ready,
-  unreadable,
-}: {
-  children: ReactNode;
-  onboardedAt: number | undefined;
-  ready: boolean;
-  unreadable: boolean;
-}) {
-  const { pathname } = useLocation();
-  if (!needsWelcome(pathname, undefined)) return children;
-  if (!ready) return null;
-  if (unreadable) return children;
-  if (needsWelcome(pathname, onboardedAt)) return <Navigate to="/welcome" replace />;
-  return children;
 }

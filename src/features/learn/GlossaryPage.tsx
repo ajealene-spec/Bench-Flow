@@ -5,9 +5,13 @@ import { deleteGlossaryTerm, listGlossary, putGlossaryTerm } from '../../db/glos
 import { BUILTIN_TERMS } from './glossaryData';
 import { findGlossaryEntry } from './glossaryMatch';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
+import { getSettings } from '../../db/settings';
+import { glossaryScore } from '../../app/personalization';
 
 interface Row {
   key: string;
+  /** How relevant the term is to the user's field and techniques. Higher sorts first. */
+  score: number;
   term: string;
   definition: string;
   aliases: string[];
@@ -21,10 +25,13 @@ export default function GlossaryPage() {
   const [definition, setDefinition] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const userTerms = useLiveQuery(() => listGlossary(db), []) ?? [];
+  const settings = useLiveQuery(() => getSettings(db).catch(() => null), []);
+  const answers = { field: settings?.field ?? null, techniques: settings?.techniques ?? [] };
 
-  const userRows: Row[] = userTerms.map((t) => ({ key: `u-${t.id}`, term: t.term, definition: t.definition, aliases: [], userId: t.id }));
+  const userRows: Row[] = userTerms.map((t) => ({ key: `u-${t.id}`, score: glossaryScore({ term: t.term }, answers), term: t.term, definition: t.definition, aliases: [], userId: t.id }));
   const builtinRows: Row[] = BUILTIN_TERMS.filter((b) => !userTerms.some((u) => u.term.toLowerCase() === b.term.toLowerCase())).map((b) => ({
     key: `b-${b.term}`,
+    score: glossaryScore(b, answers),
     term: b.term,
     definition: b.definition,
     aliases: b.aliases ?? [],
@@ -32,7 +39,8 @@ export default function GlossaryPage() {
   const q = query.trim().toLowerCase();
   const rows = [...userRows, ...builtinRows]
     .filter((r) => !q || [r.term, r.definition, ...r.aliases].some((s) => s.toLowerCase().includes(q)))
-    .sort((a, b) => a.term.localeCompare(b.term));
+    // Terms for the user's field and techniques come first, then alphabetical.
+    .sort((a, b) => b.score - a.score || a.term.localeCompare(b.term));
 
   async function add(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,6 +78,7 @@ export default function GlossaryPage() {
           <li key={r.key} className="flex flex-col gap-1 rounded-xl border border-border p-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-lg font-semibold">{r.term}</span>
+              {r.score > 0 && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-sm text-accent-text">For your work</span>}
               {r.userId ? (
                 <span className="rounded-full bg-surface-2 px-2 py-0.5 text-sm">Your term</span>
               ) : null}

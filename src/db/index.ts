@@ -22,6 +22,7 @@ import type {
   StepExplanation,
   StepRecord,
   StereotaxTarget,
+  Task,
   TargetComment,
   Timer,
 } from '../types';
@@ -56,6 +57,7 @@ export class LabCompanionDB extends Dexie {
   protocolVersions!: Table<ProtocolVersion, string>;
   comments!: Table<TargetComment, string>;
   stereotaxTargets!: Table<StereotaxTarget, string>;
+  tasks!: Table<Task, string>;
 
   constructor(name = 'lab-companion') {
     super(name);
@@ -227,6 +229,15 @@ export class LabCompanionDB extends Dexie {
           await settings.put({ ...(row ?? {}), id: SETTINGS_ROW_ID, userName: legacyName });
         }
       }
+    });
+
+    // Version 9: nested folders (folders.parentId), experiment tags (multi-entry index), and the calendar
+    // tasks table. Existing rows are not rewritten: a folder without parentId is top level, and experiments
+    // without tags simply are not in the tags index.
+    this.version(9).stores({
+      folders: 'id, createdAt, parentId',
+      experiments: 'id, status, updatedAt, folderId, templateId, *tags',
+      tasks: 'id, date, experimentId',
     });
   }
 }

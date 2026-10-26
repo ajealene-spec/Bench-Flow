@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { featureRoutes, NAV_GROUP_LABELS, type NavGroup } from './featureRoutes';
+import { BrandWordmark } from './BrandWordmark';
 import { ThemeSwitch } from './ThemeSwitch';
 
 const NAV_LINK = 'inline-flex min-h-12 items-center rounded-xl border px-4 font-medium';
@@ -23,9 +24,15 @@ export function AppNav() {
   const moreActive = moreItems.some((r) => pathname === r.path || pathname.startsWith(`${r.path}/`));
 
   return (
-    <nav aria-label="Main" className="mx-auto flex w-full max-w-3xl flex-wrap items-start gap-2 px-4 pt-4">
+    <nav aria-label="Main" className="mx-auto flex w-full max-w-5xl flex-nowrap items-center gap-2 px-4 pt-4">
+      <div className="min-w-0 shrink-0">
+        <BrandWordmark />
+      </div>
+
+      <div className="ml-auto flex flex-nowrap items-center gap-2">
+      {/* Primary links show from the lg breakpoint up. Below it they live inside More, so the bar never wraps. */}
       {primary.map((r) => (
-        <NavLink key={r.path} to={r.path} end={r.path === '/'} className={navClass}>
+        <NavLink key={r.path} to={r.path} end={r.path === '/'} className={`${navClass} hidden lg:inline-flex whitespace-nowrap`}>
           {r.nav?.label}
         </NavLink>
       ))}
@@ -48,8 +55,24 @@ export function AppNav() {
         {open && (
           <div
             id="more-menu"
-            className="absolute left-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-2xl border border-border bg-surface shadow-card p-2 shadow-lg"
+            className="absolute right-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-2xl border border-border bg-surface shadow-card p-2 shadow-lg"
           >
+            <div className="flex flex-col gap-1 lg:hidden">
+              <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Main</p>
+              {primary.map((r) => (
+                <NavLink
+                  key={r.path}
+                  to={r.path}
+                  end={r.path === '/'}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) =>
+                    `flex min-h-12 items-center rounded-xl px-3 font-medium ${isActive ? 'bg-accent text-white' : 'text-text active:bg-surface-2'}`
+                  }
+                >
+                  {r.nav?.label}
+                </NavLink>
+              ))}
+            </div>
             {MORE_GROUPS.map((group) => {
               const items = moreItems.filter((r) => r.nav?.group === group);
               if (items.length === 0) return null;
@@ -75,6 +98,7 @@ export function AppNav() {
             })}
           </div>
         )}
+      </div>
       </div>
     </nav>
   );

@@ -1,0 +1,40 @@
+/*
+ * Calendar-only color series. One per experiment, chosen by a stable hash of the run id.
+ * Light values are on :root; dark values on :root.dark, the class src/app/appearance.ts sets.
+ */
+:root {
+  --cal-0-bg: #dbeafe; --cal-0-ink: #1e3a8a; --cal-0-line: #93c5fd;
+  --cal-1-bg: #fef3c7; --cal-1-ink: #78350f; --cal-1-line: #fcd34d;
+  --cal-2-bg: #ede9fe; --cal-2-ink: #4c1d95; --cal-2-line: #c4b5fd;
+  --cal-3-bg: #ffe4e6; --cal-3-ink: #881337; --cal-3-line: #fda4af;
+  --cal-4-bg: #ccfbf1; --cal-4-ink: #134e4a; --cal-4-line: #5eead4;
+  --cal-5-bg: #ffedd5; --cal-5-ink: #7c2d12; --cal-5-line: #fdba74;
+  --cal-today: #006747;
+}
+
+:root.dark {
+  --cal-0-bg: #1e3a5f; --cal-0-ink: #bfdbfe; --cal-0-line: #3b82f6;
+  --cal-1-bg: #5c3d12; --cal-1-ink: #fde68a; --cal-1-line: #d97706;
+  --cal-2-bg: #3b2a66; --cal-2-ink: #ddd6fe; --cal-2-line: #8b5cf6;
+  --cal-3-bg: #5a2231; --cal-3-ink: #fecdd3; --cal-3-line: #e11d48;
+  --cal-4-bg: #164a46; --cal-4-ink: #99f6e4; --cal-4-line: #14b8a6;
+  --cal-5-bg: #5c3218; --cal-5-ink: #fed7aa; --cal-5-line: #ea580c;
+  --cal-today: #3fb98a;
+}
+
+.cal-series-0 { background: var(--cal-0-bg); color: var(--cal-0-ink); border-color: var(--cal-0-line); }
+.cal-series-1 { background: var(--cal-1-bg); color: var(--cal-1-ink); border-color: var(--cal-1-line); }
+.cal-series-2 { background: var(--cal-2-bg); color: var(--cal-2-ink); border-color: var(--cal-2-line); }
+.cal-series-3 { background: var(--cal-3-bg); color: var(--cal-3-ink); border-color: var(--cal-3-line); }
+.cal-series-4 { background: var(--cal-4-bg); color: var(--cal-4-ink); border-color: var(--cal-4-line); }
+.cal-series-5 { background: var(--cal-5-bg); color: var(--cal-5-ink); border-color: var(--cal-5-line); }
+
+.cal-swatch-0 { background: var(--cal-0-line); }
+.cal-swatch-1 { background: var(--cal-1-line); }
+.cal-swatch-2 { background: var(--cal-2-line); }
+.cal-swatch-3 { background: var(--cal-3-line); }
+.cal-swatch-4 { background: var(--cal-4-line); }
+.cal-swatch-5 { background: var(--cal-5-line); }
+
+/* Today uses the Tulane Green accent (#006747 light, lifted in dark for contrast). */
+.cal-today-ring { box-shadow: inset 0 0 0 2px var(--cal-today); }

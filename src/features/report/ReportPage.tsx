@@ -21,6 +21,7 @@ import type { ReportData } from './reportData';
 import { ResearchPackageButton } from './ResearchPackageButton';
 import { ZenodoHelp } from './ZenodoHelp';
 import { CommentThread } from '../share/CommentThread';
+import { ReproducibilityBadge } from '../insights/ReproducibilityBadge';
 import './report.css';
 
 const BUTTON =
@@ -153,6 +154,9 @@ function ReportView({ data }: { data: ReportData }) {
         <header>
           <p className="text-sm uppercase tracking-wide text-text-muted">Experiment report</p>
           <h1 className="mt-1 text-2xl font-semibold leading-tight sm:text-3xl">{report.title}</h1>
+          <div className="mt-2">
+            <ReproducibilityBadge experimentId={report.experimentId} />
+          </div>
           <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-base sm:grid-cols-2">
             <Field label="Protocol" value={report.protocol.title} />
             <Field label="Category" value={report.protocol.category ?? '—'} />

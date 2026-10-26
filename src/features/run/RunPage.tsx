@@ -78,6 +78,8 @@ export default function RunPage() {
   const [dense, setDense] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState('');
+  /** The mic opens only after the user taps the mic button in this run, never on page load. */
+  const [micOn, setMicOn] = useState(false);
   const runCommands = useRef<RunCommands | null>(null);
   const advanced = settings?.mode === 'advanced';
   const voiceOn = settings?.voiceEnabled === true;
@@ -91,7 +93,7 @@ export default function RunPage() {
     }
     if (!helpOpen) runCommands.current?.actions[action]();
   });
-  const voice = useVoiceControl(voiceOn && ready, (command) => runCommands.current?.voice(command));
+  const voice = useVoiceControl(voiceOn && ready && micOn, (command) => runCommands.current?.voice(command));
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -378,7 +380,19 @@ export default function RunPage() {
               Focus mode: {focus ? 'On' : 'Off'}
             </button>
           </div>
-          {voiceOn && <VoiceIndicator status={voice.status} heard={voice.heard} message={voiceMessage} />}
+          {voiceOn && (
+            <>
+              <button
+                type="button"
+                aria-pressed={micOn}
+                onClick={() => setMicOn((on) => !on)}
+                className="min-h-12 self-start rounded-lg border border-border px-4 text-base font-medium"
+              >
+                {micOn ? 'Stop listening' : 'Tap to use the mic'}
+              </button>
+              {micOn && <VoiceIndicator status={voice.status} heard={voice.heard} message={voiceMessage} />}
+            </>
+          )}
           <header className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-base text-text-muted">

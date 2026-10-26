@@ -21,6 +21,10 @@ import { ExperimentCapture } from '../features/data/ExperimentCapture';
 import { ExperimentReagentsPanel } from '../features/inventory/ExperimentReagentsPanel';
 import { TroubleshootPanel } from '../features/assist/TroubleshootPanel';
 import { ExperimentAnimalsPanel } from '../features/animals/ExperimentAnimalsPanel';
+import { ScheduleExperimentButton } from '../features/calendar/ScheduleExperimentDialog';
+import { RepeatOfNote, RunAgainPanel } from '../features/experiments/RunAgainPanel';
+import { TagEditor } from '../features/experiments/TagEditor';
+import { ReproducibilityBadge } from '../features/insights/ReproducibilityBadge';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
@@ -65,6 +69,8 @@ export default function ExperimentPage() {
           {STATUS_LABEL[experiment.status]}
           {procedure ? ` · ${procedure.title}` : ''}
         </span>
+        <ReproducibilityBadge experimentId={experiment.id} />
+        {experiment.duplicatedFrom && <RepeatOfNote duplicatedFrom={experiment.duplicatedFrom} />}
       </header>
 
       <section aria-label="Dates" className="grid gap-3 sm:grid-cols-2">
@@ -125,12 +131,17 @@ export default function ExperimentPage() {
         </select>
       </label>
 
+      <TagEditor key={experiment.id} experimentId={experiment.id} tags={experiment.tags ?? []} />
+
+      <RunAgainPanel experiment={experiment} />
+
       <NotesField key={experiment.id} experimentId={experiment.id} initial={experiment.notes ?? ''} />
 
       <RecordedDataSummary experimentId={experiment.id} experimentName={experiment.name} />
       <ExperimentCapture experimentId={experiment.id} experimentName={experiment.name} />
       <ExperimentReagentsPanel experimentId={experiment.id} />
       <ExperimentAnimalsPanel experiment={experiment} />
+      <ScheduleExperimentButton experimentId={experiment.id} />
       <TroubleshootPanel experimentId={experiment.id} />
     </main>
   );
