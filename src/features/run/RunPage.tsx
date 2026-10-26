@@ -55,6 +55,8 @@ interface Loaded {
   /** Set while the run is paused between days. */
   pausedAt?: number;
   pausedAtPhaseId?: string;
+  /** True once the run has been marked finished (even if steps were skipped). */
+  done: boolean;
 }
 
 export default function RunPage() {
@@ -105,6 +107,7 @@ export default function RunPage() {
         templateStepIds: template?.steps.map((s) => s.id) ?? [],
         pausedAt: experiment?.pausedAt,
         pausedAtPhaseId: experiment?.pausedAtPhaseId,
+        done: experiment?.status === 'done',
       });
       await saveRunState(state, db);
       const log = await listExecutionEvents(id, db);
@@ -215,6 +218,7 @@ export default function RunPage() {
     commit(next);
     if (finished) {
       void setExperimentStatus(id, 'done', db);
+      setLoaded((prev) => (prev ? { ...prev, done: true } : prev));
       return;
     }
     setPausePrompt(phaseEndedAt(procedure.steps, procedure.phases, index) ?? null);
@@ -307,12 +311,13 @@ export default function RunPage() {
             isCompleted={isCompleted}
             hazards={stepHazards}
             isLast={isLast}
+            done={loaded.done}
             onBack={() => commit(goBack(state))}
             onNext={() => commit(goNext(state, procedure))}
             onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
-          {completedCount === total && <FinishLinks id={id} />}
+          {(loaded.done || completedCount === total) && <FinishLinks id={id} />}
         </>
       ) : (
         <>
@@ -385,12 +390,12 @@ export default function RunPage() {
 
       <StepDataPanel key={step.id} experimentId={id} step={step} />
 
-      {completedCount === total && (
+      {(loaded.done || completedCount === total) && (
         <Link to={`/experiment/${id}#recorded-data`} className="inline-flex min-h-16 items-center justify-center rounded-2xl border-2 border-accent px-5 text-lg font-semibold text-accent-hover dark:border-slate-300 dark:text-slate-300">
           View all recorded data
         </Link>
       )}
-      {completedCount === total && (
+      {(loaded.done || completedCount === total) && (
         <Link to={`/experiment/${id}/report`} className="inline-flex min-h-16 items-center justify-center rounded-2xl bg-accent px-5 text-lg font-semibold text-white">
           View report
         </Link>
@@ -418,7 +423,7 @@ export default function RunPage() {
           className={`${BIG_BUTTON} col-span-2 bg-accent text-white sm:col-span-1 dark:bg-accent dark:text-slate-950`}
           onClick={handleMarkComplete}
         >
-          {isLast ? 'Mark complete and finish' : 'Mark complete'}
+          {isLast ? (loaded.done ? 'Run finished' : 'Mark complete and finish') : 'Mark complete'}
         </button>
       </nav>
 

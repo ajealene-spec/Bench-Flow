@@ -46,12 +46,12 @@ export function StepNote({ experimentId, stepId, large = false }: { experimentId
         rows={3}
         className={`w-full rounded-xl border border-slate-300 bg-white p-3 ${control} dark:border-slate-600 dark:bg-slate-900`}
       />
-      <label className={`flex items-center gap-3 ${control}`}>
+      <label className={`flex min-h-12 cursor-pointer items-center gap-3 ${control}`}>
         <input
           type="checkbox"
           checked={deviation}
           onChange={(e) => setDeviation(e.target.checked)}
-          className="h-6 w-6"
+          className="h-8 w-8 shrink-0 accent-accent"
         />
         Mark as deviation from the protocol
       </label>

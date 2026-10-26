@@ -117,7 +117,7 @@ export function MaterialsCard({
                 <label className="flex min-h-12 flex-1 cursor-pointer items-center gap-3">
                   <input
                     type="checkbox"
-                    className="h-6 w-6 shrink-0 accent-accent"
+                    className="h-8 w-8 shrink-0 accent-accent"
                     checked={checked.includes(m.id)}
                     onChange={(e) => onToggle?.(m.id, e.target.checked)}
                   />

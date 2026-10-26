@@ -29,6 +29,7 @@ export interface FocusModeProps {
   isCompleted: boolean;
   hazards: Hazard[];
   isLast: boolean;
+  done?: boolean;
   onBack: () => void;
   onNext: () => void;
   onComplete: () => void;
@@ -40,7 +41,7 @@ export interface FocusModeProps {
  * here, and a finished timer rings until it is dismissed.
  */
 export function FocusMode(props: FocusModeProps) {
-  const { experimentId, step, index, total, isCompleted, hazards, isLast, onBack, onNext, onComplete, onSkip } = props;
+  const { experimentId, step, index, total, isCompleted, hazards, isLast, done, onBack, onNext, onComplete, onSkip } = props;
 
   return (
     <section aria-label="Focus mode" className="flex flex-col gap-6">
@@ -91,7 +92,7 @@ export function FocusMode(props: FocusModeProps) {
           </button>
         </div>
         <button type="button" className={`${NAV_BUTTON} bg-accent text-white dark:text-slate-950`} onClick={onComplete}>
-          {isLast ? 'Mark complete and finish' : 'Mark complete'}
+          {isLast ? (done ? 'Run finished' : 'Mark complete and finish') : 'Mark complete'}
         </button>
         <button type="button" className="min-h-14 w-full rounded-2xl px-5 text-lg font-medium underline" disabled={isLast} onClick={onSkip}>
           Skip this step (logged as a deviation)
