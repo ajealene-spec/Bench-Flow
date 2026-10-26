@@ -29,6 +29,8 @@ export interface ProtocolTemplate {
   steps: Step[];
   hazards: Hazard[];
   sourceText?: string;
+  /** Free-text notes, including accepted literature suggestions. */
+  notes?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -131,4 +133,38 @@ export interface RunState {
   currentStepIndex: number;
   completedStepIds: string[];
   updatedAt: number;
+}
+
+export type InventoryKind = 'antibody' | 'reagent' | 'buffer' | 'kit';
+
+/** A reagent, antibody, buffer or kit the lab keeps stock of. Lots and expiry are added by the user. */
+export interface InventoryItem {
+  id: string;
+  name: string;
+  kind: InventoryKind;
+  vendor?: string;
+  catalogNumber?: string;
+  lotNumber?: string;
+  concentration?: string;
+  stockDilution?: string;
+  hostSpecies?: string;
+  target?: string;
+  conjugate?: string;
+  isotype?: string;
+  reactivity?: string[];
+  /** ISO date (YYYY-MM-DD). */
+  expiresOn?: string;
+  location?: string;
+  quantity?: string;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Links an inventory item (or lot) to the run it was used in. stepId is '' for run-level use. */
+export interface ReagentUsage {
+  experimentId: string;
+  inventoryItemId: string;
+  stepId: string;
+  usedAt: number;
 }

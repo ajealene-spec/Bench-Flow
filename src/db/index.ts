@@ -1,5 +1,15 @@
 import Dexie, { type Table } from 'dexie';
-import type { Experiment, Folder, Procedure, ProtocolTemplate, RunState, StepRecord, Timer } from '../types';
+import type {
+  Experiment,
+  Folder,
+  InventoryItem,
+  Procedure,
+  ProtocolTemplate,
+  ReagentUsage,
+  RunState,
+  StepRecord,
+  Timer,
+} from '../types';
 
 /** Category given to templates that were created from existing experiments by the version 3 upgrade. */
 export const UNCATEGORIZED = 'Uncategorized';
@@ -12,6 +22,8 @@ export class LabCompanionDB extends Dexie {
   timers!: Table<Timer, string>;
   stepRecords!: Table<StepRecord, string>;
   templates!: Table<ProtocolTemplate, string>;
+  inventory!: Table<InventoryItem, string>;
+  inventoryUsage!: Table<ReagentUsage, [string, string, string]>;
 
   constructor(name = 'lab-companion') {
     super(name);
@@ -116,6 +128,13 @@ export class LabCompanionDB extends Dexie {
           await tx.table('experiments').update(experiment.id, { templateId });
         }
       });
+
+    // Version 4: reagent and antibody inventory. Usage rows are keyed by run, item and step so the
+    // same item is linked to a run only once per step.
+    this.version(4).stores({
+      inventory: 'id, kind, name, expiresOn',
+      inventoryUsage: '[experimentId+inventoryItemId+stepId], experimentId, inventoryItemId',
+    });
   }
 }
 

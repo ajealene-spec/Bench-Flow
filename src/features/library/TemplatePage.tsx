@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { deleteTemplate, getTemplate, listCategories, updateTemplate } from '../../db/templates';
 import type { Hazard, ProtocolTemplate, Step } from '../../types';
 import { prepareSteps, ReviewSection } from '../import/ImportPage';
+import { LiteraturePrompt } from '../assist/LiteraturePrompt';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
@@ -37,6 +38,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   const [category, setCategory] = useState(template.category);
   const [steps, setSteps] = useState<Step[]>(template.steps);
   const [hazards, setHazards] = useState<Hazard[]>(template.hazards ?? []);
+  const [notes, setNotes] = useState(template.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
     setBusy(true);
     setError(null);
     try {
-      await updateTemplate(template.id, { title, category, steps: prepareSteps(steps), hazards }, db);
+      await updateTemplate(template.id, { title, category, steps: prepareSteps(steps), hazards, notes }, db);
       setSaved(true);
     } catch {
       setError('Could not save the protocol. Please try again.');
@@ -121,6 +123,30 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
         }}
         onSave={() => void save()}
       />
+
+      <LiteraturePrompt
+        templateId={template.id}
+        onAddNote={(text) => {
+          // Suggestions are saved as notes only; steps never change without the user editing them.
+          const next = notes ? `${notes}\n\n${text}` : text;
+          setNotes(next);
+          void updateTemplate(template.id, { notes: next }, db);
+        }}
+      />
+
+      <label className="flex flex-col gap-2">
+        <span className="font-medium">Protocol notes</span>
+        <textarea
+          value={notes}
+          rows={5}
+          onChange={(e) => {
+            setNotes(e.target.value);
+            setSaved(false);
+          }}
+          onBlur={() => void updateTemplate(template.id, { notes }, db)}
+          className="min-h-32 rounded-lg border border-slate-300 bg-white p-3 dark:border-slate-600 dark:bg-slate-900"
+        />
+      </label>
     </main>
   );
 }

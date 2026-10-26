@@ -43,7 +43,7 @@ export function getTemplate(id: string, database: LabCompanionDB = defaultDb): P
 /** Updates a template. A blank title falls back to the default; a blank category to "Uncategorized". */
 export async function updateTemplate(
   id: string,
-  changes: Partial<Pick<ProtocolTemplate, 'title' | 'category' | 'steps' | 'hazards'>>,
+  changes: Partial<Pick<ProtocolTemplate, 'title' | 'category' | 'steps' | 'hazards' | 'notes'>>,
   database: LabCompanionDB = defaultDb,
 ): Promise<void> {
   const next: Partial<ProtocolTemplate> = { ...changes, updatedAt: Date.now() };

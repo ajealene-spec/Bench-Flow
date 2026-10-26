@@ -14,6 +14,8 @@ import {
 import type { ExperimentStatus } from '../types';
 import { formatDate } from './format';
 import { RecordedDataSummary } from '../features/data/RecordedDataSummary';
+import { ExperimentReagentsPanel } from '../features/inventory/ExperimentReagentsPanel';
+import { TroubleshootPanel } from '../features/assist/TroubleshootPanel';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-teal-700 text-white active:bg-teal-800`;
@@ -119,6 +121,8 @@ export default function ExperimentPage() {
       <NotesField key={experiment.id} experimentId={experiment.id} initial={experiment.notes ?? ''} />
 
       <RecordedDataSummary experimentId={experiment.id} experimentName={experiment.name} />
+      <ExperimentReagentsPanel experimentId={experiment.id} />
+      <TroubleshootPanel experimentId={experiment.id} />
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { TimerTray } from '../features/timers/TimerTray';
 import ExperimentPage from './ExperimentPage';
 import ExperimentImportRedirect from './ExperimentImportRedirect';
 import ReportPage from '../features/report/ReportPage';
+import InventoryPage from '../features/inventory/InventoryPage';
 
 const NAV_LINK = 'inline-flex min-h-12 items-center rounded-xl border px-4 font-medium';
 
@@ -28,6 +29,9 @@ function Layout() {
         <NavLink to="/library" className={navClass}>
           Protocol Library
         </NavLink>
+        <NavLink to="/inventory" className={navClass}>
+          Inventory
+        </NavLink>
       </nav>
       <div className="mx-auto w-full max-w-3xl px-4 pt-4">
         <TimerTray />
@@ -46,6 +50,7 @@ const router = createBrowserRouter([
       { path: '/experiment/:id/import', element: <ExperimentImportRedirect /> },
       { path: '/experiment/:id/run', element: <RunPage /> },
       { path: '/experiment/:id/report', element: <ReportPage /> },
+      { path: '/inventory', element: <InventoryPage /> },
       { path: '/library', element: <LibraryPage /> },
       { path: '/library/new', element: <ImportPage /> },
       { path: '/library/:templateId', element: <TemplatePage /> },

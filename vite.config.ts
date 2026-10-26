@@ -3,12 +3,14 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { parsePlugin } from './server/parsePlugin';
+import { assistPlugin } from './server/assistPlugin';
 
 // Build output lives in dist.nosync so iCloud does not sync it.
 export default defineConfig({
   plugins: [
     react(),
     parsePlugin(),
+    assistPlugin(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
