@@ -3,6 +3,8 @@ import { db } from '../../db';
 import { createInventoryItem, updateInventoryItem, type InventoryInput } from '../../db/inventory';
 import type { InventoryItem, InventoryKind } from '../../types';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
+import { RridField } from '../neuro/RridField';
+import { extractRridFromNotes, setRridInNotes } from '../neuro/rrid';
 
 const KINDS: Array<{ value: InventoryKind; label: string }> = [
   { value: 'antibody', label: 'Antibody' },
@@ -91,7 +93,7 @@ export function InventoryForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label={item ? 'Edit inventory item' : 'Add inventory item'} className="flex flex-col gap-4 rounded-2xl border border-slate-300 p-4 dark:border-slate-700">
+    <form onSubmit={handleSubmit} aria-label={item ?'Edit inventory item' :'Add inventory item'} className="flex flex-col gap-4 rounded-2xl border border-border p-4">
       <h2 className="text-xl font-semibold">{item ? 'Edit item' : 'Add item'}</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-1 text-base font-medium">
@@ -129,6 +131,7 @@ export function InventoryForm({
           />
         </label>
       </div>
+      <RridField id="inventory-rrid" searchName={form.name} value={extractRridFromNotes(form.notes)} onChange={(r) => set('notes', setRridInNotes(form.notes, r))} />
       {error && (
         <p role="alert" className="text-base text-red-700 dark:text-red-300">
           {error}

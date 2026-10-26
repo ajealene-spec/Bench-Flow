@@ -6,25 +6,21 @@ import { getExperiment, getProcedureForExperiment, getRunState, listStepRecords 
 import { listExecutionEvents } from '../../db/executionLog';
 import { getInventoryItem, listInventoryUsageForExperiment } from '../../db/inventory';
 import { getTemplate } from '../../db/templates';
-import type { ExecutionEvent, Procedure, RunValue, StepRecord } from '../../types';
+import type { RunValue } from '../../types';
 import { formatElapsed, formatTimestamp } from '../data/time';
-import { buildExecutionLog, type ExecutionLog, type ReagentLot } from './buildExecutionLog';
-import { buildReport, type Report } from './buildReport';
+import { buildExecutionLog, type ReagentLot } from './buildExecutionLog';
+import { buildReport } from './buildReport';
 import { reportToCSV, reportToEventsCSV, reportToJSON, reportToMarkdown } from './reportText';
+import type { ReportData } from './reportData';
+import { ResearchPackageButton } from './ResearchPackageButton';
+import { ZenodoHelp } from './ZenodoHelp';
+import { CommentThread } from '../share/CommentThread';
 import './report.css';
 
 const BUTTON =
-  'inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 font-medium text-slate-900 active:bg-slate-100';
-const SECTION = 'report-section mt-8 border-t border-slate-300 pt-4';
+'inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-surface shadow-card px-4 font-medium text-text active:bg-surface-2';
+const SECTION ='report-section mt-8 border-t border-border pt-4';
 const SECTION_BREAK = `${SECTION} report-section--break`;
-
-interface ReportData {
-  report: Report;
-  procedure?: Procedure;
-  records: StepRecord[];
-  events: ExecutionEvent[];
-  executionLog: ExecutionLog;
-}
 
 /** Loads everything the report needs for one experiment. Resolves to null when the experiment does not exist. */
 async function loadReportData(experimentId: string): Promise<ReportData | null> {
@@ -68,11 +64,11 @@ export default function ReportPage() {
   const { id = '' } = useParams();
   const data = useLiveQuery(() => loadReportData(id), [id]);
 
-  if (data === undefined) return <main className="p-6 text-slate-500">Loading report…</main>;
+  if (data === undefined) return <main className="p-6 text-text-muted">Loading report…</main>;
   if (data === null) {
     return (
       <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
-        <Link to="/" className="inline-flex min-h-12 w-fit items-center text-accent underline">
+        <Link to="/" className="inline-flex min-h-12 w-fit items-center text-accent-text underline">
           Back to experiments
         </Link>
         <h1 className="text-2xl font-semibold">Experiment not found</h1>
@@ -118,14 +114,15 @@ function ReportView({ data }: { data: ReportData }) {
         <button type="button" className={BUTTON} onClick={copyText}>
           Copy as text
         </button>
-        <p role="status" className="w-full text-sm text-slate-600">
+        <ResearchPackageButton experimentId={report.experimentId} data={data} />
+        <p role="status" className="w-full text-sm text-text-muted">
           {message}
         </p>
       </div>
 
-      <article className="report-print-root mx-auto mt-4 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-4 text-black shadow-sm sm:p-8">
+      <article className="report-print-root mx-auto mt-4 w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-card p-4 text-text shadow-sm sm:p-8">
         <header>
-          <p className="text-sm uppercase tracking-wide text-slate-600">Experiment report</p>
+          <p className="text-sm uppercase tracking-wide text-text-muted">Experiment report</p>
           <h1 className="mt-1 text-2xl font-semibold leading-tight sm:text-3xl">{report.title}</h1>
           <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-base sm:grid-cols-2">
             <Field label="Protocol" value={report.protocol.title} />
@@ -170,7 +167,7 @@ function ReportView({ data }: { data: ReportData }) {
             <div key={step.stepId} className="report-step mt-5">
               <h3 className="text-lg font-semibold">
                 {step.number}. {step.title}{' '}
-                <span className="text-base font-normal text-slate-700">
+                <span className="text-base font-normal text-text-muted">
                   ({step.completed ? 'completed' : 'not completed'})
                 </span>
               </h3>
@@ -185,7 +182,7 @@ function ReportView({ data }: { data: ReportData }) {
               {step.numbers.length > 0 && (
                 <table className="mt-2 w-full border-collapse text-left text-base">
                   <thead>
-                    <tr className="border-b border-slate-400">
+                    <tr className="border-b border-border-strong">
                       <th className="py-1 pr-2 font-semibold">Recorded</th>
                       <th className="py-1 pr-2 font-semibold">Value</th>
                       <th className="py-1 font-semibold">Note</th>
@@ -193,7 +190,7 @@ function ReportView({ data }: { data: ReportData }) {
                   </thead>
                   <tbody>
                     {step.numbers.map((n, i) => (
-                      <tr key={`${n.label}-${i}`} className="report-row border-b border-slate-200">
+                      <tr key={`${n.label}-${i}`} className="report-row border-b border-border">
                         <td className="py-1 pr-2">{n.label}</td>
                         <td className="py-1 pr-2">
                           {n.value ?? '—'}
@@ -237,14 +234,14 @@ function ReportView({ data }: { data: ReportData }) {
           ) : (
             <table className="mt-2 w-full border-collapse text-left text-base">
               <thead>
-                <tr className="border-b border-slate-400">
+                <tr className="border-b border-border-strong">
                   <th className="py-1 pr-2 font-semibold">Time</th>
                   <th className="py-1 font-semibold">What happened</th>
                 </tr>
               </thead>
               <tbody>
                 {executionLog.timeline.map((entry, i) => (
-                  <tr key={`${entry.at}-${entry.type}-${i}`} className="report-row border-b border-slate-200">
+                  <tr key={`${entry.at}-${entry.type}-${i}`} className="report-row border-b border-border">
                     <td className="py-1 pr-2 whitespace-nowrap">{formatTimestamp(entry.at)}</td>
                     <td className="py-1">{entry.text}</td>
                   </tr>
@@ -275,7 +272,7 @@ function ReportView({ data }: { data: ReportData }) {
               {executionLog.deviations.map((d, i) => (
                 <li
                   key={`${d.kind}-${d.at ?? i}-${i}`}
-                  className="report-row rounded-md border-l-4 border-amber-600 bg-amber-50 px-3 py-2 text-black"
+                  className="report-row rounded-md border-l-4 border-amber-600 bg-amber-50 px-3 py-2 text-text"
                 >
                   <span className="font-semibold capitalize">{d.kind}</span>: {d.message}
                 </li>
@@ -334,12 +331,17 @@ function ReportView({ data }: { data: ReportData }) {
         </section>
 
         {report.generatedAt !== undefined && (
-          <footer className="mt-8 border-t border-slate-300 pt-2 text-sm text-slate-600">
+          <footer className="mt-8 border-t border-border pt-2 text-sm text-text-muted">
             Generated {formatTimestamp(report.generatedAt)} · {report.recordCount} recorded{' '}
             {report.recordCount === 1 ? 'entry' : 'entries'}
           </footer>
         )}
       </article>
+
+      <section className="no-print mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-card p-4 text-text" aria-label="Run comments">
+        <CommentThread targetType="experiment" targetId={report.experimentId} label="this run" />
+      </section>
+      <ZenodoHelp />
     </div>
   );
 }
@@ -347,7 +349,7 @@ function ReportView({ data }: { data: ReportData }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-sm text-slate-600">{label}</dt>
+      <dt className="text-sm text-text-muted">{label}</dt>
       <dd className="font-medium">{value}</dd>
     </div>
   );

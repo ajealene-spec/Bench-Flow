@@ -27,17 +27,17 @@ const STATUS_LABEL: Record<ExperimentStatus, string> = {
 };
 
 const STATUS_CLASS: Record<ExperimentStatus, string> = {
-  draft: 'bg-slate-100 text-slate-800',
+  draft:'bg-surface-2 text-text',
   in_progress: 'bg-accent text-white',
-  done: 'bg-slate-900 text-white',
+  done:'bg-accent text-white',
 };
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
-const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100`;
+const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
 const INPUT =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900';
-const CARD = 'flex flex-col gap-3 rounded-xl border border-slate-300 bg-white p-4 sm:p-5';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
+const CARD ='flex flex-col gap-3 rounded-xl border border-border bg-surface shadow-card p-4 sm:p-5';
 
 export function Workspace() {
   const summaries = useLiveQuery(() => listExperimentSummaries(db), []);
@@ -59,8 +59,8 @@ export function Workspace() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 p-4 pb-12 sm:p-6 md:max-w-4xl lg:max-w-6xl">
       <header className="flex flex-col gap-1">
-        <span className="text-sm text-slate-500">Lab Companion</span>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Command Center</h1>
+        <span className="text-sm text-text-muted">Lab Companion</span>
+        <h1 className="text-3xl font-semibold tracking-tight text-text">Command Center</h1>
       </header>
 
       <section aria-label="Quick actions" className="grid gap-3 sm:grid-cols-2">
@@ -68,22 +68,22 @@ export function Workspace() {
           type="button"
           onClick={() => setPicking((p) => !p)}
           aria-expanded={picking}
-          className={`${CARD} min-h-24 text-left active:bg-slate-50`}
+          className={`${CARD} min-h-24 text-left active:bg-surface-2`}
         >
-          <span className="text-lg font-semibold text-accent">New experiment</span>
-          <span className="text-sm text-slate-600">Start a run from a protocol, or from a blank page.</span>
+          <span className="text-lg font-semibold text-accent-text">New experiment</span>
+          <span className="text-sm text-text-muted">Start a run from a protocol, or from a blank page.</span>
         </button>
-        <Link to="/library/new" className={`${CARD} min-h-24 active:bg-slate-50`}>
-          <span className="text-lg font-semibold text-slate-900">Draft protocol</span>
-          <span className="text-sm text-slate-600">Paste or upload a new protocol into the library.</span>
+        <Link to="/library/new" className={`${CARD} min-h-24 active:bg-surface-2`}>
+          <span className="text-lg font-semibold text-text">Draft protocol</span>
+          <span className="text-sm text-text-muted">Paste or upload a new protocol into the library.</span>
         </Link>
       </section>
 
       {picking && <TemplatePicker onDone={() => setPicking(false)} />}
 
       <section aria-label="Active workspace" className="flex flex-col gap-3">
-        <h2 className="text-xl font-semibold text-slate-900">Active workspace</h2>
-        {workspace === undefined && <p className="text-slate-500">Loading…</p>}
+        <h2 className="text-xl font-semibold text-text">Active workspace</h2>
+        {workspace === undefined && <p className="text-text-muted">Loading…</p>}
         {workspace?.length === 0 && (
           <EmptyState title="Nothing is running" primary={{ label: 'Browse protocols', to: '/library' }}>
             When you start an experiment, it appears here with its current step and any timers still running.
@@ -99,26 +99,26 @@ export function Workspace() {
       </section>
 
       <section aria-label="Recent activity" className="flex flex-col gap-3">
-        <h2 className="text-xl font-semibold text-slate-900">Recent activity</h2>
+        <h2 className="text-xl font-semibold text-text">Recent activity</h2>
         {recent?.length === 0 && (
-          <p className="text-slate-600">Experiments you open or finish will be listed here.</p>
+          <p className="text-text-muted">Experiments you open or finish will be listed here.</p>
         )}
         {recent && recent.length > 0 && (
           <ul className="grid gap-3 md:grid-cols-2">
             {recent.map(({ experiment, at }) => (
-              <li key={experiment.id} className="flex items-stretch gap-2 rounded-xl border border-slate-300 bg-white">
+              <li key={experiment.id} className="flex items-stretch gap-2 rounded-xl border border-border bg-surface shadow-card">
                 <Link
                   to={`/experiment/${experiment.id}`}
-                  className="flex min-h-12 flex-1 flex-col justify-center gap-1 rounded-l-xl p-4 active:bg-slate-50"
+                  className="flex min-h-12 flex-1 flex-col justify-center gap-1 rounded-l-xl p-4 active:bg-surface-2"
                 >
-                  <span className="font-medium text-slate-900">{experiment.name}</span>
-                  <span className="text-sm text-slate-600">
+                  <span className="font-medium text-text">{experiment.name}</span>
+                  <span className="text-sm text-text-muted">
                     {experiment.endedAt ? 'Finished' : 'Opened'} {formatDate(at)} · {STATUS_LABEL[experiment.status]}
                   </span>
                 </Link>
                 <Link
                   to={`/experiment/${experiment.id}/report`}
-                  className="flex min-h-12 items-center rounded-r-xl border-l border-slate-300 px-4 font-medium text-accent active:bg-slate-50"
+                  className="flex min-h-12 items-center rounded-r-xl border-l border-border px-4 font-medium text-accent-text active:bg-surface-2"
                 >
                   Report
                 </Link>
@@ -130,7 +130,7 @@ export function Workspace() {
 
       <section aria-label="Folders and experiments" className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-900">All experiments</h2>
+          <h2 className="text-xl font-semibold text-text">All experiments</h2>
           <button type="button" onClick={() => setCreatingFolder((c) => !c)} className={BUTTON_SECONDARY}>
             New folder
           </button>
@@ -138,7 +138,7 @@ export function Workspace() {
 
         {creatingFolder && <FolderForm onDone={() => setCreatingFolder(false)} />}
 
-        {summaries === undefined && <p className="text-slate-500">Loading experiments…</p>}
+        {summaries === undefined && <p className="text-text-muted">Loading experiments…</p>}
 
         {summaries?.length === 0 && (
           <EmptyState
@@ -167,29 +167,29 @@ function ActiveCard({ entry }: { entry: WorkspaceEntry }) {
   return (
     <li className={CARD}>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-lg font-semibold text-slate-900">{experiment.name}</span>
+        <span className="text-lg font-semibold text-text">{experiment.name}</span>
         <span className={`shrink-0 rounded-full px-3 py-1 text-sm ${STATUS_CLASS[experiment.status]}`}>
           {STATUS_LABEL[experiment.status]}
         </span>
       </div>
 
       {resumeDay !== undefined && (
-        <span className="text-sm font-semibold text-accent-hover">Paused – resume Day {resumeDay}</span>
+        <span className="text-sm font-semibold text-accent-text">Paused – resume Day {resumeDay}</span>
       )}
 
       <div className="flex flex-col gap-1">
-        <span className="text-sm text-slate-600">Current step</span>
-        <span className="text-slate-900">{currentStep?.title || (total === 0 ? 'No steps yet' : 'Finished')}</span>
+        <span className="text-sm text-text-muted">Current step</span>
+        <span className="text-text">{currentStep?.title || (total === 0 ?'No steps yet' :'Finished')}</span>
       </div>
 
       <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-sm text-slate-600">
+        <div className="flex justify-between text-sm text-text-muted">
           <span>
             {completed} of {total} steps
           </span>
           <span>{percent}%</span>
         </div>
-        <div role="progressbar" aria-label={`${experiment.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+        <div role="progressbar" aria-label={`${experiment.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
           <div className="h-2 rounded-full bg-accent transition-[width]" style={{ width: `${percent}%` }} />
         </div>
       </div>
@@ -197,8 +197,8 @@ function ActiveCard({ entry }: { entry: WorkspaceEntry }) {
       {runningTimers.length > 0 && (
         <ul className="flex flex-col gap-1">
           {runningTimers.map((timer) => (
-            <li key={timer.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
-              <span className="truncate text-slate-700">{timer.label}</span>
+            <li key={timer.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+              <span className="truncate text-text-muted">{timer.label}</span>
               <LiveCountdown timer={timer} />
             </li>
           ))}
@@ -219,7 +219,7 @@ function LiveCountdown({ timer }: { timer: Timer }) {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
-  return <span className="font-semibold tabular-nums text-slate-900">{formatRemaining(remainingSec(timer, now))}</span>;
+  return <span className="font-semibold tabular-nums text-text">{formatRemaining(remainingSec(timer, now))}</span>;
 }
 
 /** Start from a protocol in the library, or from a blank experiment. */
@@ -241,9 +241,9 @@ function TemplatePicker({ onDone }: { onDone: () => void }) {
 
   return (
     <section aria-label="Start an experiment" className={CARD}>
-      <h2 className="text-lg font-semibold text-slate-900">Start from a protocol</h2>
+      <h2 className="text-lg font-semibold text-text">Start from a protocol</h2>
 
-      {templates === undefined && <p className="text-slate-500">Loading protocols…</p>}
+      {templates === undefined && <p className="text-text-muted">Loading protocols…</p>}
 
       {templates?.length === 0 && (
         <EmptyState title="Your library is empty" primary={{ label: 'Draft a protocol', to: '/library/new' }}>
@@ -256,10 +256,10 @@ function TemplatePicker({ onDone }: { onDone: () => void }) {
       ) : (
         <ul className="flex flex-col gap-2">
           {templates?.map((t) => (
-            <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3">
+            <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3">
               <div className="flex flex-col">
-                <span className="font-medium text-slate-900">{t.title}</span>
-                <span className="text-sm text-slate-600">{t.category}</span>
+                <span className="font-medium text-text">{t.title}</span>
+                <span className="text-sm text-text-muted">{t.category}</span>
               </div>
               <button type="button" className={BUTTON_PRIMARY} onClick={() => setChosen(t)}>
                 Start
@@ -298,7 +298,7 @@ function FolderForm({ onDone }: { onDone: () => void }) {
       }}
     >
       <label className="flex flex-1 flex-col gap-1">
-        <span className="text-sm font-medium text-slate-700">Folder name</span>
+        <span className="text-sm font-medium text-text-muted">Folder name</span>
         <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       </label>
       <div className="flex gap-2 sm:items-end">
@@ -351,7 +351,7 @@ function FolderSection({ folder, items }: { folder: Folder; items: ExperimentSum
           </form>
         ) : (
           <>
-            <h3 className="text-lg font-semibold text-slate-900">{folder.name}</h3>
+            <h3 className="text-lg font-semibold text-text">{folder.name}</h3>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -378,32 +378,32 @@ function FolderSection({ folder, items }: { folder: Folder; items: ExperimentSum
 function Section({ title, items }: { title: string; items: ExperimentSummary[] }) {
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+      <h3 className="text-lg font-semibold text-text">{title}</h3>
       <Cards items={items} emptyText="Every experiment is in a folder." />
     </section>
   );
 }
 
 function Cards({ items, emptyText }: { items: ExperimentSummary[]; emptyText: string }) {
-  if (items.length === 0) return <p className="text-sm text-slate-500">{emptyText}</p>;
+  if (items.length === 0) return <p className="text-sm text-text-muted">{emptyText}</p>;
   return (
     <ul className="grid gap-3 sm:grid-cols-2">
       {items.map(({ experiment, lastStepTitle }) => (
         <li key={experiment.id} className="flex items-stretch gap-2">
           <Link
             to={`/experiment/${experiment.id}`}
-            className="flex min-h-12 flex-1 flex-col gap-2 rounded-xl border border-slate-300 bg-white p-4 active:bg-slate-50"
+            className="flex min-h-12 flex-1 flex-col gap-2 rounded-xl border border-border bg-surface shadow-card p-4 active:bg-surface-2"
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="text-lg font-medium text-slate-900">{experiment.name}</span>
+              <span className="text-lg font-medium text-text">{experiment.name}</span>
               <span className={`shrink-0 rounded-full px-3 py-1 text-sm ${STATUS_CLASS[experiment.status]}`}>
                 {STATUS_LABEL[experiment.status]}
               </span>
             </div>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-text-muted">
               Started {formatDate(experiment.startedAt)} · Ended {formatDate(experiment.endedAt)}
             </span>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-text-muted">
               {lastStepTitle ? `Last step: ${lastStepTitle}` : 'No steps yet'}
             </span>
           </Link>

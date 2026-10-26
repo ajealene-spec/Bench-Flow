@@ -4,7 +4,7 @@ import { startExperimentFromTemplate } from '../../db/helpers';
 import type { ProtocolTemplate } from '../../types';
 
 const INPUT =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 font-medium';
 
 /** Asks for a run title, then starts an experiment from the template and opens its run page. */
@@ -28,7 +28,7 @@ export function StartExperimentForm({ template, onDone }: { template: ProtocolTe
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-xl border border-slate-300 p-4 dark:border-slate-700"
+      className="flex flex-col gap-3 rounded-xl border border-border p-4"
       onSubmit={(e) => {
         e.preventDefault();
         void start();
@@ -47,7 +47,7 @@ export function StartExperimentForm({ template, onDone }: { template: ProtocolTe
           type="button"
           onClick={onDone}
           disabled={busy}
-          className={`${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`}
+          className={`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`}
         >
           Cancel
         </button>

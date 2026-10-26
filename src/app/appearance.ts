@@ -19,4 +19,25 @@ export function applyAppearance(
   root.classList.toggle('dark', resolved === 'dark');
   root.style.colorScheme = resolved;
   root.classList.toggle('font-dyslexia', settings.dyslexiaFont);
+  // Mirror the choice so index.html can apply it before the first paint (no flash of the wrong theme).
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, settings.theme);
+  } catch {
+    // Storage can be blocked (private windows). The page still works without the mirror.
+  }
+}
+
+/** localStorage key for the theme mirror. index.html reads it before React loads. */
+export const THEME_STORAGE_KEY = 'lab-companion-theme';
+
+/**
+ * Calls onChange when the operating system switches between light and dark. Returns an unsubscribe
+ * function. Used so a "system" theme follows the OS while the app is open.
+ */
+export function watchSystemTheme(onChange: (prefersDark: boolean) => void): () => void {
+  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+  const query = window.matchMedia('(prefers-color-scheme: dark)');
+  const handler = (event: MediaQueryListEvent) => onChange(event.matches);
+  query.addEventListener('change', handler);
+  return () => query.removeEventListener('change', handler);
 }

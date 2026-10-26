@@ -56,18 +56,18 @@ export function ExperimentReagentsPanel({
   }
 
   return (
-    <section aria-label="Reagents used in this run" className="flex flex-col gap-4 rounded-2xl border border-slate-300 p-4 dark:border-slate-700">
+    <section aria-label="Reagents used in this run" className="flex flex-col gap-4 rounded-2xl border border-border p-4">
       <h2 className="text-lg font-semibold">Reagents and lots used</h2>
 
       {linked.length === 0 ? (
-        <p className="text-base text-slate-600 dark:text-slate-400">No inventory items linked to this run yet.</p>
+        <p className="text-base text-text-muted">No inventory items linked to this run yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {linked.map((item) => (
-            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-base font-medium">{item.name}</span>
-                {item.lotNumber && <span className="text-sm text-slate-600 dark:text-slate-400">Lot {item.lotNumber}</span>}
+                {item.lotNumber && <span className="text-sm text-text-muted">Lot {item.lotNumber}</span>}
                 <ExpiryBadge item={item} today={today} />
               </div>
               <button type="button" className={BUTTON_LINK} onClick={() => handleUnlink(item.id)}>
@@ -133,7 +133,7 @@ export function ExperimentReagentsPanel({
             </li>
           ))}
           {expiringSoon.map((item) => (
-            <li key={`soon-${item.id}`} className="text-slate-400 dark:text-slate-400">
+            <li key={`soon-${item.id}`} className="text-text-muted">
               {item.name} expires on {item.expiresOn}.
             </li>
           ))}
@@ -147,8 +147,8 @@ export function ExperimentReagentsPanel({
               key={`${w.code}-${index}`}
               className={
                 w.severity === 'warning'
-                  ? 'rounded-xl bg-slate-100 p-3 text-slate-900 dark:bg-slate-900 dark:text-slate-100'
-                  : 'rounded-xl bg-slate-100 p-3 text-accent-hover dark:bg-accent-hover dark:text-slate-100'
+                  ?'rounded-xl bg-surface-2 p-3 text-text'
+                  :'rounded-xl bg-surface-2 p-3 text-accent-text'
               }
             >
               <span className="font-semibold">{w.severity === 'warning' ? 'Warning: ' : 'Suggestion: '}</span>

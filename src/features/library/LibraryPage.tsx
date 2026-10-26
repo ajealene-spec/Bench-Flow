@@ -7,18 +7,21 @@ import type { ProtocolTemplate } from '../../types';
 import { formatDate } from '../../app/format';
 import { StartExperimentForm } from './StartExperimentForm';
 import { EmptyState } from '../../app/EmptyState';
+import { useStarterLoader } from './StarterLoader';
+import { ImportBenchflowButton } from '../share/ImportBenchflowButton';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
-const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
+const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
 const INPUT =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 
 export default function LibraryPage() {
   const templates = useLiveQuery(() => listTemplates(db), []);
   const [category, setCategory] = useState('');
+  const starter = useStarterLoader();
 
-  if (templates === undefined) return <main className="p-6 text-slate-500">Loading library…</main>;
+  if (templates === undefined) return <main className="p-6 text-text-muted">Loading library…</main>;
 
   const categories = [...new Set(templates.map((t) => t.category))];
   // A filter for a category that no longer exists (its last template was deleted) shows everything.
@@ -32,19 +35,33 @@ export default function LibraryPage() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:max-w-5xl">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col">
-          <span className="text-sm text-slate-500 dark:text-slate-400">Lab Companion</span>
+          <span className="text-sm text-text-muted">Lab Companion</span>
           <h1 className="text-2xl font-semibold">Protocol Library</h1>
         </div>
-        <Link to="/library/new" className={BUTTON_PRIMARY}>
-          New protocol
-        </Link>
+        <div className="flex flex-wrap items-start gap-2">
+          <ImportBenchflowButton />
+          <Link to="/library/new" className={BUTTON_PRIMARY}>
+            New protocol
+          </Link>
+        </div>
       </header>
 
       {templates.length === 0 ? (
-        <EmptyState title="No protocols yet" primary={{ label: 'New protocol', to: '/library/new' }} secondary={{ label: 'Go to Home', to: '/' }}>
-          A protocol is a reusable, step-by-step procedure. Paste the text of a manual or your notes, or upload a PDF, and it becomes steps
-          with timers, reagents and cautions.
-        </EmptyState>
+        <>
+          <EmptyState
+            title="No protocols yet"
+            primary={{ label: starter.busy ? 'Loading…' : 'Load starter protocols', onClick: () => void starter.load() }}
+            secondary={{ label: 'New protocol', to: '/library/new' }}
+          >
+            A protocol is a reusable, step-by-step procedure. Load the starter set for 15 common lab protocols and an example run, or paste
+            the text of a manual or your notes, or upload a PDF, and it becomes steps with timers, reagents and cautions.
+          </EmptyState>
+          {starter.message && (
+            <p role="status" className="text-slate-700 dark:text-slate-300">
+              {starter.message}
+            </p>
+          )}
+        </>
       ) : (
         <>
           <label className="flex flex-col gap-1 sm:max-w-xs">
@@ -86,10 +103,10 @@ function TemplateCard({ template }: { template: ProtocolTemplate }) {
   }
 
   return (
-    <li className="flex flex-col gap-3 rounded-xl border border-slate-300 p-4 dark:border-slate-700">
+    <li className="flex flex-col gap-3 rounded-xl border border-border p-4">
       <div className="flex flex-col gap-1">
         <h3 className="text-lg font-medium">{template.title}</h3>
-        <span className="text-sm text-slate-600 dark:text-slate-400">
+        <span className="text-sm text-text-muted">
           {template.steps.length} step{template.steps.length === 1 ? '' : 's'} · Updated {formatDate(template.updatedAt)}
         </span>
       </div>

@@ -24,3 +24,17 @@ describe('applyAppearance', () => {
     expect(root.style.colorScheme).toBe('light');
   });
 });
+
+describe('resolveTheme with system changes', () => {
+  it('follows the OS for "system" and ignores it for explicit choices', () => {
+    const cases: Array<[string, boolean, 'light' | 'dark']> = [
+      ['system', true, 'dark'],
+      ['system', false, 'light'],
+      ['light', true, 'light'],
+      ['dark', false, 'dark'],
+    ];
+    for (const [theme, prefersDark, expected] of cases) {
+      expect(resolveTheme(theme as 'system' | 'light' | 'dark', prefersDark)).toBe(expected);
+    }
+  });
+});

@@ -3,37 +3,111 @@
 /* The dark: variant applies under a .dark class on the root element, which applyAppearance() sets from Settings. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  /* Tulane Green. Use only for primary calls to action, active navigation and progress bars. */
-  --color-accent: #006747;
-  --color-accent-hover: #004f36;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
+/*
+ * Theme tokens. Values live on :root (light) and :root.dark (dark). Components use the token
+ * utilities below (bg-surface, text-text, border-border, ...) so both themes follow one set of colors.
+ * src/app/themeTokens.test.ts reads this file and checks the WCAG AA contrast of each pair.
+ */
 :root {
+  --page: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --text: #111827;
+  --text-muted: #4B5563;
+  --border: #E5E7EB;
+  --border-strong: #6B7280;
+  --accent: #006747;
+  --accent-hover: #004f36;
+  --accent-text: #006747;
+  --on-accent: #FFFFFF;
+  --focus: #1D4ED8;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   color-scheme: light;
 }
 
 :root.dark {
+  --page: #121212;
+  --surface: #1E1E1E;
+  --surface-2: #2A2A2A;
+  --text: #FFFFFF;
+  --text-muted: #B3B3B3;
+  --border: #2A2A2A;
+  --border-strong: #8A8A8A;
+  --accent: #006747;
+  --accent-hover: #004f36;
+  --accent-text: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --focus: #FFFFFF;
+  --card-shadow: none;
   color-scheme: dark;
 }
 
+@theme {
+  /* Accent is #006747 in both themes; text on it is white. */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-page: var(--page);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --shadow-card: var(--card-shadow);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-focus: var(--focus);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 body {
-  background: #fafafa;
-  color: #111827;
+  background: var(--page);
+  color: var(--text);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 
-/* User preferences set by applyAppearance() on the root element (Settings page). */
-html.dark body {
-  background: #0f1115;
-  color: #e5e7eb;
-}
-
+/* Dyslexia-friendly reading font. The font files come from @fontsource (see main.tsx), so it works offline. */
 html.font-dyslexia {
-  --font-sans: Verdana, "Trebuchet MS", Arial, sans-serif;
+  --font-sans: "Atkinson Hyperlegible", Verdana, "Trebuchet MS", Arial, sans-serif;
   letter-spacing: 0.03em;
   word-spacing: 0.08em;
   line-height: 1.6;
+}
+
+/* Visible keyboard focus everywhere, in both themes. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Skip link: hidden until it receives keyboard focus. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+/* Respect the OS "reduce motion" setting: no long transitions or looping animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

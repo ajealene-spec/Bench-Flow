@@ -6,13 +6,13 @@ import type { MaterialItem, MaterialKind, ProtocolOverview, ProtocolPhase, Step 
  * used for editing (template) and for bench checks (experiment). Cards are bordered, not filled.
  */
 
-const CARD = 'flex flex-col gap-4 rounded-xl border border-slate-300 bg-white p-4 sm:p-5';
-const INPUT = 'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900';
-const TEXTAREA = 'min-h-24 w-full rounded-xl border border-slate-300 bg-white p-3 text-base text-slate-900';
+const CARD ='flex flex-col gap-4 rounded-xl border border-border bg-surface shadow-card p-4 sm:p-5';
+const INPUT ='min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
+const TEXTAREA ='min-h-24 w-full rounded-xl border border-border bg-surface shadow-card p-3 text-base text-text';
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
-const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100`;
-const HEADING = 'text-lg font-semibold text-slate-900';
-const LABEL = 'text-sm font-medium text-slate-700';
+const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
+const HEADING ='text-lg font-semibold text-text';
+const LABEL ='text-sm font-medium text-text-muted';
 
 export const EMPTY_OVERVIEW: ProtocolOverview = { objective: '', totalTime: '', outputs: '' };
 
@@ -95,22 +95,22 @@ export function MaterialsCard({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className={HEADING}>Materials &amp; equipment</h2>
         {checkMode && (
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-text-muted">
             {readyCount} of {materials.length} ready
           </span>
         )}
       </div>
 
       {checkMode && (
-        <div role="progressbar" aria-label="Bench readiness" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+        <div role="progressbar" aria-label="Bench readiness" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
           <div className="h-2 rounded-full bg-accent transition-[width]" style={{ width: `${percent}%` }} />
         </div>
       )}
 
       {materials.length === 0 ? (
-        <p className="text-sm text-slate-600">No materials listed yet.</p>
+        <p className="text-sm text-text-muted">No materials listed yet.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200">
+        <ul className="flex flex-col divide-y divide-border rounded-xl border border-border">
           {materials.map((m) => (
             <li key={m.id} className="flex min-h-12 items-center gap-3 px-3">
               {checkMode ? (
@@ -121,13 +121,13 @@ export function MaterialsCard({
                     checked={checked.includes(m.id)}
                     onChange={(e) => onToggle?.(m.id, e.target.checked)}
                   />
-                  <span className={`flex-1 ${checked.includes(m.id) ? 'text-slate-500 line-through' : 'text-slate-900'}`}>{m.name}</span>
-                  <span className="text-sm text-slate-600">{KIND_LABEL[m.kind]}</span>
+                  <span className={`flex-1 ${checked.includes(m.id) ?'text-text-muted line-through' :'text-text'}`}>{m.name}</span>
+                  <span className="text-sm text-text-muted">{KIND_LABEL[m.kind]}</span>
                 </label>
               ) : (
                 <>
-                  <span className="flex-1 py-2 text-slate-900">{m.name}</span>
-                  <span className="text-sm text-slate-600">{KIND_LABEL[m.kind]}</span>
+                  <span className="flex-1 py-2 text-text">{m.name}</span>
+                  <span className="text-sm text-text-muted">{KIND_LABEL[m.kind]}</span>
                   <button
                     type="button"
                     className={BUTTON_SECONDARY}
@@ -223,13 +223,13 @@ export function TimelineCard({
     <section aria-label="Timeline" className={CARD}>
       <h2 className={HEADING}>Timeline</h2>
       {phases.length === 0 && (
-        <p className="text-sm text-slate-600">No phases yet. Add phases such as Day 1 or Transfer to group the steps.</p>
+        <p className="text-sm text-text-muted">No phases yet. Add phases such as Day 1 or Transfer to group the steps.</p>
       )}
 
       {phases.map((phase) => {
         const inPhase = steps.map((s, i) => ({ step: s, index: i })).filter(({ step }) => step.phaseId === phase.id);
         return (
-          <div key={phase.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
+          <div key={phase.id} className="flex flex-col gap-2 rounded-xl border border-border p-3">
             <div className="flex flex-wrap items-center gap-2">
               <PhaseNameField name={phase.name} onCommit={(name) => renamePhase(phase.id, name)} />
               <button type="button" className={BUTTON_SECONDARY} onClick={() => removePhase(phase.id)}>
@@ -243,7 +243,7 @@ export function TimelineCard({
 
       {unassigned.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-600">{phases.length > 0 ? 'Not in a phase' : 'Steps'}</span>
+          <span className="text-sm font-medium text-text-muted">{phases.length > 0 ?'Not in a phase' :'Steps'}</span>
           <StepList items={unassigned} phases={phases} onAssign={assign} />
         </div>
       )}
@@ -297,18 +297,18 @@ function StepList({
   phases: ProtocolPhase[];
   onAssign: (stepId: string, phaseId: string) => void;
 }) {
-  if (items.length === 0) return <p className="text-sm text-slate-600">No steps in this phase yet.</p>;
+  if (items.length === 0) return <p className="text-sm text-text-muted">No steps in this phase yet.</p>;
   return (
     <ol className="flex flex-col gap-2">
       {items.map(({ step, index }) => (
-        <li key={step.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-          <span className="min-w-0 flex-1 text-slate-900">
+        <li key={step.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2">
+          <span className="min-w-0 flex-1 text-text">
             {index + 1}. {step.title || 'Untitled step'}
           </span>
           <label className="flex items-center gap-2">
             <span className="sr-only">Phase for step {index + 1}</span>
             <select
-              className="min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900"
+              className="min-h-12 rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text"
               value={step.phaseId && phases.some((p) => p.id === step.phaseId) ? step.phaseId : ''}
               onChange={(e) => onAssign(step.id, e.target.value)}
             >

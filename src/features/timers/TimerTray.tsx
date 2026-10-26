@@ -4,13 +4,7 @@ import { db } from '../../db';
 import { listActiveTimers } from '../../db/helpers';
 import { alertTimerDone } from './alarm';
 import { formatRemaining, isExpired, remainingSec } from './timeMath';
-import {
-  dismissStepTimer,
-  finishIfExpired,
-  pauseStepTimer,
-  resetStepTimer,
-  resumeStepTimer,
-} from './timerActions';
+import { dismissStepTimer, finishIfExpired, pauseStepTimer, resetStepTimer, resumeStepTimer } from './timerActions';
 
 const BUTTON = 'min-h-12 rounded-lg px-4 font-medium active:opacity-80';
 
@@ -22,6 +16,8 @@ export function TimerTray() {
   const timers = useLiveQuery(() => listActiveTimers(db), [], []);
   const [now, setNow] = useState(() => Date.now());
   const alerted = useRef(new Set<string>());
+  /** Text for the polite-to-assertive live region, so screen readers hear each finished timer once. */
+  const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -39,7 +35,10 @@ export function TimerTray() {
       if (alerted.current.has(timer.id)) continue;
       alerted.current.add(timer.id);
       void finishIfExpired(timer.id).then((finished) => {
-        if (finished) alertTimerDone(finished);
+        if (finished) {
+          alertTimerDone(finished);
+          setAnnouncement(`${finished.label} timer done`);
+        }
       });
     }
   }, [timers, now]);
@@ -49,20 +48,18 @@ export function TimerTray() {
   return (
     <section
       aria-label="Running timers"
-      className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-slate-100 p-3 dark:border-accent dark:bg-accent-hover/50"
+      className="flex flex-col gap-2 rounded-xl border border-border bg-surface-2 p-3 dark:border-accent"
     >
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-hover dark:text-slate-300">
-        Timers ({timers.length})
-      </h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-text">Timers ({timers.length})</h2>
+      <p role="status" aria-live="assertive" className="sr-only">
+        {announcement}
+      </p>
       <ul className="flex flex-col gap-2">
         {timers.map((timer) => {
           const left = remainingSec(timer, now);
           const done = timer.status === 'done' || left <= 0;
           return (
-            <li
-              key={timer.id}
-              className="flex flex-wrap items-center gap-2 rounded-lg bg-white p-2 dark:bg-slate-900"
-            >
+            <li key={timer.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-surface p-2">
               <span className="min-w-32 flex-1 font-medium">{timer.label}</span>
               <span
                 className={`min-w-20 text-right font-mono text-2xl tabular-nums ${
@@ -74,19 +71,35 @@ export function TimerTray() {
               </span>
               <div className="flex flex-wrap gap-2">
                 {timer.status === 'running' && (
-                  <button type="button" className={`${BUTTON} bg-slate-100 text-slate-900 dark:bg-slate-400 dark:text-slate-100`} onClick={() => void pauseStepTimer(timer.id)}>
+                  <button
+                    type="button"
+                    className={`${BUTTON} bg-surface-2 text-text`}
+                    onClick={() => void pauseStepTimer(timer.id)}
+                  >
                     Pause
                   </button>
                 )}
                 {timer.status === 'paused' && (
-                  <button type="button" className={`${BUTTON} bg-accent text-white`} onClick={() => void resumeStepTimer(timer.id)}>
+                  <button
+                    type="button"
+                    className={`${BUTTON} bg-accent text-on-accent`}
+                    onClick={() => void resumeStepTimer(timer.id)}
+                  >
                     Resume
                   </button>
                 )}
-                <button type="button" className={`${BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100`} onClick={() => void resetStepTimer(timer.id)}>
+                <button
+                  type="button"
+                  className={`${BUTTON} bg-surface-2 text-text`}
+                  onClick={() => void resetStepTimer(timer.id)}
+                >
                   Reset
                 </button>
-                <button type="button" className={`${BUTTON} text-slate-700 underline dark:text-slate-300`} onClick={() => void dismissStepTimer(timer.id)}>
+                <button
+                  type="button"
+                  className={`${BUTTON} text-text-muted underline`}
+                  onClick={() => void dismissStepTimer(timer.id)}
+                >
                   Dismiss
                 </button>
               </div>

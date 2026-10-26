@@ -8,7 +8,7 @@ import { dismissLiteratureFor, optOutOfLiterature, shouldOfferLiterature } from 
 import { stepLines } from './runSummary';
 
 const BUTTON =
-  'inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 font-medium text-slate-900 active:bg-slate-100 disabled:opacity-50';
+'inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-surface shadow-card px-4 font-medium text-text active:bg-surface-2 disabled:opacity-50';
 
 type Phase = 'hidden' | 'ask' | 'loading' | 'results' | 'error';
 
@@ -70,7 +70,7 @@ export function LiteraturePrompt({
   if (phase === 'hidden') return null;
 
   return (
-    <section aria-labelledby="literature-heading" className="flex flex-col gap-4 rounded-2xl border border-slate-300 bg-slate-100 p-4">
+    <section aria-labelledby="literature-heading" className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-2 p-4">
       <h2 id="literature-heading" className="text-xl font-semibold">
         Check recent literature for optimizations?
       </h2>
@@ -103,11 +103,11 @@ export function LiteraturePrompt({
         </div>
       )}
 
-      {phase === 'loading' && <p className="text-base text-slate-700">Searching recent sources…</p>}
+      {phase ==='loading' && <p className="text-base text-text-muted">Searching recent sources…</p>}
 
       {phase === 'error' && (
         <div className="flex flex-col gap-3">
-          <p role="alert" className="text-base text-slate-800">
+          <p role="alert" className="text-base text-text">
             {error}
           </p>
           <div>
@@ -120,25 +120,25 @@ export function LiteraturePrompt({
 
       {phase === 'results' && result && (
         <div className="flex flex-col gap-3">
-          {result.summary && <p className="text-base text-slate-800">{result.summary}</p>}
+          {result.summary && <p className="text-base text-text">{result.summary}</p>}
           {result.suggestions.length === 0 && (
-            <p className="text-base text-slate-800">No credible recent sources suggested a change.</p>
+            <p className="text-base text-text">No credible recent sources suggested a change.</p>
           )}
           {result.suggestions.map((s, i) => {
             const isAdded = added.includes(i);
             return (
-              <article key={`${s.title}-${i}`} className="rounded-xl border border-slate-200 bg-white p-4">
+              <article key={`${s.title}-${i}`} className="rounded-xl border border-border bg-surface shadow-card p-4">
                 <h3 className="text-lg font-semibold">{s.title}</h3>
                 <p className="mt-1 text-base">
                   <span className="font-medium">Change:</span> {s.change}
                 </p>
-                <p className="mt-1 text-base text-slate-700">
+                <p className="mt-1 text-base text-text-muted">
                   <span className="font-medium">Why:</span> {s.rationale}
                 </p>
                 <ul className="mt-2 list-disc space-y-1 pl-6 text-base">
                   {s.citations.map((c) => (
                     <li key={c.url}>
-                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">
+                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-accent-text underline">
                         {c.title}
                       </a>
                     </li>
@@ -160,7 +160,7 @@ export function LiteraturePrompt({
               </article>
             );
           })}
-          <p className="text-sm text-slate-600">Suggestions are not applied to the steps. Adding one only saves a note.</p>
+          <p className="text-sm text-text-muted">Suggestions are not applied to the steps. Adding one only saves a note.</p>
           <div>
             <button type="button" className={BUTTON} onClick={() => setPhase('hidden')}>
               Close

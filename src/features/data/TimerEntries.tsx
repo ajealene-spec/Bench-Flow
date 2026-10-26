@@ -79,7 +79,7 @@ export function TimerEntries({ experimentId, stepId }: { experimentId: string; s
           )}
         </div>
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600 dark:text-slate-400">Stopwatch label</span>
+          <span className="text-sm text-text-muted">Stopwatch label</span>
           <input className={FIELD_INPUT} value={label} onChange={(e) => setLabel(e.target.value)} />
         </label>
       </div>

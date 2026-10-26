@@ -15,6 +15,7 @@ import {
 import { listActiveTimers } from '../../db/helpers';
 import { StepNote } from './StepNote';
 import { StepText } from '../assist/StepText';
+import { StepAids } from '../learn/StepAids';
 
 /** Full-width navigation buttons: at least 72px tall for gloved hands. */
 const NAV_BUTTON = 'min-h-[72px] w-full rounded-2xl px-5 text-xl font-semibold active:opacity-80 disabled:opacity-40';
@@ -41,12 +42,13 @@ export interface FocusModeProps {
  * here, and a finished timer rings until it is dismissed.
  */
 export function FocusMode(props: FocusModeProps) {
-  const { experimentId, step, index, total, isCompleted, hazards, isLast, done, onBack, onNext, onComplete, onSkip } = props;
+  const { experimentId, step, index, total, isCompleted, hazards, isLast, done, onBack, onNext, onComplete, onSkip } =
+    props;
 
   return (
     <section aria-label="Focus mode" className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">
+        <p className="text-xl font-semibold text-text-muted">
           Step {index + 1} of {total}
           {isCompleted ? ' · Completed' : ''}
         </p>
@@ -56,7 +58,7 @@ export function FocusMode(props: FocusModeProps) {
       {hazards.length > 0 && (
         <ul aria-label="Hazards for this step" className="flex flex-wrap gap-2">
           {hazards.map((h) => (
-            <li key={h.id} className="rounded-full bg-slate-100 px-3 py-1 text-lg font-semibold text-slate-900 dark:bg-slate-400 dark:text-slate-100">
+            <li key={h.id} className="rounded-full bg-surface-2 px-3 py-1 text-lg font-semibold text-text">
               ⚠ {h.name}
             </li>
           ))}
@@ -64,9 +66,13 @@ export function FocusMode(props: FocusModeProps) {
       )}
 
       <StepText step={step} experimentId={experimentId} textClassName="text-2xl leading-relaxed" />
+      <StepAids step={step} />
 
       {step.cautions.length > 0 && (
-        <section aria-label="Cautions" className="flex flex-col gap-2 rounded-xl border-2 border-slate-400 bg-slate-100 p-4 dark:bg-slate-900/60">
+        <section
+          aria-label="Cautions"
+          className="flex flex-col gap-2 rounded-xl border-2 border-border bg-surface-2 p-4"
+        >
           <h2 className="text-lg font-bold uppercase tracking-wide">Caution</h2>
           <ul className="list-disc pl-6 text-xl font-medium">
             {step.cautions.map((c) => (
@@ -84,17 +90,27 @@ export function FocusMode(props: FocusModeProps) {
 
       <nav aria-label="Step navigation" className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" className={`${NAV_BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100`} disabled={index === 0} onClick={onBack}>
+          <button
+            type="button"
+            className={`${NAV_BUTTON} bg-surface-2 text-text`}
+            disabled={index === 0}
+            onClick={onBack}
+          >
             Back
           </button>
-          <button type="button" className={`${NAV_BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100`} disabled={isLast} onClick={onNext}>
+          <button type="button" className={`${NAV_BUTTON} bg-surface-2 text-text`} disabled={isLast} onClick={onNext}>
             Next
           </button>
         </div>
-        <button type="button" className={`${NAV_BUTTON} bg-accent text-white dark:text-slate-950`} onClick={onComplete}>
+        <button type="button" className={`${NAV_BUTTON} bg-accent text-on-accent`} onClick={onComplete}>
           {isLast ? (done ? 'Run finished' : 'Mark complete and finish') : 'Mark complete'}
         </button>
-        <button type="button" className="min-h-14 w-full rounded-2xl px-5 text-lg font-medium underline" disabled={isLast} onClick={onSkip}>
+        <button
+          type="button"
+          className="min-h-14 w-full rounded-2xl px-5 text-lg font-medium underline"
+          disabled={isLast}
+          onClick={onSkip}
+        >
           Skip this step (logged as a deviation)
         </button>
       </nav>
@@ -130,10 +146,10 @@ function FocusTimerStarts({ timers, experimentId }: { timers: Timer[]; experimen
     return (
       <section aria-label="Timer starting" className="flex flex-col gap-3 rounded-2xl border-2 border-accent p-5">
         <p className="text-2xl font-semibold">Starting {pending.label} in</p>
-        <p className="text-7xl font-bold tabular-nums text-accent-hover dark:text-slate-100" role="status" aria-live="polite">
+        <p className="text-7xl font-bold tabular-nums text-accent-text" role="status" aria-live="polite">
           {Math.max(count, 0)}…
         </p>
-        <button type="button" className={`${TIMER_BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100`} onClick={() => setPending(null)}>
+        <button type="button" className={`${TIMER_BUTTON} bg-surface-2 text-text`} onClick={() => setPending(null)}>
           Cancel
         </button>
       </section>
@@ -147,7 +163,7 @@ function FocusTimerStarts({ timers, experimentId }: { timers: Timer[]; experimen
           key={timer.id}
           type="button"
           onClick={() => begin(timer)}
-          className="min-h-20 w-full rounded-2xl border-2 border-accent px-5 text-left text-2xl font-semibold text-accent-hover active:bg-slate-100 dark:border-slate-300 dark:text-slate-300"
+          className="min-h-20 w-full rounded-2xl border-2 border-accent px-5 text-left text-2xl font-semibold text-accent-text active:bg-surface-2"
         >
           Start timer: {timer.label} ({formatRemaining(timer.durationSec)})
         </button>
@@ -191,11 +207,16 @@ function FocusTimerTray({ experimentId }: { experimentId: string }) {
   return (
     <section aria-label="Running timers" className="flex flex-col gap-3">
       {ringing.map((timer) => (
-        <div key={`ring-${timer.id}`} role="alertdialog" aria-label={`${timer.label} timer done`} className="flex flex-col gap-3 rounded-2xl border-4 border-slate-900 bg-slate-100 p-5 dark:border-slate-100 dark:bg-slate-900">
+        <div
+          key={`ring-${timer.id}`}
+          role="alertdialog"
+          aria-label={`${timer.label} timer done`}
+          className="flex flex-col gap-3 rounded-2xl border-4 border-border bg-surface-2 p-5"
+        >
           <p className="text-3xl font-bold">Timer done: {timer.label}</p>
           <button
             type="button"
-            className={`${TIMER_BUTTON} min-h-[72px] w-full bg-accent text-white`}
+            className={`${TIMER_BUTTON} min-h-[72px] w-full bg-accent text-on-accent`}
             onClick={async () => {
               await finishIfExpired(timer.id);
               await dismissStepTimer(timer.id);
@@ -211,7 +232,7 @@ function FocusTimerTray({ experimentId }: { experimentId: string }) {
         .map((timer) => {
           const left = remainingSec(timer, now);
           return (
-            <div key={timer.id} className="flex flex-col gap-3 rounded-2xl border border-slate-300 p-4 dark:border-slate-700">
+            <div key={timer.id} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-xl font-semibold">{timer.label}</span>
                 <span className="font-mono text-6xl font-bold tabular-nums sm:text-7xl" aria-live="off">
@@ -220,18 +241,34 @@ function FocusTimerTray({ experimentId }: { experimentId: string }) {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {timer.status === 'running' ? (
-                  <button type="button" className={`${TIMER_BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100`} onClick={() => void pauseStepTimer(timer.id)}>
+                  <button
+                    type="button"
+                    className={`${TIMER_BUTTON} bg-surface-2 text-text`}
+                    onClick={() => void pauseStepTimer(timer.id)}
+                  >
                     Pause
                   </button>
                 ) : (
-                  <button type="button" className={`${TIMER_BUTTON} bg-accent text-white`} onClick={() => void resumeStepTimer(timer.id)}>
+                  <button
+                    type="button"
+                    className={`${TIMER_BUTTON} bg-accent text-on-accent`}
+                    onClick={() => void resumeStepTimer(timer.id)}
+                  >
                     Resume
                   </button>
                 )}
-                <button type="button" className={`${TIMER_BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100`} onClick={() => void resetStepTimer(timer.id)}>
+                <button
+                  type="button"
+                  className={`${TIMER_BUTTON} bg-surface-2 text-text`}
+                  onClick={() => void resetStepTimer(timer.id)}
+                >
                   Reset
                 </button>
-                <button type="button" className={`${TIMER_BUTTON} underline`} onClick={() => void dismissStepTimer(timer.id)}>
+                <button
+                  type="button"
+                  className={`${TIMER_BUTTON} underline`}
+                  onClick={() => void dismissStepTimer(timer.id)}
+                >
                   Dismiss
                 </button>
               </div>
@@ -241,4 +278,3 @@ function FocusTimerTray({ experimentId }: { experimentId: string }) {
     </section>
   );
 }
-

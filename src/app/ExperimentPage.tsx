@@ -17,15 +17,16 @@ import type { Experiment, ExperimentStatus, Procedure } from '../types';
 import { EMPTY_OVERVIEW, MaterialsCard, OverviewCard, TimelineCard } from '../features/plan/PlanCards';
 import { formatDate } from './format';
 import { RecordedDataSummary } from '../features/data/RecordedDataSummary';
+import { ExperimentCapture } from '../features/data/ExperimentCapture';
 import { ExperimentReagentsPanel } from '../features/inventory/ExperimentReagentsPanel';
 import { TroubleshootPanel } from '../features/assist/TroubleshootPanel';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
-const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
-const BUTTON_DANGER = `${BUTTON} border border-rose-300 bg-white text-rose-800 active:bg-rose-50 dark:border-rose-700 dark:bg-slate-800 dark:text-rose-200`;
+const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
+const BUTTON_DANGER =`${BUTTON} border border-rose-300 bg-surface shadow-card text-rose-800 active:bg-rose-50 dark:border-rose-700  dark:text-rose-200`;
 const INPUT =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = {
   draft: 'Draft',
@@ -41,7 +42,7 @@ export default function ExperimentPage() {
   const procedure = useLiveQuery(() => getProcedureForExperiment(id, db), [id]);
 
   if (loaded === undefined) {
-    return <main className="p-6 text-slate-600 dark:text-slate-400">Loading…</main>;
+    return <main className="p-6 text-text-muted">Loading…</main>;
   }
   const experiment = loaded.experiment;
   if (!experiment) {
@@ -59,7 +60,7 @@ export default function ExperimentPage() {
 
       <header className="flex flex-col gap-2">
         <NameField key={experiment.id} experimentId={experiment.id} initial={experiment.name} />
-        <span className="text-base text-slate-600 dark:text-slate-400">
+        <span className="text-base text-text-muted">
           {STATUS_LABEL[experiment.status]}
           {procedure ? ` · ${procedure.title}` : ''}
         </span>
@@ -81,7 +82,7 @@ export default function ExperimentPage() {
             Edit template
           </Link>
         ) : (
-          <span className="self-center text-sm text-slate-600 dark:text-slate-400">
+          <span className="self-center text-sm text-text-muted">
             No template. This run keeps its own steps.
           </span>
         )}
@@ -126,6 +127,7 @@ export default function ExperimentPage() {
       <NotesField key={experiment.id} experimentId={experiment.id} initial={experiment.notes ?? ''} />
 
       <RecordedDataSummary experimentId={experiment.id} experimentName={experiment.name} />
+      <ExperimentCapture experimentId={experiment.id} experimentName={experiment.name} />
       <ExperimentReagentsPanel experimentId={experiment.id} />
       <TroubleshootPanel experimentId={experiment.id} />
     </main>
@@ -136,7 +138,7 @@ function NameField({ experimentId, initial }: { experimentId: string; initial: s
   const [value, setValue] = useState(initial);
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Name</span>
+      <span className="text-sm font-medium text-text-muted">Name</span>
       <input
         className={`${INPUT} text-2xl font-semibold`}
         value={value}
@@ -170,7 +172,7 @@ function NotesField({ experimentId, initial }: { experimentId: string; initial: 
     <label className="flex flex-col gap-1">
       <span className="font-medium">Notes</span>
       <textarea
-        className="min-h-32 w-full rounded-xl border border-slate-300 bg-white p-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        className="min-h-32 w-full rounded-xl border border-border bg-surface shadow-card p-3 text-base text-text"
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
@@ -180,15 +182,15 @@ function NotesField({ experimentId, initial }: { experimentId: string; initial: 
         }}
         onBlur={flush}
       />
-      <span className="text-sm text-slate-500 dark:text-slate-400">Saves automatically.</span>
+      <span className="text-sm text-text-muted">Saves automatically.</span>
     </label>
   );
 }
 
 function DateRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-slate-300 px-4 py-3 dark:border-slate-700">
-      <span className="text-slate-600 dark:text-slate-400">{label}</span>
+    <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+      <span className="text-text-muted">{label}</span>
       <span className="text-lg font-medium">{value}</span>
     </div>
   );
@@ -198,7 +200,7 @@ function BackLink() {
   return (
     <Link
       to="/"
-      className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-accent underline dark:text-slate-300"
+      className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-accent-text underline"
     >
       Back to experiments
     </Link>

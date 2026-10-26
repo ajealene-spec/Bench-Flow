@@ -5,7 +5,7 @@ import { db } from '../db';
 import { getSettings } from '../db/settings';
 import { TimerTray } from '../features/timers/TimerTray';
 import { AppNav } from './AppNav';
-import { applyAppearance } from './appearance';
+import { applyAppearance, watchSystemTheme } from './appearance';
 import { needsWelcome } from './welcomeOptions';
 
 /** Layout for every route: appearance, first-run gate, navigation and the timer tray. */
@@ -17,13 +17,27 @@ export function AppShell() {
     // Only the fields that affect the page are dependencies, so unrelated saves do not re-apply.
   }, [settings?.theme, settings?.dyslexiaFont]);
 
+  // With the "system" theme, follow the OS while the app stays open.
+  const followSystem = settings?.theme === 'system';
+  useEffect(() => {
+    if (!followSystem) return;
+    return watchSystemTheme(() => {
+      void getSettings(db).then((current) => applyAppearance(current));
+    });
+  }, [followSystem]);
+
   return (
     <WelcomeGate onboardedAt={settings?.onboardedAt} ready={settings !== undefined}>
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <AppNav />
       <div className="mx-auto w-full max-w-3xl px-4 pt-4">
         <TimerTray />
       </div>
-      <Outlet />
+      <div id="main-content" tabIndex={-1} className="outline-none">
+        <Outlet />
+      </div>
     </WelcomeGate>
   );
 }

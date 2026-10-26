@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { featureRoutes, NAV_GROUP_LABELS, type NavGroup } from './featureRoutes';
+import { ThemeSwitch } from './ThemeSwitch';
 
 const NAV_LINK = 'inline-flex min-h-12 items-center rounded-xl border px-4 font-medium';
 
 function navClass({ isActive }: { isActive: boolean }): string {
   return isActive
     ? `${NAV_LINK} border-accent bg-accent text-white`
-    : `${NAV_LINK} border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
+    :`${NAV_LINK} border-border bg-surface shadow-card text-text active:bg-surface-2`;
 }
 
 const MORE_GROUPS: Array<Exclude<NavGroup, 'primary'>> = ['records', 'app'];
@@ -29,6 +30,8 @@ export function AppNav() {
         </NavLink>
       ))}
 
+      <ThemeSwitch />
+
       <div className="relative">
         <button
           type="button"
@@ -38,21 +41,21 @@ export function AppNav() {
           onKeyDown={(e) => {
             if (e.key === 'Escape') setOpen(false);
           }}
-          className={`${NAV_LINK} ${moreActive ? 'border-accent bg-accent text-white' : 'border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100'}`}
+          className={`${NAV_LINK} ${moreActive ?'border-accent bg-accent text-white' :'border-border bg-surface shadow-card text-text active:bg-surface-2'}`}
         >
           More
         </button>
         {open && (
           <div
             id="more-menu"
-            className="absolute left-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-2xl border border-slate-300 bg-white p-2 shadow-lg dark:border-slate-600 dark:bg-slate-900"
+            className="absolute left-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-2xl border border-border bg-surface shadow-card p-2 shadow-lg"
           >
             {MORE_GROUPS.map((group) => {
               const items = moreItems.filter((r) => r.nav?.group === group);
               if (items.length === 0) return null;
               return (
                 <div key={group} className="flex flex-col gap-1">
-                  <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
                     {NAV_GROUP_LABELS[group]}
                   </p>
                   {items.map((r) => (
@@ -61,7 +64,7 @@ export function AppNav() {
                       to={r.path}
                       onClick={() => setOpen(false)}
                       className={({ isActive }) =>
-                        `flex min-h-12 items-center rounded-xl px-3 font-medium ${isActive ? 'bg-accent text-white' : 'text-slate-900 active:bg-slate-100 dark:text-slate-100'}`
+`flex min-h-12 items-center rounded-xl px-3 font-medium ${isActive ?'bg-accent text-white' :'text-text active:bg-surface-2'}`
                       }
                     >
                       {r.nav?.label}

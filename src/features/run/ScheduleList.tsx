@@ -9,12 +9,12 @@ export function ScheduleList({ items }: { items: ScheduleItem[] }) {
   if (items.length === 0) return null;
   return (
     <section aria-label="Schedule" className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Schedule</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Schedule</h2>
       <ol className="flex flex-col gap-1 text-base">
         {items.map((item, i) => (
-          <li key={item.stepId} className="flex justify-between gap-3 rounded-lg px-3 py-2 odd:bg-slate-50 dark:odd:bg-slate-800/50">
+          <li key={item.stepId} className="flex justify-between gap-3 rounded-lg px-3 py-2 odd:bg-surface-2">
             <span className={i === 0 ? 'font-semibold' : ''}>{item.title}</span>
-            <span className="shrink-0 font-mono tabular-nums text-slate-600 dark:text-slate-300">
+            <span className="shrink-0 font-mono tabular-nums text-text-muted">
               {clock(item.startAt)}–{clock(item.endAt)}
             </span>
           </li>

@@ -1,7 +1,7 @@
 /** Shared styles for data capture. Every target is at least 48px tall for gloved hands. */
 export const FIELD_INPUT =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 export const BUTTON_BASE = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 text-base font-medium';
-export const BUTTON_PRIMARY = `${BUTTON_BASE} bg-accent text-white active:bg-accent-hover disabled:opacity-40 dark:bg-accent dark:text-slate-950`;
-export const BUTTON_SECONDARY = `${BUTTON_BASE} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
-export const BUTTON_LINK = 'min-h-12 px-3 text-base font-medium text-accent underline dark:text-slate-300';
+export const BUTTON_PRIMARY =`${BUTTON_BASE} bg-accent text-white active:bg-accent-hover disabled:opacity-40`;
+export const BUTTON_SECONDARY =`${BUTTON_BASE} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
+export const BUTTON_LINK ='min-h-12 px-3 text-base font-medium text-accent-text underline';

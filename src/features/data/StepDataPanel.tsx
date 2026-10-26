@@ -6,6 +6,7 @@ import type { Step, StepRecord } from '../../types';
 import { BUTTON_LINK, BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from './fieldStyles';
 import { fillLabels, parseNumber, parsePastedValues } from './parseNumbers';
 import { TimerEntries } from './TimerEntries';
+import { StepCapture } from './StepCapture';
 import { formatElapsed, parseDuration } from './time';
 
 /** Collapsible "Record data" area under a run step: numbers, timers and notes. Saves immediately. */
@@ -15,7 +16,7 @@ export function StepDataPanel({ experimentId, step }: { experimentId: string; st
   const count = records.length;
 
   return (
-    <section aria-label="Step data" className="flex flex-col gap-3 rounded-2xl border border-slate-300 dark:border-slate-700">
+    <section aria-label="Step data" className="flex flex-col gap-3 rounded-2xl border border-border">
       <button
         type="button"
         aria-expanded={open}
@@ -34,8 +35,8 @@ export function StepDataPanel({ experimentId, step }: { experimentId: string; st
           <NumberEntry experimentId={experimentId} step={step} />
 
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Records</h3>
-            {records.length === 0 && <p className="text-base text-slate-600 dark:text-slate-400">Nothing recorded for this step yet.</p>}
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Records</h3>
+            {records.length === 0 && <p className="text-base text-text-muted">Nothing recorded for this step yet.</p>}
             <ul className="flex flex-col gap-2">
               {records.map((record) => (
                 <RecordRow key={record.id} record={record} />
@@ -44,9 +45,11 @@ export function StepDataPanel({ experimentId, step }: { experimentId: string; st
           </div>
 
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Timers</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Timers</h3>
             <TimerEntries experimentId={experimentId} stepId={step.id} />
           </div>
+
+          <StepCapture experimentId={experimentId} step={step} />
         </div>
       )}
     </section>
@@ -129,10 +132,10 @@ function NumberEntry({ experimentId, step }: { experimentId: string; step: Step 
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Numbers</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Numbers</h3>
       <div className="grid gap-2 sm:grid-cols-3">
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600 dark:text-slate-400">Label</span>
+          <span className="text-sm text-text-muted">Label</span>
           <input
             className={FIELD_INPUT}
             list={`labels-${step.id}`}
@@ -147,7 +150,7 @@ function NumberEntry({ experimentId, step }: { experimentId: string; step: Step 
           </datalist>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600 dark:text-slate-400">Value</span>
+          <span className="text-sm text-text-muted">Value</span>
           <input
             className={FIELD_INPUT}
             inputMode="decimal"
@@ -157,19 +160,19 @@ function NumberEntry({ experimentId, step }: { experimentId: string; step: Step 
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600 dark:text-slate-400">Unit</span>
+          <span className="text-sm text-text-muted">Unit</span>
           <input className={FIELD_INPUT} value={unit} onChange={(e) => setUnit(e.target.value)} />
         </label>
       </div>
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-slate-600 dark:text-slate-400">Note (optional)</span>
+        <span className="text-sm text-text-muted">Note (optional)</span>
         <input className={FIELD_INPUT} value={note} onChange={(e) => setNote(e.target.value)} />
       </label>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className={BUTTON_PRIMARY} disabled={value.trim() === ''} onClick={() => void add()}>
           Add
         </button>
-        <span className="text-sm text-slate-600 dark:text-slate-400">
+        <span className="text-sm text-text-muted">
           Paste one value, or several from Excel or an instrument (one per line).
         </span>
       </div>
@@ -179,7 +182,7 @@ function NumberEntry({ experimentId, step }: { experimentId: string; step: Step 
         </p>
       )}
       {message && (
-        <p role="status" className="text-base text-slate-900 dark:text-slate-400">
+        <p role="status" className="text-base text-text">
           {message}
         </p>
       )}
@@ -225,7 +228,7 @@ function RecordRow({ record }: { record: StepRecord }) {
 
   if (editing) {
     return (
-      <li className="flex flex-col gap-2 rounded-xl border-2 border-accent p-3 dark:border-slate-300">
+      <li className="flex flex-col gap-2 rounded-xl border-2 border-accent p-3">
         <div className="grid gap-2 sm:grid-cols-3">
           <input aria-label="Edit label" className={FIELD_INPUT} value={label} onChange={(e) => setLabel(e.target.value)} />
           {record.kind === 'number' && (
@@ -257,15 +260,15 @@ function RecordRow({ record }: { record: StepRecord }) {
   }
 
   return (
-    <li className="flex flex-col gap-1 rounded-xl bg-slate-100 p-3 dark:bg-slate-800">
+    <li className="flex flex-col gap-1 rounded-xl bg-surface-2 p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="text-base">
           <span className="font-medium">{record.label || (record.kind === 'timer' ? 'Timer' : 'Value')}</span>{' '}
           <span className="font-mono text-lg tabular-nums">{describe(record)}</span>
         </span>
-        <span className="text-sm text-slate-600 dark:text-slate-400">{record.kind === 'timer' ? 'Time' : 'Number'}</span>
+        <span className="text-sm text-text-muted">{record.kind ==='timer' ?'Time' :'Number'}</span>
       </div>
-      {record.note && <p className="text-base text-slate-700 dark:text-slate-300">{record.note}</p>}
+      {record.note && <p className="text-base text-text-muted">{record.note}</p>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className={BUTTON_LINK} onClick={() => setEditing(true)}>
           Edit

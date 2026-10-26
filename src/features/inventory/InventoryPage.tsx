@@ -68,9 +68,9 @@ export default function InventoryPage() {
       </header>
 
       {(expired.length > 0 || expiringSoon.length > 0) && (
-        <section aria-label="Expiry summary" className="flex flex-col gap-1 rounded-2xl border border-slate-300 p-4 text-base dark:border-slate-700">
+        <section aria-label="Expiry summary" className="flex flex-col gap-1 rounded-2xl border border-border p-4 text-base">
           {expired.length > 0 && <p className="text-red-700 dark:text-red-300">{expired.length} expired</p>}
-          {expiringSoon.length > 0 && <p className="text-slate-400 dark:text-slate-400">{expiringSoon.length} expiring in the next 30 days</p>}
+          {expiringSoon.length > 0 && <p className="text-text-muted">{expiringSoon.length} expiring in the next 30 days</p>}
         </section>
       )}
 
@@ -104,17 +104,17 @@ export default function InventoryPage() {
           Keep lots, expiry dates and antibody host species in one place. Add an item by hand, or import the reagents a protocol lists.
         </EmptyState>
       ) : filtered.length === 0 ? (
-        <p className="text-base text-slate-600 dark:text-slate-400">Nothing matches that search.</p>
+        <p className="text-base text-text-muted">Nothing matches that search.</p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {filtered.map((item) => (
-            <li key={item.id} className="flex flex-col gap-2 rounded-2xl border border-slate-300 p-4 dark:border-slate-700">
+            <li key={item.id} className="flex flex-col gap-2 rounded-2xl border border-border p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-lg font-semibold">{item.name}</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm dark:bg-slate-800">{KIND_LABELS[item.kind]}</span>
+                <span className="rounded-full bg-surface-2 px-3 py-1 text-sm">{KIND_LABELS[item.kind]}</span>
                 <ExpiryBadge item={item} today={today} />
               </div>
-              <p className="text-base text-slate-600 dark:text-slate-400">
+              <p className="text-base text-text-muted">
                 {[item.lotNumber && `Lot ${item.lotNumber}`, item.catalogNumber && `Cat ${item.catalogNumber}`, item.stockDilution, item.location]
                   .filter(Boolean)
                   .join(' · ') || 'No lot or catalog recorded'}
@@ -157,7 +157,7 @@ function ImportFromProtocol({ existing }: { existing: InventoryItem[] }) {
   }
 
   return (
-    <section aria-label="Import from protocol" className="flex flex-col gap-4 rounded-2xl border border-slate-300 p-4 dark:border-slate-700">
+    <section aria-label="Import from protocol" className="flex flex-col gap-4 rounded-2xl border border-border p-4">
       <label className="flex flex-col gap-1 text-base font-medium">
         Protocol
         <select className={FIELD_INPUT} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
@@ -170,7 +170,7 @@ function ImportFromProtocol({ existing }: { existing: InventoryItem[] }) {
         </select>
       </label>
 
-      {template && extracted.length === 0 && <p className="text-base text-slate-600 dark:text-slate-400">No reagents found in this protocol.</p>}
+      {template && extracted.length === 0 && <p className="text-base text-text-muted">No reagents found in this protocol.</p>}
 
       {extracted.length > 0 && (
         <ul className="flex flex-col gap-2">
@@ -181,10 +181,10 @@ function ImportFromProtocol({ existing }: { existing: InventoryItem[] }) {
               .filter(Boolean)
               .join(' · ');
             return (
-              <li key={key + item.kind} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+              <li key={key + item.kind} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3">
                 <div className="flex flex-col">
                   <span className="text-base font-medium">{item.name}</span>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="text-sm text-text-muted">
                     {KIND_LABELS[item.kind]}
                     {details ? ` · ${details}` : ''}
                   </span>

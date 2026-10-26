@@ -11,6 +11,10 @@ import ExperimentImportRedirect from './ExperimentImportRedirect';
 import SettingsPage from './SettingsPage';
 import WelcomePage from './WelcomePage';
 import AboutPage from './AboutPage';
+import GlossaryPage from '../features/learn/GlossaryPage';
+import ToolsPage from '../features/neuro/ToolsPage';
+import SharedPage from '../features/share/SharedPage';
+import AnimalsPage from '../features/animals/AnimalsPage';
 
 /**
  * Where a route appears in the navigation.
@@ -47,4 +51,8 @@ export const featureRoutes: FeatureRoute[] = [
   { path: '/welcome', element: <WelcomePage /> },
   { path: '/settings', element: <SettingsPage />, nav: { label: 'Settings', group: 'app' } },
   { path: '/about', element: <AboutPage />, nav: { label: 'About', group: 'app' } },
+  { path: '/shared', element: <SharedPage /> },
+  { path: '/animals', element: <AnimalsPage />, nav: { label: 'Animals', group: 'records' } },
+  { path: '/glossary', element: <GlossaryPage />, nav: { label: 'Glossary', group: 'app' } },
+  { path: '/tools', element: <ToolsPage />, nav: { label: 'Bench tools', group: 'app' } },
 ];

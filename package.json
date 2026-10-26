@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.5",
     "dexie": "^4.0.11",
     "dexie-react-hooks": "^1.1.7",
     "pdfjs-dist": "^4.10.38",

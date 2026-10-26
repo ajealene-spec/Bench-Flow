@@ -6,12 +6,15 @@ import { deleteTemplate, getTemplate, listCategories, updateTemplate } from '../
 import type { Hazard, MaterialItem, ProtocolOverview, ProtocolPhase, ProtocolTemplate, Step } from '../../types';
 import { EMPTY_OVERVIEW, MaterialsCard, OverviewCard, TimelineCard } from '../plan/PlanCards';
 import { prepareSteps, ReviewSection } from '../import/ImportPage';
+import { ProtocolsIoExportButtons } from '../import/ProtocolsIoPanels';
 import { LiteraturePrompt } from '../assist/LiteraturePrompt';
+import { TemplateExtras } from '../share/TemplateExtras';
+import { TemplateSourceEditor } from './TemplateSourceEditor';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
-const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
+const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
 const INPUT =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 
 /** Edit one protocol template. Runs already started from it are not affected. */
 export default function TemplatePage() {
@@ -19,11 +22,11 @@ export default function TemplatePage() {
   const template = useLiveQuery(() => getTemplate(templateId, db), [templateId]);
   const categories = useLiveQuery(() => listCategories(db), []);
 
-  if (template === undefined) return <main className="p-6 text-slate-500">Loading protocol…</main>;
+  if (template === undefined) return <main className="p-6 text-text-muted">Loading protocol…</main>;
   if (template === null) {
     return (
       <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
-        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent underline dark:text-slate-300">
+        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent-text underline">
           Back to library
         </Link>
         <h1 className="text-2xl font-semibold">Protocol not found</h1>
@@ -76,7 +79,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <Link to="/library" className="inline-flex min-h-12 items-center text-accent underline dark:text-slate-300">
+        <Link to="/library" className="inline-flex min-h-12 items-center text-accent-text underline">
           Back to library
         </Link>
         <button type="button" className={BUTTON_SECONDARY} onClick={() => void remove()}>
@@ -85,6 +88,13 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
       </header>
 
       <h1 className="text-2xl font-semibold">Edit protocol</h1>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <ProtocolsIoExportButtons source={template} />
+        <Link to="/library/new" className={BUTTON_SECONDARY}>
+          Import from protocols.io
+        </Link>
+      </div>
 
       {error && (
         <p role="alert" className="rounded-xl bg-rose-100 p-3 text-rose-900 dark:bg-rose-900/50 dark:text-rose-100">
@@ -158,6 +168,8 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
         onSave={() => void save()}
       />
 
+      <TemplateExtras template={template} />
+
       <LiteraturePrompt
         templateId={template.id}
         onAddNote={(text) => {
@@ -178,9 +190,10 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
             setSaved(false);
           }}
           onBlur={() => void updateTemplate(template.id, { notes }, db)}
-          className="min-h-32 rounded-lg border border-slate-300 bg-white p-3 dark:border-slate-600 dark:bg-slate-900"
+          className="min-h-32 rounded-lg border border-border bg-surface shadow-card p-3"
         />
       </label>
+      <TemplateSourceEditor template={template} />
     </main>
   );
 }

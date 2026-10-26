@@ -4,12 +4,14 @@ import { formatAmount } from './variableFormat';
 import { differsFromPlan } from './stepMath';
 import { useStepMath } from './useStepMath';
 import type { Step, StepVariable } from '../../types';
+import { GlossaryText } from '../learn/GlossaryText';
+import { useIsBeginner } from '../learn/useLearnData';
 
 /* Touch target for gloved hands: at least 48px tall. */
 const CHIP_BASE = 'inline-flex min-h-12 items-center rounded-xl px-3 align-middle font-semibold';
-const CHIP_INPUT = `${CHIP_BASE} border-2 border-dashed border-slate-500 bg-slate-100 active:opacity-80 dark:border-slate-400 dark:bg-slate-800`;
-const CHIP_DERIVED = `${CHIP_BASE} border border-slate-300 dark:border-slate-600`;
-const CHIP_CHANGED = 'text-accent font-bold';
+const CHIP_INPUT =`${CHIP_BASE} border-2 border-dashed border-border-strong bg-surface-2 active:opacity-80`;
+const CHIP_DERIVED =`${CHIP_BASE} border border-border`;
+const CHIP_CHANGED ='text-accent-text font-bold';
 
 export interface StepTextProps {
   step: Step;
@@ -89,7 +91,7 @@ export function InlineVar({ variable, value, planned, onCommit }: InlineVarProps
           if (e.key === 'Enter') e.currentTarget.blur();
           if (e.key === 'Escape') setDraft(null);
         }}
-        className="inline-block min-h-12 w-32 rounded-xl border-2 border-accent bg-white px-3 align-middle text-lg text-slate-900 dark:bg-slate-900 dark:text-slate-100"
+        className="inline-block min-h-12 w-32 rounded-xl border-2 border-accent bg-surface shadow-card px-3 align-middle text-lg text-text"
       />
     );
   }
@@ -118,6 +120,7 @@ export function InlineVar({ variable, value, planned, onCommit }: InlineVarProps
 /** Step text with every quantity replaced by a live value. Values not found in the text are listed under it. */
 export function StepText({ step, experimentId, textClassName = 'text-xl leading-relaxed' }: StepTextProps) {
   const { variables, values, templateValues, setValue } = useStepMath(step, experimentId);
+  const beginner = useIsBeginner();
   if (!step.instructions && variables.length === 0) return null;
 
   const { segments, unplaced } = splitText(step.instructions, variables);
@@ -135,14 +138,20 @@ export function StepText({ step, experimentId, textClassName = 'text-xl leading-
     <div className="flex flex-col gap-3">
       {step.instructions && (
         <p className={`whitespace-pre-line ${textClassName}`}>
-          {segments.map((s, i) => (s.kind === 'text' ? <span key={i}>{s.text}</span> : render(s.variable)))}
+          {segments.map((s, i) =>
+            s.kind === 'text' ? (
+              beginner ? <GlossaryText key={i} text={s.text} /> : <span key={i}>{s.text}</span>
+            ) : (
+              render(s.variable)
+            ),
+          )}
         </p>
       )}
       {unplaced.length > 0 && (
         <ul aria-label="Calculated values" className="flex flex-col gap-2">
           {unplaced.map((v) => (
             <li key={v.id} className="flex flex-wrap items-center gap-2 text-lg">
-              <span className="text-slate-700 dark:text-slate-300">{v.token}</span>
+              <span className="text-text-muted">{v.token}</span>
               {render(v)}
             </li>
           ))}

@@ -5,16 +5,23 @@ import { listExecutionEvents } from '../../db/executionLog';
 import { logStepNote } from './runEvents';
 
 /**
- * Note for one step, saved to the execution log. The "deviation" toggle marks the note as something
+ * Note for one step, saved to the execution log. The"deviation" toggle marks the note as something
  * that departed from the protocol, which the report can pick out.
  */
-export function StepNote({ experimentId, stepId, large = false }: { experimentId: string; stepId: string; large?: boolean }) {
+export function StepNote({
+  experimentId,
+  stepId,
+  large = false,
+}: {
+  experimentId: string;
+  stepId: string;
+  large?: boolean;
+}) {
   const [text, setText] = useState('');
   const [deviation, setDeviation] = useState(false);
   const [message, setMessage] = useState('');
   const notes = useLiveQuery(
-    async () =>
-      (await listExecutionEvents(experimentId, db)).filter((e) => e.type === 'note' && e.stepId === stepId),
+    async () => (await listExecutionEvents(experimentId, db)).filter((e) => e.type === 'note' && e.stepId === stepId),
     [experimentId, stepId],
     [],
   );
@@ -35,7 +42,7 @@ export function StepNote({ experimentId, stepId, large = false }: { experimentId
   const control = large ? 'min-h-16 text-lg' : 'min-h-12 text-base';
 
   return (
-    <section aria-label="Step note" className="flex flex-col gap-3 rounded-2xl border border-slate-300 p-4 dark:border-slate-700">
+    <section aria-label="Step note" className="flex flex-col gap-3 rounded-2xl border border-border p-4">
       <label htmlFor={`note-${stepId}`} className="text-lg font-semibold">
         Note for this step
       </label>
@@ -44,7 +51,7 @@ export function StepNote({ experimentId, stepId, large = false }: { experimentId
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
-        className={`w-full rounded-xl border border-slate-300 bg-white p-3 ${control} dark:border-slate-600 dark:bg-slate-900`}
+        className={`w-full rounded-xl border border-border bg-surface p-3 ${control}`}
       />
       <label className={`flex min-h-12 cursor-pointer items-center gap-3 ${control}`}>
         <input
@@ -60,12 +67,12 @@ export function StepNote({ experimentId, stepId, large = false }: { experimentId
           type="button"
           onClick={() => void save()}
           disabled={!text.trim()}
-          className={`${large ? 'min-h-16' : 'min-h-12'} rounded-xl bg-accent px-5 font-semibold text-white disabled:opacity-40`}
+          className={`${large ? 'min-h-16' : 'min-h-12'} rounded-xl bg-accent px-5 font-semibold text-on-accent disabled:opacity-40`}
         >
           Save note
         </button>
         {message && (
-          <span role="status" className="text-base text-slate-600 dark:text-slate-400">
+          <span role="status" className="text-base text-text-muted">
             {message}
           </span>
         )}
@@ -73,7 +80,7 @@ export function StepNote({ experimentId, stepId, large = false }: { experimentId
       {notes.length > 0 && (
         <ul className="flex flex-col gap-2 text-base">
           {notes.map((n) => (
-            <li key={n.id} className="rounded-lg bg-slate-100 p-3 dark:bg-slate-800">
+            <li key={n.id} className="rounded-lg bg-surface-2 p-3">
               {n.deviation && <span className="mr-2 font-semibold">[Deviation]</span>}
               {n.note}
             </li>

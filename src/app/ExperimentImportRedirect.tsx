@@ -11,7 +11,7 @@ export default function ExperimentImportRedirect() {
   const { id = '' } = useParams();
   const experiment = useLiveQuery(() => getExperiment(id, db), [id]);
 
-  if (experiment === undefined) return <main className="p-6 text-slate-500">Loading…</main>;
+  if (experiment === undefined) return <main className="p-6 text-text-muted">Loading…</main>;
   if (experiment === null) return <Navigate to="/" replace />;
   if (experiment.templateId) return <Navigate to={`/library/${experiment.templateId}`} replace />;
   return <Navigate to="/library/new" replace />;

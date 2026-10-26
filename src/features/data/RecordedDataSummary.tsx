@@ -19,7 +19,7 @@ export function RecordedDataSummary({ experimentId, experimentName }: { experime
   );
   const [status, setStatus] = useState<string | undefined>(undefined);
 
-  if (!data) return <p className="text-slate-600 dark:text-slate-400">Loading recorded data…</p>;
+  if (!data) return <p className="text-text-muted">Loading recorded data…</p>;
 
   const groups = groupRecordsByStep(data.procedure, data.records);
   const rows = summaryRows(groups);
@@ -48,10 +48,10 @@ export function RecordedDataSummary({ experimentId, experimentName }: { experime
   }
 
   return (
-    <section id="recorded-data" aria-label="Recorded data" className="flex flex-col gap-4 rounded-2xl border border-slate-300 p-5 dark:border-slate-700">
+    <section id="recorded-data" aria-label="Recorded data" className="flex flex-col gap-4 rounded-2xl border border-border p-5">
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Recorded data</h2>
-        <p className="text-base text-slate-600 dark:text-slate-400">
+        <p className="text-base text-text-muted">
           {rows.length === 0
             ? 'No numbers or timer records yet.'
             : `${rows.length} record${rows.length === 1 ? '' : 's'} across ${groups.length} step${groups.length === 1 ? '' : 's'}.`}
@@ -69,7 +69,7 @@ export function RecordedDataSummary({ experimentId, experimentName }: { experime
         </div>
       )}
       {status && (
-        <p role="status" className="text-base text-slate-700 dark:text-slate-300">
+        <p role="status" className="text-base text-text-muted">
           {status}
         </p>
       )}
@@ -83,7 +83,7 @@ export function RecordedDataSummary({ experimentId, experimentName }: { experime
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] border-collapse text-left text-base">
               <thead>
-                <tr className="border-b border-slate-300 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-400">
+                <tr className="border-b border-border text-sm text-text-muted">
                   <th className="px-2 py-2 font-medium">Type</th>
                   <th className="px-2 py-2 font-medium">Label</th>
                   <th className="px-2 py-2 font-medium">Value</th>
@@ -96,7 +96,7 @@ export function RecordedDataSummary({ experimentId, experimentName }: { experime
               </thead>
               <tbody>
                 {summaryRows([group]).map((row, i) => (
-                  <tr key={i} className="border-b border-slate-200 dark:border-slate-800">
+                  <tr key={i} className="border-b border-border">
                     <td className="px-2 py-2">{row[2]}</td>
                     <td className="px-2 py-2">{row[3]}</td>
                     <td className="px-2 py-2 font-mono tabular-nums">{row[4]}</td>

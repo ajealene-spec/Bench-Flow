@@ -8,15 +8,16 @@ import { pruneHazardSteps } from './hazards';
 import { detectVariables } from '../assist/detectVariables';
 import { StepText } from '../assist/StepText';
 import { getParserStatus, parseProcedure, type ParseOutcome } from './parseProcedure';
+import { ProtocolsIoExportButtons, ProtocolsIoImport } from './ProtocolsIoPanels';
 
 type Unit = 's' | 'min' | 'h';
 const UNIT_SECONDS: Record<Unit, number> = { s: 1, min: 60, h: 3600 };
 
 const FIELD =
-  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 const BUTTON = 'inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl px-4 font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover disabled:opacity-50`;
-const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
+const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2 disabled:opacity-50`;
 
 /** Largest unit that represents the seconds exactly, so 3600 shows as "1 h". */
 function bestUnit(sec: number): Unit {
@@ -138,7 +139,7 @@ export default function ImportPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-1">
-        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent underline dark:text-slate-300">
+        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent-text underline">
           Back to library
         </Link>
         <h1 className="text-2xl font-semibold">New protocol</h1>
@@ -153,7 +154,7 @@ export default function ImportPage() {
       {!review ? (
         <section className="flex flex-col gap-4">
           {aiReady === false && (
-            <div role="note" className="rounded-xl border border-slate-400 bg-slate-100 p-3 text-slate-900 dark:border-slate-400 dark:bg-slate-900/50 dark:text-slate-100">
+            <div role="note" className="rounded-xl border border-border-strong bg-surface-2 p-3 text-text">
               <p className="font-semibold">For PDFs, add an Anthropic API key to .env for accurate steps.</p>
               <p className="text-sm">
                 Add a line <code className="font-mono">ANTHROPIC_API_KEY=your-key</code> to a file named <code className="font-mono">.env</code> in the project folder, then restart <code className="font-mono">npm run dev</code>.
@@ -199,12 +200,23 @@ export default function ImportPage() {
               {busy === 'parse' ? 'Parsing…' : 'Parse steps'}
             </button>
           </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-text-muted">
             The PDF text is read on this device. AI parsing (recommended for PDFs) uses Claude when you are online and an
             API key is set; otherwise the local parser is used.
           </p>
+          <ProtocolsIoImport />
         </section>
       ) : (
+        <>
+        <ProtocolsIoExportButtons
+          source={{
+            title: review.title,
+            steps: review.steps,
+            hazards: review.hazards,
+            phases: review.outcome.phases,
+            materials: review.outcome.materials,
+          }}
+        />
         <ReviewSection
           title={review.title}
           steps={review.steps}
@@ -228,6 +240,7 @@ export default function ImportPage() {
           onBack={() => setReview(null)}
           onSave={() => void handleSave()}
         />
+        </>
       )}
     </main>
   );
@@ -284,7 +297,7 @@ export function ReviewSection({
 
   return (
     <section className="flex flex-col gap-4">
-      {statusNote && <p role="status" className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">{statusNote}</p>}
+      {statusNote && <p role="status" className="rounded-xl bg-surface-2 p-3 text-sm">{statusNote}</p>}
 
       {hazards && onHazardsChange && <SafetyBox hazards={hazards} steps={steps} onChange={onHazardsChange} />}
 
@@ -299,7 +312,7 @@ export function ReviewSection({
         />
       </label>
 
-      {steps.length === 0 && <p className="text-slate-600 dark:text-slate-400">No steps yet. Add one below.</p>}
+      {steps.length === 0 && <p className="text-text-muted">No steps yet. Add one below.</p>}
 
       <ol className="flex flex-col gap-4">
         {steps.map((step, index) => (
@@ -319,7 +332,7 @@ export function ReviewSection({
         Add step
       </button>
 
-      <div className="sticky bottom-0 -mx-4 flex flex-wrap gap-3 border-t border-slate-200 bg-white/95 p-4 backdrop-blur sm:-mx-6 sm:px-6 dark:border-slate-700 dark:bg-slate-950/95">
+      <div className="sticky bottom-0 -mx-4 flex flex-wrap gap-3 border-t border-border bg-white/95 p-4 backdrop-blur sm:-mx-6 sm:px-6">
         {onBack && (
           <button type="button" className={BUTTON_SECONDARY} onClick={onBack} disabled={busy}>
             Back to text
@@ -358,9 +371,9 @@ function StepCard({ step, index, count, onChange, onMove, onDelete }: StepCardPr
   const timedPhases = step.timers.map((t) => `${t.label} (${formatSec(t.durationSec)})`);
 
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+    <li className="flex flex-col gap-3 rounded-2xl border border-border bg-surface shadow-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <span className="text-sm font-semibold uppercase tracking-wide text-text-muted">
           Step {index + 1}
         </span>
         <div className="flex flex-wrap gap-2">
@@ -384,7 +397,7 @@ function StepCard({ step, index, count, onChange, onMove, onDelete }: StepCardPr
           </button>
           <button
             type="button"
-            className={`${BUTTON} border border-rose-300 bg-white text-rose-800 active:bg-rose-50 dark:border-rose-700 dark:bg-slate-800 dark:text-rose-200`}
+            className={`${BUTTON} border border-rose-300 bg-surface shadow-card text-rose-800 active:bg-rose-50 dark:border-rose-700  dark:text-rose-200`}
             aria-label={`Delete step ${index + 1}`}
             onClick={onDelete}
           >
@@ -450,12 +463,12 @@ function StepCard({ step, index, count, onChange, onMove, onDelete }: StepCardPr
           </select>
         </div>
         {timedPhases.length > 1 && (
-          <p className="text-sm text-slate-600 dark:text-slate-400">Also timed: {timedPhases.slice(1).join(', ')}</p>
+          <p className="text-sm text-text-muted">Also timed: {timedPhases.slice(1).join(',')}</p>
         )}
       </div>
 
       {step.cautions.length > 0 && (
-        <ul className="list-disc pl-5 text-sm text-slate-900 dark:text-slate-100">
+        <ul className="list-disc pl-5 text-sm text-text">
           {step.cautions.map((c) => (
             <li key={c}>{c}</li>
           ))}
@@ -500,7 +513,7 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
   }
 
   return (
-    <section aria-labelledby="safety-heading" className="flex flex-col gap-3 rounded-2xl border-2 border-slate-400 bg-slate-100 p-4 text-slate-900 dark:border-slate-400 dark:bg-slate-900/40 dark:text-slate-100">
+    <section aria-labelledby="safety-heading" className="flex flex-col gap-3 rounded-2xl border-2 border-border-strong bg-surface-2 p-4 text-text">
       <h2 id="safety-heading" className="text-lg font-semibold">
         Safety
       </h2>
@@ -515,11 +528,11 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
           {hazards.map((h) => {
             const steps = h.stepIds.map((id) => stepNumber.get(id)).filter((n): n is number => n !== undefined);
             return (
-              <li key={h.id} className="flex flex-col gap-2 rounded-xl bg-white p-3 dark:bg-slate-900">
+              <li key={h.id} className="flex flex-col gap-2 rounded-xl bg-surface shadow-card p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex flex-col">
                     <span className="font-semibold">{h.name}</span>
-                    <span className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    <span className="text-xs uppercase tracking-wide text-text-muted">
                       {KIND_LABEL[h.kind]} · {steps.length > 0 ? `Steps ${steps.join(', ')}` : 'Whole protocol'}
                     </span>
                   </div>
@@ -545,7 +558,7 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
         </ul>
       )}
 
-      <div className="flex flex-col gap-2 rounded-xl border border-slate-400 p-3 dark:border-slate-400">
+      <div className="flex flex-col gap-2 rounded-xl border border-border-strong p-3">
         <span className="text-sm font-medium">Add a hazard</span>
         <input
           type="text"
