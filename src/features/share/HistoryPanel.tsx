@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -43,9 +44,7 @@ export function HistoryPanel({ template }: { template: ProtocolTemplate }) {
   }
 
   async function restore(version: ProtocolVersion) {
-    const ok = window.confirm(
-      `Restore version ${version.version}? This becomes a new version, so nothing is lost. The page will reload to show it.`,
-    );
+    const ok = await askConfirm({ title: `Restore version ${version.version}?`, message: 'This becomes a new version, so nothing is lost. The page will reload to show it.', confirmLabel: 'Restore' });
     if (!ok) return;
     try {
       const changed = await restoreVersion(template.id, version.id, db);

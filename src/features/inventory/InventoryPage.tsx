@@ -1,15 +1,17 @@
+import { askConfirm } from '../../app/feedback';
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { createInventoryItem, deleteInventoryItem, listInventoryItems } from '../../db/inventory';
 import { listTemplates } from '../../db/templates';
 import type { InventoryItem, InventoryKind } from '../../types';
-import { BUTTON_LINK, BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
+import { BUTTON_LINK, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
 import { ExpiryBadge } from './ExpiryBadge';
 import { InventoryForm } from './InventoryForm';
 import { expiringItems } from './expiry';
 import { extractReagents, toInventoryInput, type ExtractedReagent } from './extractReagents';
 import { EmptyState } from '../../app/EmptyState';
+import { PageHeader } from '../../app/ui';
 
 const KIND_LABELS: Record<InventoryKind, string> = { antibody: 'Antibody', reagent: 'Reagent', buffer: 'Buffer', kit: 'Kit' };
 
@@ -41,7 +43,7 @@ export default function InventoryPage() {
   const { expired, expiringSoon } = expiringItems(items, today);
 
   async function handleDelete(item: InventoryItem) {
-    if (!window.confirm(`Delete ${item.name}? It will also be unlinked from any runs.`)) return;
+    if (!await askConfirm({ title: `Delete ${item.name}?`, message: 'It will also be unlinked from any runs.', confirmLabel: 'Delete', danger: true })) return;
     await deleteInventoryItem(item.id, db);
   }
 
@@ -55,17 +57,20 @@ export default function InventoryPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Inventory</h1>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" className={BUTTON_PRIMARY} onClick={() => setEditing('new')}>
-            Add item
-          </button>
-          <button type="button" className={BUTTON_SECONDARY} onClick={() => setShowImport((s) => !s)} aria-expanded={showImport}>
-            Import from protocol
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Inventory"
+        subtitle="Reagents and antibodies with lot numbers and expiry dates."
+        actions={
+          <>
+            <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}>
+              Add item
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setShowImport((s) => !s)} aria-expanded={showImport}>
+              Import from protocol
+            </button>
+          </>
+        }
+      />
 
       {(expired.length > 0 || expiringSoon.length > 0) && (
         <section aria-label="Expiry summary" className="flex flex-col gap-1 rounded-2xl border border-border p-4 text-base">

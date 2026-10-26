@@ -11,6 +11,7 @@ import { dilutionPlan, injectionVolumeUl, VirusError } from './virus';
 import { StereotaxTool } from './StereotaxTool';
 import { NumField, readNum } from './NumField';
 import type { ToolId } from './toolHints';
+import { PageHeader } from '../../app/ui';
 
 /** Tool tiles on /tools. Each tile opens its tool below. */
 export const TOOL_TILES: Array<{ id: ToolId | 'osmolarity'; title: string; blurb: string }> = [
@@ -30,8 +31,7 @@ export default function ToolsPage() {
   const tiles = orderToolTiles(TOOL_TILES, { field: settings?.field ?? null, techniques: settings?.techniques ?? [] });
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4">
-      <h1 className="text-3xl font-bold">Bench tools</h1>
-      <p className="text-lg text-text-muted">Calculators for neuro and molecular work. Check every number against your protocol.</p>
+      <PageHeader title="Bench tools" subtitle="Calculators for neuro and molecular work. Check every number against your protocol." />
       <ul className="grid gap-3 sm:grid-cols-2">
         {tiles.map((t) => (
           <li key={t.id}>

@@ -16,6 +16,7 @@ import type { TaskOccurrence } from './recurrence';
 import { BTN_BASE, BTN_PRIMARY, BTN_SECONDARY, CARD } from './ui';
 import { SERIES_COUNT } from './experimentBlocks';
 import './calendar.css';
+import { PageHeader } from '../../app/ui';
 
 type View = 'month' | 'week' | 'agenda';
 const AGENDA_DAYS = 30;
@@ -132,8 +133,8 @@ export default function CalendarPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 pb-12 sm:p-6 md:max-w-5xl">
-      <header className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold text-text">Calendar</h1>
+      <div className="flex flex-col gap-3">
+        <PageHeader title="Calendar" subtitle="Runs, timers and tasks by day." />
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setAnchor(today)} className={BTN_SECONDARY}>
             Today
@@ -187,7 +188,7 @@ export default function CalendarPage() {
             ))}
           </ul>
         )}
-      </header>
+      </div>
 
       {items === undefined ? (
         <p className="text-text-muted">Loading…</p>

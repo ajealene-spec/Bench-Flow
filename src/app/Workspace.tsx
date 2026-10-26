@@ -17,6 +17,7 @@ import { ThisWeekStrip } from '../features/calendar/ThisWeekStrip';
 import { PersonalizeCard } from './PersonalizeCard';
 import { InsightsPreviewCard } from '../features/insights/InsightsPreviewCard';
 import { greetingFor } from './personalization';
+import { PageHeader, ProgressRing } from './ui';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = {
   draft: 'Draft',
@@ -52,11 +53,7 @@ export function Workspace() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 p-4 pb-12 sm:p-6 md:max-w-4xl lg:max-w-6xl">
-      <header className="flex flex-col gap-1">
-        <span className="text-sm text-text-muted">Bench Flow</span>
-        <h1 className="text-3xl font-semibold tracking-tight text-text">Command Center</h1>
-        <p className="text-lg text-text-muted">{greetingFor(new Date().getHours(), settings?.userName)}</p>
-      </header>
+      <PageHeader title="Command Center" subtitle={greetingFor(new Date().getHours(), settings?.userName)} />
 
       <PersonalizeCard />
 
@@ -187,16 +184,11 @@ function ActiveCard({ entry }: { entry: WorkspaceEntry }) {
         <span className="text-text">{currentStep?.title || (total === 0 ?'No steps yet' :'Finished')}</span>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-sm text-text-muted">
-          <span>
-            {completed} of {total} steps
-          </span>
-          <span>{percent}%</span>
-        </div>
-        <div role="progressbar" aria-label={`${experiment.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-          <div className="h-2 rounded-full bg-accent transition-[width]" style={{ width: `${percent}%` }} />
-        </div>
+      <div className="flex items-center gap-4">
+        <ProgressRing percent={percent} label={`${experiment.name} progress`} />
+        <span className="t-small text-text-muted">
+          <span className="t-num font-semibold text-text">{completed}</span> of <span className="t-num">{total}</span> steps done
+        </span>
       </div>
 
       {runningTimers.length > 0 && (

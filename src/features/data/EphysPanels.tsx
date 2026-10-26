@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -177,8 +178,8 @@ export function EphysTable({ experimentId, experimentName = 'run' }: { experimen
                     <button
                       type="button"
                       className={BUTTON_LINK}
-                      onClick={() => {
-                        if (window.confirm(`Delete the record for cell ${r.cellId}?`)) void deleteEphysRecord(r.id, db);
+                      onClick={async () => {
+                        if (await askConfirm({ title: `Delete the record for cell ${r.cellId}?`, confirmLabel: 'Delete', danger: true })) void deleteEphysRecord(r.id, db);
                       }}
                     >
                       Delete

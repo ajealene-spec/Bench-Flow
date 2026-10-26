@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -27,6 +28,7 @@ import { downloadText } from '../data/download';
 import { formatDate } from '../../app/format';
 import { EmptyState } from '../../app/EmptyState';
 import type { Experiment, ExperimentStatus, Folder, Procedure, StepRecord } from '../../types';
+import { PageHeader } from '../../app/ui';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = { draft: 'Draft', in_progress: 'In progress', done: 'Done' };
 
@@ -177,12 +179,15 @@ export default function ExperimentsPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 pb-32 sm:p-6 md:max-w-5xl md:pb-12 lg:max-w-6xl">
-      <header className="flex flex-col gap-1">
-        <Link to="/" className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-accent-text underline">
-          Command Center
-        </Link>
-        <h1 className="text-3xl font-semibold tracking-tight text-text">Experiments</h1>
-      </header>
+      <PageHeader
+        title="Experiments"
+        subtitle="Every run, with its status, folder and recorded data."
+        actions={
+          <Link to="/" className="btn btn-ghost">
+            Command Center
+          </Link>
+        }
+      />
 
       {data === undefined && <p className="text-text-muted">Loading experiments…</p>}
 
@@ -291,9 +296,7 @@ export default function ExperimentsPage() {
             setMessage(`Downloaded a CSV for ${inputs.length} experiment${inputs.length === 1 ? '' : 's'}.`);
           }}
           onDelete={async () => {
-            const ok = window.confirm(
-              `Delete ${selectedIds.length} experiment${selectedIds.length === 1 ? '' : 's'}? Their steps, timers and recorded data will be deleted. Protocols stay in the library.`,
-            );
+            const ok = await askConfirm({ title: `Delete ${selectedIds.length} experiment${selectedIds.length === 1 ? '' : 's'}?`, message: 'Their steps, timers and recorded data will be deleted. Protocols stay in the library.', confirmLabel: 'Delete', danger: true });
             if (!ok) return;
             try {
               await deleteExperiments(selectedIds, db);

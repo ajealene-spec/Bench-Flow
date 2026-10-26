@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
@@ -135,7 +136,7 @@ export function AnimalDetail({ animal, cageLabel }: { animal: Animal; cageLabel:
         type="button"
         className={`${BUTTON_LINK} self-start text-rose-800 dark:text-rose-300`}
         onClick={async () => {
-          if (!window.confirm(`Delete animal ${animal.label} and its event log?`)) return;
+          if (!await askConfirm({ title: `Delete animal ${animal.label}?`, message: 'Its event log is deleted too.', confirmLabel: 'Delete animal', danger: true })) return;
           await deleteAnimal(animal.id, db);
         }}
       >

@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState, type FormEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -7,6 +8,7 @@ import { findGlossaryEntry } from './glossaryMatch';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, FIELD_INPUT } from '../data/fieldStyles';
 import { getSettings } from '../../db/settings';
 import { glossaryScore } from '../../app/personalization';
+import { PageHeader } from '../../app/ui';
 
 interface Row {
   key: string;
@@ -61,13 +63,13 @@ export default function GlossaryPage() {
   }
 
   async function remove(id: string, name: string) {
-    if (!window.confirm(`Delete your term "${name}"?`)) return;
+    if (!await askConfirm({ title: `Delete your term “${name}”?`, confirmLabel: 'Delete', danger: true })) return;
     await deleteGlossaryTerm(id, db);
   }
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
-      <h1 className="text-3xl font-bold">Glossary</h1>
+      <PageHeader title="Glossary" subtitle="Plain-language definitions for terms used in protocols. Add your own below." />
       <label className="flex flex-col gap-1 text-base font-medium">
         Search terms
         <input type="search" className={FIELD_INPUT} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="For example TBST, bregma, IACUC" />

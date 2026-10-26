@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -79,7 +80,7 @@ export function StereotaxTool() {
   }
 
   async function remove(t: StereotaxTarget) {
-    if (!window.confirm(`Delete the saved target "${t.name}"?`)) return;
+    if (!await askConfirm({ title: `Delete the saved target “${t.name}”?`, confirmLabel: 'Delete', danger: true })) return;
     await deleteStereotaxTarget(t.id, db);
     if (editingId === t.id) setEditingId(null);
     if (printId === t.id) setPrintId(null);

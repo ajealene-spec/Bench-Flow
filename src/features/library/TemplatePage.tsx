@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -68,9 +69,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   }
 
   async function remove() {
-    const ok = window.confirm(
-      `Delete the protocol “${template.title}”? Experiments started from it keep their own steps and records.`,
-    );
+    const ok = await askConfirm({ title: `Delete the protocol “${template.title}”?`, message: 'Experiments started from it keep their own steps and records.', confirmLabel: 'Delete protocol', danger: true });
     if (!ok) return;
     await deleteTemplate(template.id, db);
     navigate('/library');

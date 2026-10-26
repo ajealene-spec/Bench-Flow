@@ -14,11 +14,15 @@
 }
 
 /* Reveal on scroll. The reveal-in class is added by useRevealOnScroll. */
+/* Content is visible by default. Only once the reveal observer is armed (html.reveal-armed) do unrevealed blocks hide,
+   so a slow script never leaves the page faded. The transition is short so sections settle quickly. */
 [data-reveal] {
-  opacity: 0;
-  transform: translate3d(0, 18px, 0);
-  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
   transition-delay: var(--reveal-delay, 0ms);
+}
+html.reveal-armed [data-reveal]:not(.reveal-in) {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
 }
 [data-reveal].reveal-in {
   opacity: 1;

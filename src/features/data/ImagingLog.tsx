@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -168,8 +169,8 @@ export function ImagingLog({ experimentId, experimentName = 'run', stepId }: { e
                 <button
                   type="button"
                   className={`${BUTTON_LINK} self-start`}
-                  onClick={() => {
-                    if (window.confirm('Delete this imaging entry?')) void deleteImagingRecord(r.id, db);
+                  onClick={async () => {
+                    if (await askConfirm({ title: 'Delete this imaging entry?', confirmLabel: 'Delete', danger: true })) void deleteImagingRecord(r.id, db);
                   }}
                 >
                   Delete

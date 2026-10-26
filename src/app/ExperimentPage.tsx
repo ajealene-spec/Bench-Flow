@@ -1,3 +1,4 @@
+import { askConfirm } from '../app/feedback';
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -97,9 +98,7 @@ export default function ExperimentPage() {
           type="button"
           className={BUTTON_DANGER}
           onClick={async () => {
-            const ok = window.confirm(
-              `Delete the experiment “${experiment.name}”? Its steps, timers and recorded data will be deleted. The protocol stays in the library.`,
-            );
+            const ok = await askConfirm({ title: 'Delete this experiment?', message: 'Its steps, timers and recorded data will be deleted. The protocol stays in the library.', confirmLabel: 'Delete experiment', danger: true });
             if (!ok) return;
             await deleteExperiment(experiment.id, db);
             navigate('/');

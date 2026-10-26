@@ -50,11 +50,14 @@ export function useScrollFrame(onFrame: (scrollY: number, maxScroll: number) => 
  */
 export function useRevealOnScroll(reduced: boolean): void {
   useEffect(() => {
+    const root = document.documentElement;
     const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
     if (reduced || !('IntersectionObserver' in window)) {
       targets.forEach((el) => el.classList.add('reveal-in'));
       return;
     }
+    // Arm the hidden state only now that the observer exists. Before this, everything is visible.
+    root.classList.add('reveal-armed');
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -63,10 +66,13 @@ export function useRevealOnScroll(reduced: boolean): void {
           observer.unobserve(entry.target);
         }
       },
-      { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
+      { rootMargin: '0px 0px -5% 0px', threshold: 0.02 },
     );
     targets.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      root.classList.remove('reveal-armed');
+    };
   }, [reduced]);
 }
 

@@ -1,4 +1,8 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { db } from '../../db';
+import { demoReportPath } from '../../content/seed';
+import { useToast } from '../../app/feedback';
 import { CARD, EYEBROW, EnterLink } from './introShared';
 import { HeroNetwork } from './HeroNetwork';
 import { HowItWorksSection } from './HowItWorksSection';
@@ -7,6 +11,37 @@ import { OpenScienceSection } from './OpenScienceSection';
 import { ProblemSection } from './ProblemSection';
 import { useActiveAnchor, usePrefersReducedMotion, useRevealOnScroll, useScrollFrame } from './introHooks';
 import './intro.css';
+
+/** Loads the starter content if needed, then opens the demo experiment's report. */
+function DemoButton() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function openDemo() {
+    setBusy(true);
+    try {
+      const path = await demoReportPath(db);
+      if (path) navigate(path);
+      else toast('Could not open the demo experiment. Try again from the Protocol Library.', { tone: 'error' });
+    } catch {
+      toast('Could not open the demo experiment. Try again from the Protocol Library.', { tone: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void openDemo()}
+      disabled={busy}
+      className={`${HERO_BUTTON} border-border bg-surface text-text shadow-card active:bg-surface-2 disabled:opacity-60`}
+    >
+      {busy ? 'Opening the demo…' : 'Try the demo experiment'}
+    </button>
+  );
+}
 
 export const REPO_URL = 'https://github.com/ajealene-spec/Bench-Flow';
 
@@ -62,9 +97,7 @@ export default function IntroPage() {
             <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, offline-first, built for reproducible neuroscience.</p>
             <div className="mt-8 flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
               <EnterLink className="border-2 border-transparent leading-6" />
-              <Link to="/library" className={`${HERO_BUTTON} border-border bg-surface text-text shadow-card active:bg-surface-2`}>
-                Try the demo experiment
-              </Link>
+              <DemoButton />
             </div>
           </div>
           <HeroNetwork reduced={reduced} />

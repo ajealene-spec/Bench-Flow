@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { askConfirm } from '../../../app/feedback';
+import { lazy, Suspense, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../../db';
 import { deletePhoto, listPhotos, putPhoto } from '../../../db/photos';
 import type { Photo } from '../../../types';
 import { BUTTON_LINK, BUTTON_SECONDARY } from '../fieldStyles';
 import { AnnotationOverlay } from './AnnotationOverlay';
-import { PhotoEditor } from './PhotoEditor';
+// The photo editor is heavy and rarely opened, so it loads on first use.
+const PhotoEditor = lazy(() => import('./PhotoEditor').then((m) => ({ default: m.PhotoEditor })));
 import { useObjectUrl } from './objectUrl';
 
 const TIME = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -27,7 +29,11 @@ export function PhotoGallery({ experimentId, stepId }: { experimentId: string; s
           <PhotoTile key={photo.id} photo={photo} onEdit={() => setEditing(photo)} />
         ))}
       </ul>
-      {editing && <PhotoEditor photo={editing} onClose={() => setEditing(undefined)} />}
+      {editing && (
+        <Suspense fallback={null}>
+          <PhotoEditor photo={editing} onClose={() => setEditing(undefined)} />
+        </Suspense>
+      )}
     </>
   );
 }
@@ -49,8 +55,8 @@ function PhotoTile({ photo, onEdit }: { photo: Photo; onEdit: () => void }) {
         <button
           type="button"
           className={BUTTON_LINK}
-          onClick={() => {
-            if (window.confirm('Delete this photo?')) void deletePhoto(photo.id, db);
+          onClick={async () => {
+            if (await askConfirm({ title: 'Delete this photo?', confirmLabel: 'Delete', danger: true })) void deletePhoto(photo.id, db);
           }}
         >
           Delete

@@ -6,6 +6,7 @@ import { getExperiment, getProcedureForExperiment, getRunState, listStepRecords 
 import { listExecutionEvents } from '../../db/executionLog';
 import { getInventoryItem, listInventoryUsageForExperiment } from '../../db/inventory';
 import { getAnimal } from '../../db/animals';
+import { listProtocolVersions } from '../../db/protocolVersions';
 import { listComments } from '../../db/comments';
 import { getTemplate } from '../../db/templates';
 import type { RunValue } from '../../types';
@@ -19,6 +20,7 @@ import { buildReport, type ReportAnimal } from './buildReport';
 import { reportToCSV, reportToEventsCSV, reportToJSON, reportToMarkdown } from './reportText';
 import type { ReportData } from './reportData';
 import { ResearchPackageButton } from './ResearchPackageButton';
+import { useToast } from '../../app/feedback';
 import { ZenodoHelp } from './ZenodoHelp';
 import { CommentThread } from '../share/CommentThread';
 import { ReproducibilityBadge } from '../insights/ReproducibilityBadge';
@@ -109,6 +111,16 @@ export default function ReportPage() {
 }
 
 function ReportView({ data }: { data: ReportData }) {
+  const { toast } = useToast();
+  const experimentId = data.report.experimentId;
+  // The template version that was current when the run started, so the report names the protocol revision it followed.
+  const protocolVersion = useLiveQuery(async () => {
+    const experiment = await getExperiment(experimentId);
+    if (!experiment?.templateId) return undefined;
+    const versions = await listProtocolVersions(experiment.templateId);
+    const atStart = versions.filter((v) => v.createdAt <= experiment.createdAt).at(-1);
+    return atStart ? `v${atStart.version}` : 'Unversioned';
+  }, [experimentId]);
   const { report, procedure, records, events, executionLog, photos } = data;
   const [message, setMessage] = useState('');
 
@@ -118,6 +130,7 @@ function ReportView({ data }: { data: ReportData }) {
     try {
       await navigator.clipboard.writeText(reportToMarkdown(report));
       setMessage('Copied report text.');
+      toast('Copied report text.');
     } catch {
       setMessage('Could not copy. Use Download JSON or Print instead.');
     }
@@ -151,6 +164,15 @@ function ReportView({ data }: { data: ReportData }) {
       </div>
 
       <article className="report-print-root mx-auto mt-4 w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-card p-4 text-text shadow-sm sm:p-8">
+        {/* Print-only running header and footer. They repeat on every page (see report.css). */}
+        <div className="print-brand hidden print:flex" aria-hidden="true">
+          <img src="/icon.svg" alt="" width={22} height={22} />
+          <span className="font-semibold">Bench Flow</span>
+          <span className="ml-auto truncate">{report.title}</span>
+        </div>
+        <div className="print-footer hidden print:block" aria-hidden="true">
+          Generated with Bench Flow · {formatTimestamp(Date.now())}
+        </div>
         <header>
           <p className="text-sm uppercase tracking-wide text-text-muted">Experiment report</p>
           <h1 className="mt-1 text-2xl font-semibold leading-tight sm:text-3xl">{report.title}</h1>
@@ -159,6 +181,7 @@ function ReportView({ data }: { data: ReportData }) {
           </div>
           <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-base sm:grid-cols-2">
             <Field label="Protocol" value={report.protocol.title} />
+            <Field label="Protocol version" value={protocolVersion ?? '—'} />
             <Field label="Category" value={report.protocol.category ?? '—'} />
             <Field label="Status" value={report.status.replace('_', ' ')} />
             <Field label="Total duration" value={formatElapsed(report.dates.durationSec) || '—'} />

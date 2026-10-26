@@ -20,6 +20,7 @@ import {
   type InsightsRun,
 } from './insightsData';
 import { loadInsightsRuns } from './loadInsights';
+import { PageHeader } from '../../app/ui';
 
 /** Charts drawn from recorded data across runs of the same protocol. Descriptions are written for screen readers too. */
 export default function InsightsPage() {
@@ -43,12 +44,10 @@ export default function InsightsPage() {
       <Link to="/" className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-accent-text underline">
         Back to Command Center
       </Link>
-      <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight text-text">Insights</h1>
-        <p className="text-base text-text-muted">
-          Charts from the data you recorded, across runs of the same protocol. Use the data table under any chart to read the exact values.
-        </p>
-      </header>
+      <PageHeader
+        title="Insights"
+        subtitle="Charts from the data you recorded, across runs of the same protocol. Use the data table under any chart to read the exact values."
+      />
 
       {runs.length === 0 ? (
         <section className={`${CARD} p-4`}>

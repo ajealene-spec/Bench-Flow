@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -83,7 +84,7 @@ export function TaskDialog({ date, task, onClose }: TaskDialogProps) {
 
   async function remove() {
     if (!task) return;
-    if (!window.confirm(`Delete "${task.title}"?`)) return;
+    if (!await askConfirm({ title: `Delete “${task.title}”?`, confirmLabel: 'Delete', danger: true })) return;
     await deleteTask(task.id);
     onClose();
   }

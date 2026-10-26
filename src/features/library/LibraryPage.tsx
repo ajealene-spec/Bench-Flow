@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
@@ -9,10 +10,10 @@ import { StartExperimentForm } from './StartExperimentForm';
 import { EmptyState } from '../../app/EmptyState';
 import { useStarterLoader } from './StarterLoader';
 import { ImportBenchflowButton } from '../share/ImportBenchflowButton';
+import { PageHeader } from '../../app/ui';
 
-const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
-const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
-const BUTTON_SECONDARY =`${BUTTON} border border-border bg-surface shadow-card text-text active:bg-surface-2`;
+const BUTTON_PRIMARY = 'btn btn-primary';
+const BUTTON_SECONDARY = 'btn btn-secondary';
 const INPUT =
 'min-h-12 w-full rounded-xl border border-border bg-surface shadow-card px-3 text-base text-text';
 
@@ -33,18 +34,18 @@ export default function LibraryPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:max-w-5xl">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col">
-          <span className="text-sm text-text-muted">Bench Flow</span>
-          <h1 className="text-2xl font-semibold">Protocol Library</h1>
-        </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <ImportBenchflowButton />
-          <Link to="/library/new" className={BUTTON_PRIMARY}>
-            New protocol
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Protocol Library"
+        subtitle="Reusable protocols, grouped by category. Start a run from any of them."
+        actions={
+          <>
+            <ImportBenchflowButton />
+            <Link to="/library/new" className="btn btn-primary">
+              New protocol
+            </Link>
+          </>
+        }
+      />
 
       {templates.length === 0 ? (
         <>
@@ -96,9 +97,7 @@ function TemplateCard({ template }: { template: ProtocolTemplate }) {
   const [starting, setStarting] = useState(false);
 
   async function remove() {
-    const ok = window.confirm(
-      `Delete the protocol “${template.title}”? Experiments started from it keep their own steps and records.`,
-    );
+    const ok = await askConfirm({ title: `Delete the protocol “${template.title}”?`, message: 'Experiments started from it keep their own steps and records.', confirmLabel: 'Delete protocol', danger: true });
     if (ok) await deleteTemplate(template.id, db);
   }
 
@@ -121,7 +120,7 @@ function TemplateCard({ template }: { template: ProtocolTemplate }) {
           <Link to={`/library/${template.id}`} className={BUTTON_SECONDARY}>
             Edit
           </Link>
-          <button type="button" className={BUTTON_SECONDARY} onClick={() => void remove()}>
+          <button type="button" className="btn btn-danger" onClick={() => void remove()}>
             Delete
           </button>
         </div>

@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -72,8 +73,8 @@ export function CommentThread({ targetType, targetId, label }: CommentThreadProp
               <button
                 type="button"
                 className={BUTTON_SECONDARY}
-                onClick={() => {
-                  if (window.confirm('Delete this comment?')) void removeComment(c.id, db);
+                onClick={async () => {
+                  if (await askConfirm({ title: 'Delete this comment?', confirmLabel: 'Delete', danger: true })) void removeComment(c.id, db);
                 }}
               >
                 Delete

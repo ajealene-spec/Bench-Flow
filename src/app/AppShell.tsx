@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { db } from '../db';
 import { getSettings } from '../db/settings';
 import { TimerTray } from '../features/timers/TimerTray';
@@ -28,6 +28,8 @@ export function AppShell() {
     });
   }, [followSystem]);
 
+  const location = useLocation();
+
   return (
     <>
       <a href="#main-content" className="skip-link">
@@ -38,7 +40,10 @@ export function AppShell() {
         <TimerTray />
       </div>
       <div id="main-content" tabIndex={-1} className="outline-none">
-        <Outlet />
+        {/* Keyed by path so each route fades in. Reduced motion turns the fade off (see index.css). */}
+        <div key={location.pathname} className="route-enter">
+          <Outlet />
+        </div>
       </div>
     </>
   );

@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { renameFolder } from '../../db/helpers';
 import { db } from '../../db';
@@ -127,10 +128,8 @@ export function FolderPanel({ folders, counts, selection, onSelect, dropKey, onM
             <button
               type="button"
               className={BUTTON_DANGER}
-              onClick={() => {
-                const ok = window.confirm(
-                  `Delete the folder “${selected.name}”? Its subfolders move up one level and its experiments move to Unfiled. No experiments are deleted.`,
-                );
+              onClick={async () => {
+                const ok = await askConfirm({ title: `Delete the folder “${selected.name}”?`, message: 'Its subfolders move up one level and its experiments move to Unfiled. No experiments are deleted.', confirmLabel: 'Delete folder', danger: true });
                 if (!ok) return;
                 void run(async () => {
                   await deleteFolderReparent(selected.id, db);

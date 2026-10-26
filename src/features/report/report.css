@@ -3,9 +3,54 @@
  * this file only changes what is printed or saved as PDF.
  */
 
+/* Letter and A4 both work: the page size follows the printer, and the margins leave room for the running header and footer. */
 @media print {
   @page {
-    margin: 16mm;
+    size: auto;
+    margin: 24mm 16mm 22mm;
+
+    /* Page numbers where the browser supports margin boxes (Chromium). Safari keeps the footer text only. */
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 8pt;
+      color: #4b5563;
+    }
+  }
+
+  /* Running header: Bench Flow icon and wordmark, with the experiment title. Fixed, so it repeats on each page. */
+  .print-brand {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    align-items: center;
+    gap: 8px;
+    height: 12mm;
+    padding: 0 0 2mm;
+    border-bottom: 0.4pt solid #d1d5db;
+    font-size: 9pt;
+    color: #111827;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .print-brand img {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+  }
+
+  /* Running footer with the generation date. */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10mm;
+    padding-top: 2mm;
+    border-top: 0.4pt solid #d1d5db;
+    font-size: 8pt;
+    color: #4b5563;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   }
 
   html,
@@ -40,6 +85,14 @@
 
   .no-print {
     display: none !important;
+  }
+
+  /* Print-only blocks are shown explicitly, so the visibility rule above does not hide them. */
+  .print-brand,
+  .print-footer,
+  .print-brand *,
+  .print-footer * {
+    visibility: visible;
   }
 
   .report-print-root a {

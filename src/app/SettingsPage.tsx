@@ -6,6 +6,7 @@ import { getSettings, putSettings } from '../db/settings';
 import type { AppSettings, ExperienceMode, ThemePreference } from '../types';
 import { testApiKey, type KeyTestResult } from './apiKey';
 import StarterLoader from '../features/library/StarterLoader';
+import { PageHeader } from './ui';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium disabled:opacity-50';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
@@ -20,10 +21,7 @@ export default function SettingsPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-6 p-4 pb-12 sm:p-6">
-      <header className="flex flex-col gap-1">
-        <span className="text-sm text-text-muted">Bench Flow</span>
-        <h1 className="text-2xl font-semibold text-text">Settings</h1>
-      </header>
+      <PageHeader title="Settings" subtitle="Appearance, your name, the AI key and the starter content." />
 
       {settings === undefined ? (
         <p className="text-text-muted">Loading settings…</p>

@@ -39,6 +39,16 @@ export interface FocusModeProps {
   onSkip: () => void;
 }
 
+/** Check mark that pops in when a step is completed. Decorative: the text label says the same thing. */
+function CheckBadge() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="32" height="32" className="check-pop shrink-0 text-accent-text">
+      <circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.15" />
+      <path d="M6.5 12.5l3.5 3.5 7.5-8" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /**
  * Focus mode: one step per screen, large text, huge timers. Timers for this run stay on screen
  * here, and a finished timer rings until it is dismissed.
@@ -47,12 +57,20 @@ export function FocusMode(props: FocusModeProps) {
   const { experimentId, step, protocolTitle, index, total, isCompleted, hazards, isLast, done, onBack, onNext, onComplete, onSkip } =
     props;
 
+  // Which way the last move went, so the step slides in from the side the user moved toward.
+  const [motion, setMotion] = useState({ index, dir: 'next' as 'next' | 'prev' });
+  if (motion.index !== index) setMotion({ index, dir: index > motion.index ? 'next' : 'prev' });
+
   return (
     <section aria-label="Focus mode" className="flex flex-col gap-6">
+      <div key={step.id} className={`flex flex-col gap-6 ${motion.dir === 'next' ? 'step-enter-next' : 'step-enter-prev'}`}>
       <div className="flex flex-col gap-2">
-        <p className="text-xl font-semibold text-text-muted">
-          Step {index + 1} of {total}
-          {isCompleted ? ' · Completed' : ''}
+        <p className="flex flex-wrap items-center gap-3 text-xl font-semibold text-text-muted">
+          <span>
+            Step {index + 1} of {total}
+            {isCompleted ? ' · Completed' : ''}
+          </span>
+          {isCompleted && <CheckBadge />}
         </p>
         <h1 className="text-4xl font-bold leading-tight sm:text-5xl">{step.title}</h1>
       </div>
@@ -90,6 +108,7 @@ export function FocusMode(props: FocusModeProps) {
 
       <StepNote experimentId={experimentId} stepId={step.id} large />
 
+      </div>
       <nav aria-label="Step navigation" className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
           <button

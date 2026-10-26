@@ -213,3 +213,17 @@ function stepIdByTitle(procedure: Procedure, title: string): string {
   if (!step) throw new Error(`Starter step "${title}" is missing`);
   return step.id;
 }
+
+/**
+ * Path to the finished demo experiment's report. Loads the starter content first when the demo is missing.
+ * Returns null only if the demo cannot be created (for example, the starter template failed to load).
+ */
+export async function demoReportPath(database: LabCompanionDB = defaultDb): Promise<string | null> {
+  const find = () => database.experiments.filter((e) => e.name === DEMO_EXPERIMENT_NAME).first();
+  let demo = await find();
+  if (!demo) {
+    await seedStarterContent(database);
+    demo = await find();
+  }
+  return demo ? `/experiment/${demo.id}/report` : null;
+}

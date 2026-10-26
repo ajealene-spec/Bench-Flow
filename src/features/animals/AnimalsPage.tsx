@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -10,6 +11,7 @@ import { computeAge, formatAge, parseIsoDate } from './ageMath';
 import { AnimalDetail } from './AnimalDetail';
 import { CageCard } from './CageCard';
 import { RridField } from '../neuro/RridField';
+import { PageHeader } from '../../app/ui';
 
 const SEX_LABEL: Record<AnimalSex, string> = { male: 'Male', female: 'Female', unknown: 'Unknown' };
 
@@ -29,10 +31,7 @@ export default function AnimalsPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 p-4 pb-12 sm:p-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold">Animals</h1>
-        <p className="text-base text-text-muted">Cages, animals, weights, surgery and post-op checks.</p>
-      </header>
+      <PageHeader title="Animals" subtitle="Cages, animals, weights, surgery and post-op checks." />
 
       <section aria-label="Cages" className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold">Cages</h2>
@@ -58,8 +57,8 @@ export default function AnimalsPage() {
                   <button
                     type="button"
                     className={BUTTON_LINK}
-                    onClick={() => {
-                      if (window.confirm(`Delete cage ${cage.label}? Animals in it stay on record but become uncaged.`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete cage ${cage.label}?`, message: 'Animals in it stay on record but become uncaged.', confirmLabel: 'Delete cage', danger: true })) {
                         void deleteCage(cage.id, db);
                       }
                     }}

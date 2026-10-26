@@ -111,3 +111,167 @@ html.font-dyslexia {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Design system. Shared type scale, buttons, cards and motion, so every page uses the same
+ * sizes and variants. Use these classes instead of one-off font sizes.
+ * Spacing follows an 8px rhythm: gap-2 / p-4 / gap-6 / p-8 (8, 16, 24, 32px).
+ */
+@utility t-display {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+@utility t-h1 {
+  font-size: 1.875rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+@utility t-h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+@utility t-h3 {
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+@utility t-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+@utility t-small {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+@utility t-overline {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+/* Timers, counts and measurements: digits keep their width so values do not jitter as they change. */
+@utility t-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Cards: one radius (16px) and one border and shadow. */
+@utility card {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+/* Buttons. Every variant is at least 48px tall for gloved hands. */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0 1.25rem;
+  border-radius: 0.75rem;
+  border: 2px solid transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+@utility btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  &:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+}
+@utility btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+}
+@utility btn-ghost {
+  background: transparent;
+  color: var(--accent-text);
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+}
+@utility btn-danger {
+  background: #B91C1C;
+  color: #FFFFFF;
+  &:hover:not(:disabled) {
+    background: #991B1B;
+  }
+}
+
+/* Motion. Each keyframe set is turned off by the reduced-motion rule above. */
+@keyframes route-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.route-enter {
+  animation: route-in 220ms ease-out both;
+}
+
+@keyframes step-from-right {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes step-from-left {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+.step-enter-next {
+  animation: step-from-right 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.step-enter-prev {
+  animation: step-from-left 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes check-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.check-pop {
+  animation: check-pop 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
+.progress-ring-arc {
+  transition: stroke-dashoffset 400ms ease;
+}
+
+/* Toasts and dialogs: small entrance, same easing as the route fade. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.toast-enter {
+  animation: toast-in 200ms ease-out both;
+}

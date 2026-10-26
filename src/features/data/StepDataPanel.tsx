@@ -1,3 +1,4 @@
+import { askConfirm } from '../../app/feedback';
 import { useState, type ClipboardEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -222,7 +223,7 @@ function RecordRow({ record }: { record: StepRecord }) {
   }
 
   async function remove() {
-    if (!window.confirm('Delete this record?')) return;
+    if (!await askConfirm({ title: 'Delete this record?', confirmLabel: 'Delete', danger: true })) return;
     await deleteStepRecord(record.id, db);
   }
 
