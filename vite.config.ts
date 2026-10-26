@@ -33,7 +33,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    outDir: 'dist.nosync',
+    outDir: 'dist',
   },
   test: {
     environment: 'jsdom',
