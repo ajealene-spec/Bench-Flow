@@ -95,7 +95,7 @@ export default function IntroPage() {
               <h1 id="hero-title" className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
                 Bench Flow — the open lab notebook for every bench.
               </h1>
-              <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, works offline, built for reproducible neuroscience.</p>
+              <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, works offline, built for reproducible research.</p>
               <div className="mt-8 flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
                 <EnterLink className="border-2 border-transparent leading-6" />
                 <DemoButton />

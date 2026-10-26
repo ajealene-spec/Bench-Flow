@@ -18,7 +18,7 @@ export default defineConfig({
       manifest: {
         name: 'Bench Flow',
         short_name: 'Bench Flow',
-        description: 'Bench Flow: the open lab notebook for every bench. Free, offline-first, built for reproducible neuroscience.',
+        description: 'Bench Flow: the open lab notebook for every bench. Free, offline-first, built for reproducible research.',
         display: 'standalone',
         start_url: '/',
         scope: '/',
