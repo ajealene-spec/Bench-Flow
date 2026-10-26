@@ -8,7 +8,7 @@ import { formatDate } from '../../app/format';
 import { StartExperimentForm } from './StartExperimentForm';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
-const BUTTON_PRIMARY = `${BUTTON} bg-teal-700 text-white active:bg-teal-800`;
+const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
 const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
 const INPUT =
   'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';

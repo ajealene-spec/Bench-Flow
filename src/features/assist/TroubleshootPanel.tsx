@@ -118,7 +118,7 @@ export function TroubleshootPanel({ experimentId }: { experimentId: string }) {
               type="button"
               aria-pressed={selected}
               onClick={() => setPresetId(selected ? undefined : p.id)}
-              className={`${CHIP} ${selected ? 'border-teal-700 bg-teal-50 text-teal-900' : 'border-slate-300 bg-white text-slate-900'}`}
+              className={`${CHIP} ${selected ? 'border-accent bg-slate-100 text-accent-hover' : 'border-slate-300 bg-white text-slate-900'}`}
             >
               {p.label}
             </button>
@@ -139,7 +139,7 @@ export function TroubleshootPanel({ experimentId }: { experimentId: string }) {
       </label>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className={`${BUTTON} bg-teal-700 text-white active:bg-teal-800`} onClick={getSuggestions} disabled={busy}>
+        <button type="button" className={`${BUTTON} bg-accent text-white active:bg-accent-hover`} onClick={getSuggestions} disabled={busy}>
           {busy ? 'Working…' : 'Get suggestions'}
         </button>
         <p className="text-sm text-slate-600">

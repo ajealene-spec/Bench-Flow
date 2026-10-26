@@ -3,7 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { db } from '../../db';
 import { deleteTemplate, getTemplate, listCategories, updateTemplate } from '../../db/templates';
-import type { Hazard, ProtocolTemplate, Step } from '../../types';
+import type { Hazard, MaterialItem, ProtocolOverview, ProtocolPhase, ProtocolTemplate, Step } from '../../types';
+import { EMPTY_OVERVIEW, MaterialsCard, OverviewCard, TimelineCard } from '../plan/PlanCards';
 import { prepareSteps, ReviewSection } from '../import/ImportPage';
 import { LiteraturePrompt } from '../assist/LiteraturePrompt';
 
@@ -22,7 +23,7 @@ export default function TemplatePage() {
   if (template === null) {
     return (
       <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
-        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-teal-700 underline dark:text-teal-300">
+        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent underline dark:text-slate-300">
           Back to library
         </Link>
         <h1 className="text-2xl font-semibold">Protocol not found</h1>
@@ -38,6 +39,9 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   const [category, setCategory] = useState(template.category);
   const [steps, setSteps] = useState<Step[]>(template.steps);
   const [hazards, setHazards] = useState<Hazard[]>(template.hazards ?? []);
+  const [overview, setOverview] = useState<ProtocolOverview>(template.overview ?? EMPTY_OVERVIEW);
+  const [materials, setMaterials] = useState<MaterialItem[]>(template.materials ?? []);
+  const [phases, setPhases] = useState<ProtocolPhase[]>(template.phases ?? []);
   const [notes, setNotes] = useState(template.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -47,7 +51,11 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
     setBusy(true);
     setError(null);
     try {
-      await updateTemplate(template.id, { title, category, steps: prepareSteps(steps), hazards, notes }, db);
+      await updateTemplate(
+        template.id,
+        { title, category, steps: prepareSteps(steps), hazards, notes, overview, materials, phases },
+        db,
+      );
       setSaved(true);
     } catch {
       setError('Could not save the protocol. Please try again.');
@@ -68,7 +76,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <Link to="/library" className="inline-flex min-h-12 items-center text-teal-700 underline dark:text-teal-300">
+        <Link to="/library" className="inline-flex min-h-12 items-center text-accent underline dark:text-slate-300">
           Back to library
         </Link>
         <button type="button" className={BUTTON_SECONDARY} onClick={() => void remove()}>
@@ -103,6 +111,32 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
           ))}
         </datalist>
       </label>
+
+      <OverviewCard
+        value={overview}
+        onChange={(next) => {
+          setOverview(next);
+          setSaved(false);
+        }}
+      />
+
+      <MaterialsCard
+        materials={materials}
+        onChange={(next) => {
+          setMaterials(next);
+          setSaved(false);
+        }}
+      />
+
+      <TimelineCard
+        steps={steps}
+        phases={phases}
+        onChange={(next) => {
+          setSteps(next.steps);
+          setPhases(next.phases);
+          setSaved(false);
+        }}
+      />
 
       <ReviewSection
         title={title}

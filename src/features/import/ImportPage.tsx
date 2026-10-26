@@ -5,6 +5,8 @@ import { createTemplate } from '../../db/templates';
 import type { Hazard, HazardKind, Step } from '../../types';
 import { extractPdfText } from './pdfText';
 import { pruneHazardSteps } from './hazards';
+import { detectVariables } from '../assist/detectVariables';
+import { StepText } from '../assist/StepText';
 import { getParserStatus, parseProcedure, type ParseOutcome } from './parseProcedure';
 
 type Unit = 's' | 'min' | 'h';
@@ -13,7 +15,7 @@ const UNIT_SECONDS: Record<Unit, number> = { s: 1, min: 60, h: 3600 };
 const FIELD =
   'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
 const BUTTON = 'inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl px-4 font-medium';
-const BUTTON_PRIMARY = `${BUTTON} bg-teal-700 text-white active:bg-teal-800 disabled:opacity-50`;
+const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover disabled:opacity-50`;
 const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
 
 /** Largest unit that represents the seconds exactly, so 3600 shows as "1 h". */
@@ -45,7 +47,12 @@ export function blankStep(): Step {
 
 /** Trims titles and points each timer at its step, ready to store. */
 export function prepareSteps(steps: Step[]): Step[] {
-  return steps.map((s) => ({ ...s, title: s.title.trim(), timers: s.timers.map((t) => ({ ...t, stepId: s.id })) }));
+  return steps.map((s) => ({
+    ...s,
+    title: s.title.trim(),
+    timers: s.timers.map((t) => ({ ...t, stepId: s.id })),
+    variables: s.variables ?? detectVariables(s.instructions),
+  }));
 }
 
 interface ReviewState {
@@ -117,6 +124,8 @@ export default function ImportPage() {
         title: review.title,
         steps: prepareSteps(review.steps),
         hazards: pruneHazardSteps(review.hazards, review.steps.map((s) => s.id)),
+        phases: review.outcome.phases,
+        materials: review.outcome.materials,
         sourceText: text,
       });
       navigate(`/library/${template.id}`);
@@ -129,7 +138,7 @@ export default function ImportPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-1">
-        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-teal-700 underline dark:text-teal-300">
+        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent underline dark:text-slate-300">
           Back to library
         </Link>
         <h1 className="text-2xl font-semibold">New protocol</h1>
@@ -144,7 +153,7 @@ export default function ImportPage() {
       {!review ? (
         <section className="flex flex-col gap-4">
           {aiReady === false && (
-            <div role="note" className="rounded-xl border border-amber-400 bg-amber-50 p-3 text-amber-950 dark:border-amber-600 dark:bg-amber-950/50 dark:text-amber-100">
+            <div role="note" className="rounded-xl border border-slate-400 bg-slate-100 p-3 text-slate-900 dark:border-slate-400 dark:bg-slate-900/50 dark:text-slate-100">
               <p className="font-semibold">For PDFs, add an Anthropic API key to .env for accurate steps.</p>
               <p className="text-sm">
                 Add a line <code className="font-mono">ANTHROPIC_API_KEY=your-key</code> to a file named <code className="font-mono">.env</code> in the project folder, then restart <code className="font-mono">npm run dev</code>.
@@ -398,11 +407,16 @@ function StepCard({ step, index, count, onChange, onMove, onDelete }: StepCardPr
         <span className="text-sm font-medium">Instructions</span>
         <textarea
           value={step.instructions}
-          onChange={(e) => onChange({ ...step, instructions: e.target.value })}
+          onChange={(e) => onChange({ ...step, instructions: e.target.value, variables: undefined })}
           rows={3}
           className={`${FIELD} min-h-24 py-3`}
         />
       </label>
+
+      <div aria-label="Step text preview" className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Preview with live values</span>
+        <StepText step={step} textClassName="text-base leading-relaxed" />
+      </div>
 
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium">Duration (leave empty for none)</span>
@@ -441,7 +455,7 @@ function StepCard({ step, index, count, onChange, onMove, onDelete }: StepCardPr
       </div>
 
       {step.cautions.length > 0 && (
-        <ul className="list-disc pl-5 text-sm text-amber-800 dark:text-amber-200">
+        <ul className="list-disc pl-5 text-sm text-slate-900 dark:text-slate-100">
           {step.cautions.map((c) => (
             <li key={c}>{c}</li>
           ))}
@@ -486,7 +500,7 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
   }
 
   return (
-    <section aria-labelledby="safety-heading" className="flex flex-col gap-3 rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 text-amber-950 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-100">
+    <section aria-labelledby="safety-heading" className="flex flex-col gap-3 rounded-2xl border-2 border-slate-400 bg-slate-100 p-4 text-slate-900 dark:border-slate-400 dark:bg-slate-900/40 dark:text-slate-100">
       <h2 id="safety-heading" className="text-lg font-semibold">
         Safety
       </h2>
@@ -531,7 +545,7 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
         </ul>
       )}
 
-      <div className="flex flex-col gap-2 rounded-xl border border-amber-300 p-3 dark:border-amber-700">
+      <div className="flex flex-col gap-2 rounded-xl border border-slate-400 p-3 dark:border-slate-400">
         <span className="text-sm font-medium">Add a hazard</span>
         <input
           type="text"

@@ -9,16 +9,19 @@ import {
   listFolders,
   renameExperiment,
   setExperimentFolder,
+  setMaterialChecked,
   updateExperiment,
+  updateProcedureFields,
 } from '../db/helpers';
-import type { ExperimentStatus } from '../types';
+import type { Experiment, ExperimentStatus, Procedure } from '../types';
+import { EMPTY_OVERVIEW, MaterialsCard, OverviewCard, TimelineCard } from '../features/plan/PlanCards';
 import { formatDate } from './format';
 import { RecordedDataSummary } from '../features/data/RecordedDataSummary';
 import { ExperimentReagentsPanel } from '../features/inventory/ExperimentReagentsPanel';
 import { TroubleshootPanel } from '../features/assist/TroubleshootPanel';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
-const BUTTON_PRIMARY = `${BUTTON} bg-teal-700 text-white active:bg-teal-800`;
+const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
 const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
 const BUTTON_DANGER = `${BUTTON} border border-rose-300 bg-white text-rose-800 active:bg-rose-50 dark:border-rose-700 dark:bg-slate-800 dark:text-rose-200`;
 const INPUT =
@@ -67,6 +70,8 @@ export default function ExperimentPage() {
         <DateRow label="Ended" value={formatDate(experiment.endedAt)} />
       </section>
 
+      {procedure && <ExperimentPlan key={procedure.id} experiment={experiment} procedure={procedure} />}
+
       <section aria-label="Actions" className="flex flex-wrap gap-3">
         <Link to={`/experiment/${experiment.id}/run`} className={BUTTON_PRIMARY}>
           Continue run
@@ -96,7 +101,7 @@ export default function ExperimentPage() {
         </button>
         <Link
           to={`/experiment/${experiment.id}/report`}
-          className="inline-flex min-h-12 items-center justify-center rounded-lg bg-teal-700 px-4 font-semibold text-white"
+          className="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-4 font-semibold text-white"
         >
           View report
         </Link>
@@ -193,9 +198,33 @@ function BackLink() {
   return (
     <Link
       to="/"
-      className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-teal-700 underline dark:text-teal-300"
+      className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-accent underline dark:text-slate-300"
     >
       Back to experiments
     </Link>
+  );
+}
+
+/** Overview, materials checklist and timeline for the run. Edits change this run only, never the template. */
+function ExperimentPlan({ experiment, procedure }: { experiment: Experiment; procedure: Procedure }) {
+  const [overview, setOverview] = useState(procedure.overview ?? EMPTY_OVERVIEW);
+  return (
+    <section aria-label="Protocol plan" className="flex flex-col gap-4">
+      <OverviewCard
+        value={overview}
+        onChange={setOverview}
+        onBlur={() => void updateProcedureFields(procedure.id, { overview }, db)}
+      />
+      <MaterialsCard
+        materials={procedure.materials ?? []}
+        checked={experiment.materialsChecked ?? []}
+        onToggle={(id, on) => void setMaterialChecked(experiment.id, id, on, db)}
+      />
+      <TimelineCard
+        steps={procedure.steps}
+        phases={procedure.phases ?? []}
+        onChange={(next) => void updateProcedureFields(procedure.id, next, db)}
+      />
+    </section>
   );
 }

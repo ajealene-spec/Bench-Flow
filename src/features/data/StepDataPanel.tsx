@@ -179,7 +179,7 @@ function NumberEntry({ experimentId, step }: { experimentId: string; step: Step 
         </p>
       )}
       {message && (
-        <p role="status" className="text-base text-emerald-800 dark:text-emerald-300">
+        <p role="status" className="text-base text-slate-900 dark:text-slate-400">
           {message}
         </p>
       )}
@@ -225,7 +225,7 @@ function RecordRow({ record }: { record: StepRecord }) {
 
   if (editing) {
     return (
-      <li className="flex flex-col gap-2 rounded-xl border-2 border-teal-600 p-3 dark:border-teal-400">
+      <li className="flex flex-col gap-2 rounded-xl border-2 border-accent p-3 dark:border-slate-300">
         <div className="grid gap-2 sm:grid-cols-3">
           <input aria-label="Edit label" className={FIELD_INPUT} value={label} onChange={(e) => setLabel(e.target.value)} />
           {record.kind === 'number' && (

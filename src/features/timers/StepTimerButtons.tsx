@@ -24,7 +24,7 @@ export function StepTimerButtons({ timers, experimentId }: { timers: Timer[]; ex
             key={timer.id}
             type="button"
             onClick={() => void handleStart(timer)}
-            className="min-h-16 rounded-xl border-2 border-teal-700 px-5 text-left font-medium text-teal-800 active:bg-teal-50 dark:border-teal-400 dark:text-teal-200 dark:active:bg-teal-900/40"
+            className="min-h-16 rounded-xl border-2 border-accent px-5 text-left font-medium text-accent-hover active:bg-slate-100 dark:border-slate-300 dark:text-slate-300 dark:active:bg-accent-hover/40"
           >
             Start timer: {timer.label} ({formatRemaining(timer.durationSec)})
           </button>

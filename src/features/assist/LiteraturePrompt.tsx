@@ -70,14 +70,14 @@ export function LiteraturePrompt({
   if (phase === 'hidden') return null;
 
   return (
-    <section aria-labelledby="literature-heading" className="flex flex-col gap-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
+    <section aria-labelledby="literature-heading" className="flex flex-col gap-4 rounded-2xl border border-slate-300 bg-slate-100 p-4">
       <h2 id="literature-heading" className="text-xl font-semibold">
         Check recent literature for optimizations?
       </h2>
 
       {phase === 'ask' && (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={`${BUTTON} border-teal-700 bg-teal-700 text-white active:bg-teal-800`} onClick={checkLiterature}>
+          <button type="button" className={`${BUTTON} border-accent bg-accent text-white active:bg-accent-hover`} onClick={checkLiterature}>
             Yes
           </button>
           <button
@@ -138,7 +138,7 @@ export function LiteraturePrompt({
                 <ul className="mt-2 list-disc space-y-1 pl-6 text-base">
                   {s.citations.map((c) => (
                     <li key={c.url}>
-                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-teal-700 underline">
+                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">
                         {c.title}
                       </a>
                     </li>

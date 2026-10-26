@@ -1,12 +1,16 @@
-import type { Hazard, Step } from '../../types';
+import type { Hazard, MaterialItem, ProtocolPhase, Step } from '../../types';
 import { detectHazards, mergeHazards, sanitizeHazards } from './hazards';
-import { parseLocal } from './localParse';
+import { detectMaterials, parseLocal } from './localParse';
 
 export interface ParseOutcome {
   title?: string;
   steps: Step[];
   /** Rule hits merged with the AI's hazards (AI names are matched to the rule list). */
   hazards: Hazard[];
+  /** Phases from "Day N" / "Phase N" headings, when found. */
+  phases?: ProtocolPhase[];
+  /** Materials mentioned in the text. */
+  materials?: MaterialItem[];
   parser: 'ai' | 'local';
   /** Why the local parser was used, or empty when AI parsed the text. */
   note: string;
@@ -47,7 +51,7 @@ export async function parseProcedure(text: string): Promise<ParseOutcome> {
           const data = (await res.json()) as { title?: string; steps: Step[]; hazards?: unknown };
           if (Array.isArray(data.steps) && data.steps.length > 0) {
             const hazards = mergeHazards(detectHazards(data.steps), sanitizeHazards(data.hazards, data.steps));
-            return { title: data.title, steps: data.steps, hazards, parser: 'ai', note: '' };
+            return { title: data.title, steps: data.steps, hazards, parser: 'ai', note: '', materials: detectMaterials(text) };
           }
         }
         note = 'The AI parser could not read this text, so the local parser was used.';
@@ -58,5 +62,13 @@ export async function parseProcedure(text: string): Promise<ParseOutcome> {
   }
 
   const local = parseLocal(text);
-  return { title: local.title, steps: local.steps, hazards: detectHazards(local.steps), parser: 'local', note };
+  return {
+    title: local.title,
+    steps: local.steps,
+    hazards: detectHazards(local.steps),
+    parser: 'local',
+    note,
+    phases: local.phases,
+    materials: local.materials,
+  };
 }

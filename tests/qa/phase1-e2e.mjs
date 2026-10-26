@@ -66,6 +66,17 @@ function horizontalOverflow(page) {
   return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 }
 
+// The safety & PPE gate hides steps until every checklist item is checked and confirmed.
+async function passSafetyGate(page) {
+  const gate = page.getByRole('heading', { name: 'Safety & PPE checklist' });
+  if (!(await gate.isVisible().catch(() => false))) return;
+  const boxes = page.getByRole('checkbox');
+  const n = await boxes.count();
+  for (let i = 0; i < n; i++) await boxes.nth(i).check();
+  await page.getByRole('button', { name: 'Confirm and begin' }).click();
+  await gate.waitFor({ state: 'detached' });
+}
+
 async function openStepList(page) {
   const toggle = page.getByRole('button', { name: /All steps/ });
   if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
@@ -97,6 +108,7 @@ async function createAndStartRun(page, protocolTitle, runTitle) {
   await card.getByLabel('Run title').fill(runTitle);
   await card.getByRole('button', { name: 'Start run' }).click();
   await page.waitForURL(/\/run$/);
+  await passSafetyGate(page);
   return page.url();
 }
 
@@ -178,6 +190,7 @@ async function runViewport(browser, vp) {
     await card.getByLabel('Run title').fill('QA run');
     await card.getByRole('button', { name: 'Start run' }).click();
     await page.waitForURL(/\/run$/);
+    await passSafetyGate(page);
     await page.getByRole('heading', { name: 'Prepare lysis buffer (QA edit)' }).waitFor();
     return page.url();
   });

@@ -6,7 +6,7 @@ export function Placeholder({ title }: { title: string }) {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 sm:p-6">
       <Link
         to="/"
-        className="inline-flex min-h-12 items-center rounded-lg px-3 font-medium text-teal-700 underline dark:text-teal-300"
+        className="inline-flex min-h-12 items-center rounded-lg px-3 font-medium text-accent underline dark:text-slate-300"
       >
         Back to workspace
       </Link>

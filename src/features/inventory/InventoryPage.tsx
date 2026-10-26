@@ -69,7 +69,7 @@ export default function InventoryPage() {
       {(expired.length > 0 || expiringSoon.length > 0) && (
         <section aria-label="Expiry summary" className="flex flex-col gap-1 rounded-2xl border border-slate-300 p-4 text-base dark:border-slate-700">
           {expired.length > 0 && <p className="text-red-700 dark:text-red-300">{expired.length} expired</p>}
-          {expiringSoon.length > 0 && <p className="text-amber-700 dark:text-amber-300">{expiringSoon.length} expiring in the next 30 days</p>}
+          {expiringSoon.length > 0 && <p className="text-slate-400 dark:text-slate-400">{expiringSoon.length} expiring in the next 30 days</p>}
         </section>
       )}
 

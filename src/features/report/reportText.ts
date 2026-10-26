@@ -1,7 +1,8 @@
-import type { Procedure, StepRecord } from '../../types';
+import type { ExecutionEvent, Procedure, StepRecord } from '../../types';
 import { groupRecordsByStep, SUMMARY_HEADERS, summaryRows, toCSV } from '../data/summary';
 import { formatElapsed, formatTimestamp } from '../data/time';
 import type { Report } from './buildReport';
+import type { ExecutionLog } from './buildExecutionLog';
 
 const DASH = '—';
 
@@ -81,6 +82,27 @@ export function reportToCSV(procedure: Procedure | undefined, records: StepRecor
   return toCSV(SUMMARY_HEADERS, summaryRows(groups));
 }
 
-export function reportToJSON(report: Report): string {
-  return JSON.stringify(report, null, 2);
+/** Every execution event, oldest first. One row per event, with the planned and actual values when present. */
+export function reportToEventsCSV(events: ExecutionEvent[]): string {
+  const headers = ['time', 'type', 'step_id', 'phase_id', 'planned', 'actual', 'unit', 'note', 'deviation_kind', 'deviation_delta'];
+  const rows = [...events]
+    .sort((a, b) => a.at - b.at)
+    .map((e) => [
+      formatTimestamp(e.at),
+      e.type,
+      e.stepId ?? '',
+      e.phaseId ?? '',
+      e.planned === undefined ? '' : String(e.planned),
+      e.actual === undefined ? '' : String(e.actual),
+      e.unit ?? '',
+      e.note ?? '',
+      e.deviation?.kind ?? '',
+      e.deviation?.delta === undefined ? '' : String(e.deviation.delta),
+    ]);
+  return toCSV(headers, rows);
+}
+
+/** The report as JSON. Pass the execution log and events to include them alongside the report. */
+export function reportToJSON(report: Report, extra?: { executionLog?: ExecutionLog; events?: ExecutionEvent[] }): string {
+  return JSON.stringify({ ...report, ...extra }, null, 2);
 }

@@ -49,9 +49,9 @@ export function TimerTray() {
   return (
     <section
       aria-label="Running timers"
-      className="flex flex-col gap-2 rounded-xl border border-teal-300 bg-teal-50 p-3 dark:border-teal-700 dark:bg-teal-950/50"
+      className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-slate-100 p-3 dark:border-accent dark:bg-accent-hover/50"
     >
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-teal-800 dark:text-teal-200">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-hover dark:text-slate-300">
         Timers ({timers.length})
       </h2>
       <ul className="flex flex-col gap-2">
@@ -74,12 +74,12 @@ export function TimerTray() {
               </span>
               <div className="flex flex-wrap gap-2">
                 {timer.status === 'running' && (
-                  <button type="button" className={`${BUTTON} bg-amber-200 text-amber-900 dark:bg-amber-700 dark:text-amber-50`} onClick={() => void pauseStepTimer(timer.id)}>
+                  <button type="button" className={`${BUTTON} bg-slate-100 text-slate-900 dark:bg-slate-400 dark:text-slate-100`} onClick={() => void pauseStepTimer(timer.id)}>
                     Pause
                   </button>
                 )}
                 {timer.status === 'paused' && (
-                  <button type="button" className={`${BUTTON} bg-teal-700 text-white`} onClick={() => void resumeStepTimer(timer.id)}>
+                  <button type="button" className={`${BUTTON} bg-accent text-white`} onClick={() => void resumeStepTimer(timer.id)}>
                     Resume
                   </button>
                 )}

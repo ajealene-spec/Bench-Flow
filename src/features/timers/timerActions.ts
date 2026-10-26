@@ -2,6 +2,7 @@ import { db as defaultDb, type LabCompanionDB } from '../../db';
 import { deleteTimer as deleteTimerRow, newId, saveTimer } from '../../db/helpers';
 import type { Timer } from '../../types';
 import { logTimerRun } from '../data/timerRecords';
+import { logTimerStart, logTimerStop } from './timerEvents';
 import { finishTimer, isExpired, pauseTimer, resetTimer, startTimer } from './timeMath';
 
 /*
@@ -36,6 +37,7 @@ export async function startStepTimer(template: Timer, database: LabCompanionDB =
   const now = Date.now();
   const running: Timer = { ...startTimer(row, now), firstStartedAt: now };
   await saveTimer(running, database);
+  await logTimerStart(running, now, database);
   return running;
 }
 
@@ -58,7 +60,10 @@ export function resetStepTimer(id: string, database: LabCompanionDB = defaultDb)
  */
 export async function dismissStepTimer(id: string, database: LabCompanionDB = defaultDb) {
   const current = await database.timers.get(id);
-  if (current && current.status !== 'done') await logTimerRun(current, Date.now(), database);
+  if (current && current.status !== 'done') {
+    await logTimerRun(current, Date.now(), database);
+    await logTimerStop(current, Date.now(), database);
+  }
   return deleteTimerRow(id, database);
 }
 
@@ -75,6 +80,9 @@ export async function finishIfExpired(id: string, database: LabCompanionDB = def
     await database.timers.put(finished);
   });
   // Logged here, on the one transition that returns a value, so a run is recorded exactly once.
-  if (finished) await logTimerRun(finished, Date.now(), database);
+  if (finished) {
+    await logTimerRun(finished, Date.now(), database);
+    await logTimerStop(finished, Date.now(), database);
+  }
   return finished;
 }

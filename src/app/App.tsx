@@ -14,7 +14,7 @@ const NAV_LINK = 'inline-flex min-h-12 items-center rounded-xl border px-4 font-
 
 function navClass({ isActive }: { isActive: boolean }): string {
   return isActive
-    ? `${NAV_LINK} border-teal-700 bg-teal-700 text-white`
+    ? `${NAV_LINK} border-accent bg-accent text-white`
     : `${NAV_LINK} border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
 }
 
@@ -24,7 +24,7 @@ function Layout() {
     <>
       <nav aria-label="Main" className="mx-auto flex w-full max-w-3xl flex-wrap gap-2 px-4 pt-4">
         <NavLink to="/" end className={navClass}>
-          Experiments
+          Home
         </NavLink>
         <NavLink to="/library" className={navClass}>
           Protocol Library

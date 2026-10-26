@@ -79,3 +79,27 @@ export function alertTimerDone(timer: Pick<Timer, 'id' | 'label'>): void {
   vibrate();
   notifyTimerDone(timer);
 }
+
+/**
+ * Rings the alarm (beeps and vibration) every `intervalMs` until the returned function is called.
+ * Used by the run view so a finished timer keeps sounding until the user dismisses it.
+ */
+export function startRepeatingAlarm(intervalMs = 2500): () => void {
+  let stopped = false;
+  const ring = () => {
+    if (stopped) return;
+    playAlarm();
+    vibrate();
+  };
+  ring();
+  const id = window.setInterval(ring, intervalMs);
+  return () => {
+    stopped = true;
+    window.clearInterval(id);
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(0);
+    } catch {
+      /* unsupported */
+    }
+  };
+}

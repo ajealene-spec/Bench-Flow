@@ -3,7 +3,9 @@ import type {
   Experiment,
   ExperimentStatus,
   Folder,
+  MaterialItem,
   Procedure,
+  ProtocolPhase,
   RunState,
   Step,
   StepRecord,
@@ -11,6 +13,7 @@ import type {
 } from '../types';
 import { getTemplate } from './templates';
 import { buildSafetyChecklist } from '../features/run/safety';
+import { detectVariables } from '../features/assist/detectVariables';
 
 export const DEFAULT_EXPERIMENT_NAME = 'Untitled experiment';
 export const DEFAULT_FOLDER_NAME = 'New folder';
@@ -60,6 +63,9 @@ export async function updateExperiment(
       | 'endedAt'
       | 'safetyChecklist'
       | 'safetyConfirmedAt'
+      | 'materialsChecked'
+      | 'pausedAtPhaseId'
+      | 'pausedAt'
     >
   >,
   database: LabCompanionDB = defaultDb,
@@ -121,15 +127,33 @@ export async function listExperimentSummaries(database: LabCompanionDB = default
  * Copies template steps with fresh ids. Timers are keyed by step id, so two runs of the same
  * template must not share step ids or one run's timers would show up in the other.
  */
-function snapshotSteps(steps: Step[]): Step[] {
+function snapshotSteps(steps: Step[], phaseIds: Map<string, string>): Step[] {
   return steps.map((step) => {
     const stepId = newId();
     return {
       ...structuredClone(step),
       id: stepId,
+      variables: step.variables ?? detectVariables(step.instructions),
+      phaseId: step.phaseId ? phaseIds.get(step.phaseId) : undefined,
       timers: step.timers.map((timer) => ({ ...structuredClone(timer), id: newId(), stepId })),
     };
   });
+}
+
+/** Copies materials with fresh ids; the bench checklist is per run, so no checked state is carried over. */
+export function snapshotMaterials(materials: MaterialItem[] | undefined): MaterialItem[] {
+  return (materials ?? []).map((m) => ({ id: newId(), name: m.name, kind: m.kind }));
+}
+
+/** Copies phases with fresh ids. The returned map goes from template phase id to run phase id, for remapping steps. */
+export function snapshotPhases(phases: ProtocolPhase[] | undefined): { phases: ProtocolPhase[]; phaseIds: Map<string, string> } {
+  const phaseIds = new Map<string, string>();
+  const copies = (phases ?? []).map((p) => {
+    const id = newId();
+    phaseIds.set(p.id, id);
+    return { id, name: p.name };
+  });
+  return { phases: copies, phaseIds };
 }
 
 /**
@@ -146,13 +170,17 @@ export async function startExperimentFromTemplate(
     const template = await getTemplate(templateId, database);
     if (!template) throw new Error(`Template ${templateId} not found`);
 
+    const snapshot = snapshotPhases(template.phases);
     const now = Date.now();
     const experimentId = newId();
     const procedure: Procedure = {
       id: newId(),
       experimentId,
       title: template.title,
-      steps: snapshotSteps(template.steps),
+      steps: snapshotSteps(template.steps, snapshot.phaseIds),
+      overview: template.overview ? { ...template.overview } : undefined,
+      materials: snapshotMaterials(template.materials),
+      phases: snapshot.phases,
       createdAt: now,
       updatedAt: now,
     };
@@ -164,6 +192,7 @@ export async function startExperimentFromTemplate(
       templateId: template.id,
       procedureId: procedure.id,
       safetyChecklist: buildSafetyChecklist(template.hazards ?? []),
+      materialsChecked: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -232,6 +261,15 @@ export function setExperimentFolder(
 
 export async function saveProcedure(procedure: Procedure, database: LabCompanionDB = defaultDb): Promise<void> {
   await database.procedures.put({ ...procedure, updatedAt: Date.now() });
+}
+
+/** Saves plan fields (overview, materials, phases, steps) on a run snapshot without rewriting the rest of it. */
+export async function updateProcedureFields(
+  id: string,
+  changes: Partial<Pick<Procedure, 'overview' | 'materials' | 'phases' | 'steps'>>,
+  database: LabCompanionDB = defaultDb,
+): Promise<void> {
+  await database.procedures.update(id, { ...changes, updatedAt: Date.now() });
 }
 
 export function getProcedureForExperiment(
@@ -307,4 +345,21 @@ export function listActiveTimers(database: LabCompanionDB = defaultDb): Promise<
 
 export async function deleteTimer(id: string, database: LabCompanionDB = defaultDb): Promise<void> {
   await database.timers.delete(id);
+}
+
+/** Ticks one material on or off for a run. The checklist lives on the experiment, not the template. */
+export function setMaterialChecked(
+  experimentId: string,
+  materialId: string,
+  checked: boolean,
+  database: LabCompanionDB = defaultDb,
+): Promise<void> {
+  return database.transaction('rw', database.experiments, async () => {
+    const experiment = await database.experiments.get(experimentId);
+    if (!experiment) return;
+    const current = new Set(experiment.materialsChecked ?? []);
+    if (checked) current.add(materialId);
+    else current.delete(materialId);
+    await updateExperiment(experimentId, { materialsChecked: [...current] }, database);
+  });
 }

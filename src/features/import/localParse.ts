@@ -1,4 +1,4 @@
-import type { Step, Timer } from '../../types';
+import type { MaterialItem, MaterialKind, ProtocolPhase, Step, Timer } from '../../types';
 
 /**
  * Deterministic, offline procedure parser. Used when the AI parser is unavailable.
@@ -13,6 +13,10 @@ import type { Step, Timer } from '../../types';
 export interface LocalParseResult {
   title?: string;
   steps: Step[];
+  /** "Day N" / "Phase N" blocks found in the text. Missing when there are none. */
+  phases?: ProtocolPhase[];
+  /** Reagents, solutions and equipment mentioned in the text. Missing when none were found. */
+  materials?: MaterialItem[];
 }
 
 export interface DetectedDuration {
@@ -194,6 +198,81 @@ function continuesPrevious(prev: string, line: string): boolean {
 interface Pending {
   text: string;
   group?: string;
+  phaseId?: string;
+}
+
+/** 'Day 1', 'Day 2: Transfer', 'Phase 3 - Detection'. Must be short and must not end like a sentence. */
+const PHASE_HEADING_RE = /^(?:day|phase)\s+[\w.-]+(?:\s*[:.\-–—]\s*.{0,60}|\s*)?$/i;
+
+function isPhaseHeading(line: string): boolean {
+  return line.length <= 80 && !/[.!?;,]$/.test(line) && PHASE_HEADING_RE.test(line);
+}
+
+function phaseName(line: string): string {
+  return capitalize(line.replace(/[:\s]+$/, '').trim()).slice(0, 60);
+}
+
+// Equipment and consumables are matched by name; solutions by a '... buffer/solution/medium' phrase.
+const EQUIPMENT_TERMS: Array<[RegExp, MaterialKind, string]> = [
+  [/\b(?:transfer (?:apparatus|cassette|tank|stack)|wet transfer|semi-dry transfer|blotting (?:apparatus|system))\b/gi, 'equipment', 'Transfer apparatus'],
+  [/\b(?:gel (?:tank|box|apparatus|system)|electrophoresis (?:tank|chamber|apparatus|system))\b/gi, 'equipment', 'Electrophoresis tank'],
+  [/\bpower supply\b/gi, 'equipment', 'Power supply'],
+  [/\bcentrifuge\b/gi, 'equipment', 'Centrifuge'],
+  [/\bmicrocentrifuge\b/gi, 'equipment', 'Microcentrifuge'],
+  [/\bheat block\b/gi, 'equipment', 'Heat block'],
+  [/\bwater bath\b/gi, 'equipment', 'Water bath'],
+  [/\bincubator\b/gi, 'equipment', 'Incubator'],
+  [/\b(?:rocker|shaker|orbital shaker)\b/gi, 'equipment', 'Rocker'],
+  [/\b(?:imager|imaging system|chemiluminescence imager|scanner)\b/gi, 'equipment', 'Imaging system'],
+  [/\bplate reader\b/gi, 'equipment', 'Plate reader'],
+  [/\b(?:spectrophotometer|nanodrop)\b/gi, 'equipment', 'Spectrophotometer'],
+  [/\bthermocycler\b/gi, 'equipment', 'Thermocycler'],
+  [/\bpipett(?:e|es|ing)\b/gi, 'equipment', 'Pipettes'],
+  [/\bvortex(?:er|ing)?\b/gi, 'equipment', 'Vortexer'],
+  [/\bpipette tips?\b/gi, 'consumable', 'Pipette tips'],
+  [/\b(?:nitrocellulose|pvdf) membranes?\b/gi, 'consumable', 'Membrane'],
+  [/\bfilter paper\b/gi, 'consumable', 'Filter paper'],
+  [/\bsponges?\b/gi, 'consumable', 'Sponges'],
+  [/\bmicrocentrifuge tubes?\b/gi, 'consumable', 'Microcentrifuge tubes'],
+  [/\b(?:falcon|conical) tubes?\b/gi, 'consumable', 'Conical tubes'],
+  [/\b96-well (?:plate|plates)\b/gi, 'consumable', '96-well plate'],
+  [/\bgloves\b/gi, 'consumable', 'Gloves'],
+  [/\bparafilm\b/gi, 'consumable', 'Parafilm'],
+];
+
+const SOLUTION_RE = /\b((?:[A-Za-z0-9+-]+\s){0,2}(?:buffer|solution|medium|media|mix))\b/gi;
+const SOLUTION_STOP = /^(?:the|this|each|of|in|with|and|a|an|to|for|at)$/i;
+
+const MATERIAL_LIMIT = 40;
+
+/**
+ * Best-effort materials list from the text: equipment and consumables by name, and solutions or
+ * buffers by a '... buffer' / '... solution' phrase. Duplicates are merged case-insensitively.
+ */
+export function detectMaterials(text: string): MaterialItem[] {
+  const found = new Map<string, MaterialItem>();
+  const add = (name: string, kind: MaterialKind) => {
+    const key = name.toLowerCase();
+    if (found.size >= MATERIAL_LIMIT || found.has(key)) return;
+    found.set(key, { id: crypto.randomUUID(), name, kind });
+  };
+
+  const positions: Array<{ at: number; name: string; kind: MaterialKind }> = [];
+  for (const [re, kind, name] of EQUIPMENT_TERMS) {
+    for (const m of text.matchAll(re)) positions.push({ at: m.index ?? 0, name, kind });
+  }
+  positions.sort((a, b) => a.at - b.at);
+  for (const p of positions) add(p.name, p.kind);
+
+  for (const m of text.matchAll(SOLUTION_RE)) {
+    const words = m[1].split(/\s+/);
+    // Drop leading filler words such as 'the' or 'of' so 'the transfer buffer' becomes 'Transfer buffer'.
+    while (words.length > 1 && SOLUTION_STOP.test(words[0])) words.shift();
+    if (words.length < 2) continue;
+    add(capitalize(words.join(' ')), 'solution');
+  }
+
+  return [...found.values()];
 }
 
 export function parseLocal(input: string): LocalParseResult {
@@ -206,6 +285,8 @@ export function parseLocal(input: string): LocalParseResult {
   let open = false;
   let blankBefore = true;
   let group: string | undefined;
+  const phases: ProtocolPhase[] = [];
+  let currentPhaseId: string | undefined;
   let title: string | undefined;
   let firstLine: string | undefined;
 
@@ -253,6 +334,16 @@ export function parseLocal(input: string): LocalParseResult {
       continue;
     }
 
+    if (inSection && isPhaseHeading(line)) {
+      const id = crypto.randomUUID();
+      phases.push({ id, name: phaseName(line) });
+      currentPhaseId = id;
+      open = false;
+      group = undefined;
+      blankBefore = true;
+      continue;
+    }
+
     if (!inSection) continue;
 
     const last = items[items.length - 1];
@@ -260,7 +351,7 @@ export function parseLocal(input: string): LocalParseResult {
       const match = ITEM_RE.exec(raw);
       const indented = INDENT_RE.test(raw);
       if (match && (!indented || !open)) {
-        items.push({ text: match[1], group });
+        items.push({ text: match[1], group, phaseId: currentPhaseId });
         open = true;
       } else if (open && last) {
         last.text += ` ${line}`;
@@ -270,7 +361,7 @@ export function parseLocal(input: string): LocalParseResult {
     } else if (open && last && !blankBefore && continuesPrevious(last.text, line)) {
       last.text += ` ${line}`;
     } else {
-      items.push({ text: line, group });
+      items.push({ text: line, group, phaseId: currentPhaseId });
       open = true;
     }
     blankBefore = false;
@@ -282,13 +373,17 @@ export function parseLocal(input: string): LocalParseResult {
     }
   }
 
+  const materials = detectMaterials(input);
+
   return {
     title,
-    steps: items.map((item) => makeStep(item.text, item.group)),
+    steps: items.map((item) => makeStep(item.text, item.group, item.phaseId)),
+    phases: phases.length > 0 ? phases : undefined,
+    materials: materials.length > 0 ? materials : undefined,
   };
 }
 
-function makeStep(text: string, group?: string): Step {
+function makeStep(text: string, group?: string, phaseId?: string): Step {
   const id = crypto.randomUUID();
   const durations = detectDurations(text);
   const timers: Timer[] = durations.map((d) => ({
@@ -308,5 +403,6 @@ function makeStep(text: string, group?: string): Step {
     reagents: [],
     dataFields: [],
     cautions: detectCautions(text),
+    ...(phaseId ? { phaseId } : {}),
   };
 }

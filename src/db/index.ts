@@ -1,12 +1,14 @@
 import Dexie, { type Table } from 'dexie';
 import type {
   Experiment,
+  ExecutionEvent,
   Folder,
   InventoryItem,
   Procedure,
   ProtocolTemplate,
   ReagentUsage,
   RunState,
+  RunValue,
   StepRecord,
   Timer,
 } from '../types';
@@ -24,6 +26,8 @@ export class LabCompanionDB extends Dexie {
   templates!: Table<ProtocolTemplate, string>;
   inventory!: Table<InventoryItem, string>;
   inventoryUsage!: Table<ReagentUsage, [string, string, string]>;
+  executionEvents!: Table<ExecutionEvent, string>;
+  runValues!: Table<RunValue, [string, string, string]>;
 
   constructor(name = 'lab-companion') {
     super(name);
@@ -134,6 +138,27 @@ export class LabCompanionDB extends Dexie {
     this.version(4).stores({
       inventory: 'id, kind, name, expiresOn',
       inventoryUsage: '[experimentId+inventoryItemId+stepId], experimentId, inventoryItemId',
+    });
+
+    // Version 5: protocol overview, materials and phases. All three are optional fields inside the
+    // existing documents, so no index changes are needed. The upgrade fills empty arrays in older
+    // templates and procedure snapshots so readers never have to special-case missing lists.
+    this.version(5).upgrade(async (tx) => {
+      await tx.table('templates').toCollection().modify((t: Record<string, unknown>) => {
+        t.phases ??= [];
+        t.materials ??= [];
+      });
+      await tx.table('procedures').toCollection().modify((p: Record<string, unknown>) => {
+        p.phases ??= [];
+        p.materials ??= [];
+      });
+    });
+
+    // Version 6: append-only execution log (what happened, when, and where it deviated) and per-run
+    // values for step variables. Both start empty; no existing rows change.
+    this.version(6).stores({
+      executionEvents: 'id, experimentId, [experimentId+at]',
+      runValues: '[experimentId+stepId+varId]',
     });
   }
 }

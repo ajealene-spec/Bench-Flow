@@ -40,7 +40,7 @@ export function StartExperimentForm({ template, onDone }: { template: ProtocolTe
       </label>
       {error && <p role="alert" className="text-rose-700 dark:text-rose-300">{error}</p>}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={busy} className={`${BUTTON} bg-teal-700 text-white active:bg-teal-800 disabled:opacity-50`}>
+        <button type="submit" disabled={busy} className={`${BUTTON} bg-accent text-white active:bg-accent-hover disabled:opacity-50`}>
           {busy ? 'Starting…' : 'Start run'}
         </button>
         <button

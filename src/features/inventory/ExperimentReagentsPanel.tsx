@@ -133,7 +133,7 @@ export function ExperimentReagentsPanel({
             </li>
           ))}
           {expiringSoon.map((item) => (
-            <li key={`soon-${item.id}`} className="text-amber-700 dark:text-amber-300">
+            <li key={`soon-${item.id}`} className="text-slate-400 dark:text-slate-400">
               {item.name} expires on {item.expiresOn}.
             </li>
           ))}
@@ -147,8 +147,8 @@ export function ExperimentReagentsPanel({
               key={`${w.code}-${index}`}
               className={
                 w.severity === 'warning'
-                  ? 'rounded-xl bg-amber-50 p-3 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
-                  : 'rounded-xl bg-teal-50 p-3 text-teal-900 dark:bg-teal-950 dark:text-teal-100'
+                  ? 'rounded-xl bg-slate-100 p-3 text-slate-900 dark:bg-slate-900 dark:text-slate-100'
+                  : 'rounded-xl bg-slate-100 p-3 text-accent-hover dark:bg-accent-hover dark:text-slate-100'
               }
             >
               <span className="font-semibold">{w.severity === 'warning' ? 'Warning: ' : 'Suggestion: '}</span>

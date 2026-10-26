@@ -1,5 +1,5 @@
 import { db as defaultDb, UNCATEGORIZED, type LabCompanionDB } from './index';
-import type { Hazard, ProtocolTemplate, Step } from '../types';
+import type { Hazard, MaterialItem, ProtocolOverview, ProtocolPhase, ProtocolTemplate, Step } from '../types';
 
 export const DEFAULT_TEMPLATE_TITLE = 'Untitled protocol';
 
@@ -8,6 +8,9 @@ export interface TemplateInput {
   category?: string;
   steps?: Step[];
   hazards?: Hazard[];
+  overview?: ProtocolOverview;
+  materials?: MaterialItem[];
+  phases?: ProtocolPhase[];
   sourceText?: string;
 }
 
@@ -28,6 +31,9 @@ export async function createTemplate(input: TemplateInput, database: LabCompanio
     category: normalizeCategory(input.category),
     steps: input.steps ?? [],
     hazards: input.hazards ?? [],
+    overview: input.overview,
+    materials: input.materials ?? [],
+    phases: input.phases ?? [],
     sourceText: input.sourceText,
     createdAt: now,
     updatedAt: now,
@@ -43,7 +49,7 @@ export function getTemplate(id: string, database: LabCompanionDB = defaultDb): P
 /** Updates a template. A blank title falls back to the default; a blank category to "Uncategorized". */
 export async function updateTemplate(
   id: string,
-  changes: Partial<Pick<ProtocolTemplate, 'title' | 'category' | 'steps' | 'hazards' | 'notes'>>,
+  changes: Partial<Pick<ProtocolTemplate, 'title' | 'category' | 'steps' | 'hazards' | 'notes' | 'overview' | 'materials' | 'phases'>>,
   database: LabCompanionDB = defaultDb,
 ): Promise<void> {
   const next: Partial<ProtocolTemplate> = { ...changes, updatedAt: Date.now() };

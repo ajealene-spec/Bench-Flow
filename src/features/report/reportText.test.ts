@@ -74,3 +74,18 @@ describe('reportToJSON', () => {
     expect(JSON.parse(reportToJSON(report))).toEqual(JSON.parse(JSON.stringify(report)));
   });
 });
+
+describe('reportToEventsCSV', () => {
+  it('writes one row per event, oldest first, with planned, actual and deviation columns', async () => {
+    const { reportToEventsCSV } = await import('./reportText');
+    const csv = reportToEventsCSV([
+      { id: 'b', experimentId: 'e', at: 2_000, type: 'timer_stop', stepId: 's1', planned: 60, actual: 90, unit: 's', note: 'Block', deviation: { kind: 'timer', delta: 30 } },
+      { id: 'a', experimentId: 'e', at: 1_000, type: 'step_start', stepId: 's1' },
+    ]);
+    const lines = csv.split('\r\n');
+    expect(lines[0]).toContain('deviation_kind');
+    expect(lines[1]).toContain('step_start');
+    expect(lines[2]).toContain('timer_stop');
+    expect(lines[2]).toContain(',timer,30');
+  });
+});
