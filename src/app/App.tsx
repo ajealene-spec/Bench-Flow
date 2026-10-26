@@ -7,6 +7,7 @@ import RunPage from '../features/run/RunPage';
 import { TimerTray } from '../features/timers/TimerTray';
 import ExperimentPage from './ExperimentPage';
 import ExperimentImportRedirect from './ExperimentImportRedirect';
+import ReportPage from '../features/report/ReportPage';
 
 const NAV_LINK = 'inline-flex min-h-12 items-center rounded-xl border px-4 font-medium';
 
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: '/experiment/:id', element: <ExperimentPage /> },
       { path: '/experiment/:id/import', element: <ExperimentImportRedirect /> },
       { path: '/experiment/:id/run', element: <RunPage /> },
+      { path: '/experiment/:id/report', element: <ReportPage /> },
       { path: '/library', element: <LibraryPage /> },
       { path: '/library/new', element: <ImportPage /> },
       { path: '/library/:templateId', element: <TemplatePage /> },

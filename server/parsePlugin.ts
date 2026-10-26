@@ -67,7 +67,7 @@ async function callClaude(apiKey: string, model: string, text: string): Promise<
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
+      max_tokens: 6000,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: text }],
     }),
@@ -128,7 +128,7 @@ async function handleParse(req: Req, res: Res, env: Record<string, string>): Pro
       send(res, 422, { error: 'model_output_invalid', message: result.error });
       return;
     }
-    send(res, 200, { title: result.title, steps: result.steps, parser: 'ai' });
+    send(res, 200, { title: result.title, steps: result.steps, hazards: result.hazards, parser: 'ai' });
   } catch (err) {
     const status = (err as { status?: number }).status ?? 500;
     console.error('[parse] failed:', (err as Error).message);

@@ -1,0 +1,68 @@
+/*
+ * Print styles for the experiment report. Screen styles are Tailwind classes in ReportPage.tsx;
+ * this file only changes what is printed or saved as PDF.
+ */
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide the app chrome (navigation, timer tray) and everything else on the page. */
+  body * {
+    visibility: hidden;
+  }
+
+  .report-print-root,
+  .report-print-root * {
+    visibility: visible;
+  }
+
+  .report-print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .report-print-root a {
+    color: #000000;
+    text-decoration: none;
+  }
+
+  /* Major sections start on a new page; the header and safety block share the first page. */
+  .report-section--break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /* Keep a step, a deviation or a reagent row from splitting across pages. */
+  .report-step,
+  .report-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-section h2,
+  .report-step h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

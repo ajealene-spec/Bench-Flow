@@ -1,5 +1,6 @@
-import type { DataField, Reagent, Step, Timer } from '../../types';
+import type { DataField, Hazard, Reagent, Step, Timer } from '../../types';
 import { cleanStepTitle } from './localParse';
+import { parseAiHazards } from './hazards';
 
 /**
  * Validates the JSON returned by the AI parser and turns it into Step objects.
@@ -10,7 +11,7 @@ import { cleanStepTitle } from './localParse';
 export const MAX_STEPS = 200;
 
 export type ValidationResult =
-  | { ok: true; title?: string; steps: Step[] }
+  | { ok: true; title?: string; steps: Step[]; hazards: Hazard[] }
   | { ok: false; error: string };
 
 type Obj = Record<string, unknown>;
@@ -105,5 +106,10 @@ export function validateParsedProcedure(raw: unknown): ValidationResult {
   }
 
   const procedureTitle = str(raw.title);
-  return { ok: true, title: procedureTitle ? cleanStepTitle(procedureTitle) : undefined, steps };
+  return {
+    ok: true,
+    title: procedureTitle ? cleanStepTitle(procedureTitle) : undefined,
+    steps,
+    hazards: parseAiHazards(raw.hazards, steps),
+  };
 }

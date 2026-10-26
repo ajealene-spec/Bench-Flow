@@ -10,6 +10,7 @@ import type {
   Timer,
 } from '../types';
 import { getTemplate } from './templates';
+import { buildSafetyChecklist } from '../features/run/safety';
 
 export const DEFAULT_EXPERIMENT_NAME = 'Untitled experiment';
 export const DEFAULT_FOLDER_NAME = 'New folder';
@@ -162,7 +163,7 @@ export async function startExperimentFromTemplate(
       folderId: null,
       templateId: template.id,
       procedureId: procedure.id,
-      safetyChecklist: [],
+      safetyChecklist: buildSafetyChecklist(template.hazards ?? []),
       createdAt: now,
       updatedAt: now,
     };

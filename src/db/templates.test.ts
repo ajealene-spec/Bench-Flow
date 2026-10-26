@@ -14,6 +14,7 @@ import {
   saveRunState,
   setExperimentFolder,
   startExperimentFromTemplate,
+  updateExperiment,
 } from './helpers';
 import {
   createTemplate,
@@ -174,5 +175,45 @@ describe('folders and templates together', () => {
 
     await deleteFolder(folder.id, database);
     expect((await getExperiment(run.id, database))?.folderId).toBeNull();
+  });
+});
+
+describe('safety checklist on template start', () => {
+  it('builds the checklist from template hazards, with baseline PPE when there are none', async () => {
+    const withHazard = await createTemplate(
+      {
+        title: 'Gel',
+        steps: [step('s1', 'Pour')],
+        hazards: [
+          { id: 'h1', name: 'Acrylamide', kind: 'chemical', reason: '', ppe: ['wear nitrile gloves'], stepIds: ['s1'] },
+        ],
+      },
+      database,
+    );
+    const run = await startExperimentFromTemplate(withHazard.id, 'Run', database);
+    expect(run.safetyChecklist?.map((i) => i.label)).toEqual([
+      'Lab coat',
+      'Gloves',
+      'Eye protection',
+      'Acrylamide — wear nitrile gloves',
+    ]);
+    expect(run.safetyConfirmedAt).toBeUndefined();
+
+    const plain = await createTemplate({ title: 'Plain', steps: [step('s1', 'Mix')] }, database);
+    const plainRun = await startExperimentFromTemplate(plain.id, 'Plain run', database);
+    expect(plainRun.safetyChecklist?.map((i) => i.label)).toEqual(['Lab coat', 'Gloves', 'Eye protection']);
+  });
+
+  it('persists checked items and the confirmation time so a resumed run restores them', async () => {
+    const template = await createTemplate({ title: 'Blot', steps: [step('s1', 'Lyse')] }, database);
+    const run = await startExperimentFromTemplate(template.id, 'Run', database);
+    const checked = (run.safetyChecklist ?? []).map((i) => ({ ...i, checked: true }));
+    await updateExperiment(run.id, { safetyChecklist: checked }, database);
+
+    const resumed = await getExperiment(run.id, database);
+    expect(resumed?.safetyChecklist?.every((i) => i.checked)).toBe(true);
+
+    await updateExperiment(run.id, { safetyConfirmedAt: 123 }, database);
+    expect((await getExperiment(run.id, database))?.safetyConfirmedAt).toBe(123);
   });
 });

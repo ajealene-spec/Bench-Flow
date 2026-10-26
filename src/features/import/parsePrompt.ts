@@ -27,6 +27,15 @@ Return ONLY a JSON object, no prose and no code fence, with this shape:
       "dataFields": [ { "label": string, "unit": string, "type": "number" | "text" } ] (values the user should record at this step, e.g. "Protein concentration" in "µg/µL", "Exposure time" in "s"; [] if none),
       "cautions": [ string ] (safety warnings and critical notes from the source, quoted or closely paraphrased; [] if none)
     }
+  ],
+  "hazards": [
+    {
+      "name": string (the hazardous chemical, agent, equipment or animal work, e.g. "Acrylamide", "TEMED", "Methanol", "Live animals"),
+      "kind": "chemical" | "biological" | "physical" | "radiological",
+      "reason": string (one short sentence on why it is hazardous in this procedure),
+      "ppe": [ string ] (protective equipment and handling controls the source or standard practice requires, e.g. "Nitrile gloves", "Fume hood"),
+      "stepNumbers": [ integer ] (1-based numbers of the steps, in the order you returned them, where it is used)
+    }
   ]
 }
 
@@ -37,4 +46,5 @@ Rules:
 - Pull durations, temperatures and speeds into timers when they are times. Temperatures and voltages are never durations.
 - Put each timed phase in "timers". Put the total hands-off time in "durationSec".
 - Caution, Note and Warning text belongs in "cautions", not in the title or as a step by itself. If a caution is the only content, attach it to the nearest step.
+- Hazards: list only hazards that the procedure actually uses or creates, such as toxic, flammable, carcinogenic or corrosive chemicals, biological agents, live animals, anesthetics, cryogens, radioisotopes, high voltage and sharps. Do not list water, PBS, Tris, salts or plain buffers unless they contain a listed hazard. Do not invent hazards that are not in the text. Use [] if there are none.
 - If the text is not a procedure, return one step that summarises it.`;

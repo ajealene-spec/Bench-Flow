@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { db } from '../../db';
-import { getProcedureForExperiment, getRunState, markRunStarted, saveRunState, setExperimentStatus, updateExperiment } from '../../db/helpers';
-import type { Procedure } from '../../types';
+import {
+  getExperiment,
+  getProcedureForExperiment,
+  getRunState,
+  markRunStarted,
+  saveRunState,
+  setExperimentStatus,
+  updateExperiment,
+} from '../../db/helpers';
+import { getTemplate } from '../../db/templates';
+import type { Hazard, Procedure, SafetyChecklistItem } from '../../types';
 import { StepTimerButtons } from '../timers/StepTimerButtons';
 import { StepDataPanel } from '../data/StepDataPanel';
 import {
@@ -13,6 +22,9 @@ import {
   restoreRunState,
   type RunStateInput,
 } from './runState';
+import { SafetyGate, SafetySummary } from './SafetyGate';
+import { StepExtras } from './stepExtras';
+import { buildSafetyChecklist, hazardsForStep, setItemChecked, allChecked } from './safety';
 
 const BIG_BUTTON =
   'min-h-16 rounded-2xl px-5 text-lg font-semibold active:opacity-80 disabled:opacity-40';
@@ -20,6 +32,11 @@ const BIG_BUTTON =
 interface Loaded {
   procedure: Procedure;
   state: RunStateInput;
+  safety: SafetyChecklistItem[];
+  safetyConfirmedAt?: number;
+  /** Hazards from the source template, and the template step id for each run step (by index). */
+  hazards: Hazard[];
+  templateStepIds: string[];
 }
 
 export default function RunPage() {
@@ -31,14 +48,33 @@ export default function RunPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [procedure, saved] = await Promise.all([getProcedureForExperiment(id, db), getRunState(id, db)]);
+      const [procedure, saved, experiment] = await Promise.all([
+        getProcedureForExperiment(id, db),
+        getRunState(id, db),
+        getExperiment(id, db),
+      ]);
       if (cancelled) return;
       if (!procedure) {
         setLoaded(null);
         return;
       }
+      const template = experiment?.templateId ? await getTemplate(experiment.templateId, db) : undefined;
+      const hazards = template?.hazards ?? [];
+      let safety = experiment?.safetyChecklist ?? [];
+      // Experiments created before the gate existed have no checklist yet. Build one once.
+      if (safety.length === 0) {
+        safety = buildSafetyChecklist(hazards);
+        await updateExperiment(id, { safetyChecklist: safety }, db);
+      }
       const state = restoreRunState(id, saved, procedure);
-      setLoaded({ procedure, state });
+      setLoaded({
+        procedure,
+        state,
+        safety,
+        safetyConfirmedAt: experiment?.safetyConfirmedAt,
+        hazards,
+        templateStepIds: template?.steps.map((s) => s.id) ?? [],
+      });
       await saveRunState(state, db);
       await markRunStarted(id, db);
       await updateExperiment(id, { lastOpenedAt: Date.now() }, db);
@@ -68,13 +104,27 @@ export default function RunPage() {
     );
   }
 
-  const { procedure, state } = loaded;
+  const { procedure, state, safety, safetyConfirmedAt, hazards, templateStepIds } = loaded;
   const total = procedure.steps.length;
 
   // Every change goes through here so the saved position never lags the screen.
   function commit(next: RunStateInput) {
-    setLoaded({ procedure, state: next });
+    setLoaded((prev) => (prev ? { ...prev, state: next } : prev));
     void saveRunState(next, db);
+  }
+
+  // Each check is saved right away so a reload or resume keeps it.
+  function toggleSafety(itemId: string, checked: boolean) {
+    const next = setItemChecked(safety, itemId, checked);
+    setLoaded((prev) => (prev ? { ...prev, safety: next } : prev));
+    void updateExperiment(id, { safetyChecklist: next }, db);
+  }
+
+  function confirmSafety() {
+    if (!allChecked(safety)) return;
+    const at = Date.now();
+    setLoaded((prev) => (prev ? { ...prev, safetyConfirmedAt: at } : prev));
+    void updateExperiment(id, { safetyChecklist: safety, safetyConfirmedAt: at }, db);
   }
 
   if (total === 0) {
@@ -95,12 +145,16 @@ export default function RunPage() {
   const isLast = index === total - 1;
   const isCompleted = state.completedStepIds.includes(step.id);
   const completedCount = state.completedStepIds.length;
+  const stepHazards = hazardsForStep(hazards, templateStepIds[index]);
 
   function handleMarkComplete() {
     const { state: next, finished } = completeCurrentStep(state, procedure);
     commit(next);
     if (finished) void setExperimentStatus(id, 'done', db);
   }
+
+  const gated = safetyConfirmedAt === undefined;
+  const stepExtras = <StepExtras step={step} experimentId={id} />;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-5 p-4 pb-10 sm:p-6 lg:max-w-5xl">
@@ -109,6 +163,21 @@ export default function RunPage() {
           <BackLink />
           <span className="text-base text-slate-600 dark:text-slate-400">{procedure.title}</span>
         </div>
+
+        {gated ? (
+          <SafetyGate items={safety} onToggle={toggleSafety} onConfirm={confirmSafety} />
+        ) : (
+          <SafetySummary items={safety} />
+        )}
+
+        {gated && (
+          <p className="text-base text-slate-600 dark:text-slate-400">The steps unlock after the safety checklist is confirmed.</p>
+        )}
+      </header>
+
+      {!gated && (
+        <>
+        <header className="flex flex-col gap-3">
 
         <div className="flex flex-col gap-2">
           <div className="flex justify-between text-base text-slate-700 dark:text-slate-300">
@@ -142,6 +211,19 @@ export default function RunPage() {
             </span>
           )}
         </div>
+
+        {stepHazards.length > 0 && (
+          <ul aria-label="Hazards for this step" className="flex flex-wrap gap-2">
+            {stepHazards.map((h) => (
+              <li
+                key={h.id}
+                className="rounded-full bg-amber-200 px-3 py-1 text-base font-semibold text-amber-950 dark:bg-amber-700 dark:text-amber-50"
+              >
+                ⚠ {h.name}
+              </li>
+            ))}
+          </ul>
+        )}
 
         {step.instructions && (
           <p className="whitespace-pre-line text-xl leading-relaxed">{step.instructions}</p>
@@ -186,11 +268,18 @@ export default function RunPage() {
         <StepTimerButtons timers={step.timers} experimentId={id} />
       </article>
 
+      {stepExtras}
+
       <StepDataPanel key={step.id} experimentId={id} step={step} />
 
       {completedCount === total && (
         <Link to={`/experiment/${id}#recorded-data`} className="inline-flex min-h-16 items-center justify-center rounded-2xl border-2 border-teal-700 px-5 text-lg font-semibold text-teal-800 dark:border-teal-400 dark:text-teal-200">
           View all recorded data
+        </Link>
+      )}
+      {completedCount === total && (
+        <Link to={`/experiment/${id}/report`} className="inline-flex min-h-16 items-center justify-center rounded-2xl bg-teal-700 px-5 text-lg font-semibold text-white">
+          View report
         </Link>
       )}
 
@@ -259,6 +348,8 @@ export default function RunPage() {
           </ol>
         )}
       </section>
+        </>
+      )}
     </main>
   );
 }

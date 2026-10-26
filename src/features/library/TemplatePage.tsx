@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { db } from '../../db';
 import { deleteTemplate, getTemplate, listCategories, updateTemplate } from '../../db/templates';
-import type { ProtocolTemplate, Step } from '../../types';
+import type { Hazard, ProtocolTemplate, Step } from '../../types';
 import { prepareSteps, ReviewSection } from '../import/ImportPage';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
@@ -36,6 +36,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   const [title, setTitle] = useState(template.title);
   const [category, setCategory] = useState(template.category);
   const [steps, setSteps] = useState<Step[]>(template.steps);
+  const [hazards, setHazards] = useState<Hazard[]>(template.hazards ?? []);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
     setBusy(true);
     setError(null);
     try {
-      await updateTemplate(template.id, { title, category, steps: prepareSteps(steps) }, db);
+      await updateTemplate(template.id, { title, category, steps: prepareSteps(steps), hazards }, db);
       setSaved(true);
     } catch {
       setError('Could not save the protocol. Please try again.');
@@ -104,6 +105,8 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
       <ReviewSection
         title={title}
         steps={steps}
+        hazards={hazards}
+        onHazardsChange={setHazards}
         busy={busy}
         saveLabel="Save changes"
         titleLabel="Protocol title"

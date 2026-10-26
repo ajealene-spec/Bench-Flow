@@ -2,8 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { newId } from '../../db/helpers';
 import { createTemplate } from '../../db/templates';
-import type { Step } from '../../types';
+import type { Hazard, HazardKind, Step } from '../../types';
 import { extractPdfText } from './pdfText';
+import { pruneHazardSteps } from './hazards';
 import { getParserStatus, parseProcedure, type ParseOutcome } from './parseProcedure';
 
 type Unit = 's' | 'min' | 'h';
@@ -50,6 +51,7 @@ export function prepareSteps(steps: Step[]): Step[] {
 interface ReviewState {
   title: string;
   steps: Step[];
+  hazards: Hazard[];
   outcome: ParseOutcome;
 }
 
@@ -98,7 +100,7 @@ export default function ImportPage() {
         setError('No steps found. Try numbered lines or add more detail.');
         return;
       }
-      setReview({ title: outcome.title ?? '', steps: outcome.steps, outcome });
+      setReview({ title: outcome.title ?? '', steps: outcome.steps, hazards: outcome.hazards, outcome });
     } catch {
       setError('Parsing failed. Please try again.');
     } finally {
@@ -114,6 +116,7 @@ export default function ImportPage() {
       const template = await createTemplate({
         title: review.title,
         steps: prepareSteps(review.steps),
+        hazards: pruneHazardSteps(review.hazards, review.steps.map((s) => s.id)),
         sourceText: text,
       });
       navigate(`/library/${template.id}`);
@@ -196,6 +199,8 @@ export default function ImportPage() {
         <ReviewSection
           title={review.title}
           steps={review.steps}
+          hazards={review.hazards}
+          onHazardsChange={(hazards) => setReview({ ...review, hazards })}
           busy={busy === 'save'}
           saveLabel="Save protocol"
           titleLabel="Protocol title"
@@ -222,6 +227,9 @@ export default function ImportPage() {
 export interface ReviewSectionProps {
   title: string;
   steps: Step[];
+  /** Safety box contents. The Safety box is shown only when both hazards props are given. */
+  hazards?: Hazard[];
+  onHazardsChange?: (hazards: Hazard[]) => void;
   busy: boolean;
   saveLabel: string;
   titleLabel: string;
@@ -238,6 +246,8 @@ export interface ReviewSectionProps {
 export function ReviewSection({
   title,
   steps,
+  hazards,
+  onHazardsChange,
   busy,
   saveLabel,
   titleLabel,
@@ -266,6 +276,8 @@ export function ReviewSection({
   return (
     <section className="flex flex-col gap-4">
       {statusNote && <p role="status" className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">{statusNote}</p>}
+
+      {hazards && onHazardsChange && <SafetyBox hazards={hazards} steps={steps} onChange={onHazardsChange} />}
 
       <label className="flex flex-col gap-1">
         <span className="font-medium">{titleLabel}</span>
@@ -436,5 +448,118 @@ function StepCard({ step, index, count, onChange, onMove, onDelete }: StepCardPr
         </ul>
       )}
     </li>
+  );
+}
+
+const KIND_LABEL: Record<HazardKind, string> = {
+  chemical: 'Chemical',
+  biological: 'Biological',
+  physical: 'Physical',
+  radiological: 'Radiological',
+};
+
+interface SafetyBoxProps {
+  hazards: Hazard[];
+  steps: Step[];
+  onChange: (hazards: Hazard[]) => void;
+}
+
+/** Editable list of hazards and PPE for a protocol. Removing an item drops a false positive. */
+export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
+  const [name, setName] = useState('');
+  const [kind, setKind] = useState<HazardKind>('chemical');
+  const [ppeText, setPpeText] = useState('');
+
+  const stepNumber = new Map(steps.map((s, i) => [s.id, i + 1]));
+
+  function remove(id: string) {
+    onChange(hazards.filter((h) => h.id !== id));
+  }
+
+  function add() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const ppe = ppeText.split(',').map((p) => p.trim()).filter(Boolean);
+    onChange([...hazards, { id: newId(), name: trimmed, kind, reason: 'Added by you.', ppe, stepIds: [] }]);
+    setName('');
+    setPpeText('');
+  }
+
+  return (
+    <section aria-labelledby="safety-heading" className="flex flex-col gap-3 rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 text-amber-950 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-100">
+      <h2 id="safety-heading" className="text-lg font-semibold">
+        Safety
+      </h2>
+      <p className="text-sm">
+        {hazards.length === 0
+          ? 'No hazards were detected. Add any that are missing.'
+          : 'Hazards found in this protocol, with the protective equipment to wear. Remove any false positives.'}
+      </p>
+
+      {hazards.length > 0 && (
+        <ul className="flex flex-col gap-3">
+          {hazards.map((h) => {
+            const steps = h.stepIds.map((id) => stepNumber.get(id)).filter((n): n is number => n !== undefined);
+            return (
+              <li key={h.id} className="flex flex-col gap-2 rounded-xl bg-white p-3 dark:bg-slate-900">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{h.name}</span>
+                    <span className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                      {KIND_LABEL[h.kind]} · {steps.length > 0 ? `Steps ${steps.join(', ')}` : 'Whole protocol'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`${BUTTON_SECONDARY} border-rose-300 text-rose-800 dark:border-rose-700 dark:text-rose-200`}
+                    aria-label={`Remove hazard ${h.name}`}
+                    onClick={() => remove(h.id)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                {h.reason && <p className="text-sm">{h.reason}</p>}
+                {h.ppe.length > 0 && (
+                  <div className="text-sm">
+                    <span className="font-medium">PPE: </span>
+                    {h.ppe.join('; ')}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="flex flex-col gap-2 rounded-xl border border-amber-300 p-3 dark:border-amber-700">
+        <span className="text-sm font-medium">Add a hazard</span>
+        <input
+          type="text"
+          aria-label="Hazard name"
+          placeholder="Hazard name, e.g. Ethanol"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={FIELD}
+        />
+        <select aria-label="Hazard kind" value={kind} onChange={(e) => setKind(e.target.value as HazardKind)} className={FIELD}>
+          {(Object.keys(KIND_LABEL) as HazardKind[]).map((k) => (
+            <option key={k} value={k}>
+              {KIND_LABEL[k]}
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          aria-label="PPE for this hazard"
+          placeholder="PPE, separated by commas"
+          value={ppeText}
+          onChange={(e) => setPpeText(e.target.value)}
+          className={FIELD}
+        />
+        <button type="button" className={BUTTON_SECONDARY} disabled={!name.trim()} onClick={add}>
+          Add hazard
+        </button>
+      </div>
+    </section>
   );
 }

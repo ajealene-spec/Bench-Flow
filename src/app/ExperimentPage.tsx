@@ -92,6 +92,12 @@ export default function ExperimentPage() {
         >
           Delete experiment
         </button>
+        <Link
+          to={`/experiment/${experiment.id}/report`}
+          className="inline-flex min-h-12 items-center justify-center rounded-lg bg-teal-700 px-4 font-semibold text-white"
+        >
+          View report
+        </Link>
       </section>
 
       <label className="flex flex-col gap-1">
