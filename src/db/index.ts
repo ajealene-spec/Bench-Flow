@@ -1,5 +1,8 @@
 import Dexie, { type Table } from 'dexie';
-import type { Experiment, Folder, Procedure, RunState, StepRecord, Timer } from '../types';
+import type { Experiment, Folder, Procedure, ProtocolTemplate, RunState, StepRecord, Timer } from '../types';
+
+/** Category given to templates that were created from existing experiments by the version 3 upgrade. */
+export const UNCATEGORIZED = 'Uncategorized';
 
 export class LabCompanionDB extends Dexie {
   experiments!: Table<Experiment, string>;
@@ -8,6 +11,7 @@ export class LabCompanionDB extends Dexie {
   experimentRunStates!: Table<RunState, string>;
   timers!: Table<Timer, string>;
   stepRecords!: Table<StepRecord, string>;
+  templates!: Table<ProtocolTemplate, string>;
 
   constructor(name = 'lab-companion') {
     super(name);
@@ -77,6 +81,39 @@ export class LabCompanionDB extends Dexie {
               updatedAt: s.updatedAt,
             })),
           );
+        }
+      });
+
+    // Version 3: reusable protocol templates. Every experiment that already has a procedure gets its
+    // own template built from that procedure (category "Uncategorized"), so nothing is lost. The
+    // procedure stays as the experiment's snapshot. Experiments gain a nullable templateId.
+    this.version(3)
+      .stores({
+        templates: 'id, category, updatedAt',
+        experiments: 'id, status, updatedAt, folderId, templateId',
+      })
+      .upgrade(async (tx) => {
+        const experiments = (await tx.table('experiments').toArray()) as Experiment[];
+        const procedures = (await tx.table('procedures').toArray()) as Procedure[];
+        const now = Date.now();
+
+        for (const experiment of experiments) {
+          const procedure = procedures.find((p) => p.experimentId === experiment.id);
+          if (!procedure) {
+            await tx.table('experiments').update(experiment.id, { templateId: null });
+            continue;
+          }
+          const templateId = crypto.randomUUID();
+          await tx.table('templates').add({
+            id: templateId,
+            title: procedure.title,
+            category: UNCATEGORIZED,
+            steps: procedure.steps,
+            hazards: [],
+            createdAt: procedure.createdAt ?? now,
+            updatedAt: procedure.updatedAt ?? now,
+          } satisfies ProtocolTemplate);
+          await tx.table('experiments').update(experiment.id, { templateId });
         }
       });
   }

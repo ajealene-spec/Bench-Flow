@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { db } from '../db';
 import {
-  createExperiment,
   createFolder,
+  deleteExperiment,
   deleteFolder,
   listExperimentSummaries,
   listFolders,
   renameFolder,
   type ExperimentSummary,
 } from '../db/helpers';
-import type { ExperimentStatus, Folder } from '../types';
+import { listTemplates } from '../db/templates';
+import type { ExperimentStatus, Folder, ProtocolTemplate } from '../types';
 import { formatDate } from './format';
+import { StartExperimentForm } from '../features/library/StartExperimentForm';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = {
   draft: 'Draft',
@@ -32,15 +34,10 @@ const INPUT =
   'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
 
 export function Workspace() {
-  const navigate = useNavigate();
   const summaries = useLiveQuery(() => listExperimentSummaries(db), []);
   const folders = useLiveQuery(() => listFolders(db), []);
   const [creatingFolder, setCreatingFolder] = useState(false);
-
-  async function handleCreate() {
-    const experiment = await createExperiment('Untitled experiment');
-    navigate(`/experiment/${experiment.id}/import`);
-  }
+  const [picking, setPicking] = useState(false);
 
   // Experiments whose folder was removed (for example on another device) fall back to Unfiled.
   const folderIds = new Set(folders?.map((f) => f.id) ?? []);
@@ -64,13 +61,16 @@ export function Workspace() {
           </button>
           <button
             type="button"
-            onClick={handleCreate}
+            onClick={() => setPicking((p) => !p)}
+            aria-expanded={picking}
             className={`${BUTTON} bg-teal-700 px-5 text-white active:bg-teal-800`}
           >
             New experiment
           </button>
         </div>
       </header>
+
+      {picking && <TemplatePicker onDone={() => setPicking(false)} />}
 
       {creatingFolder && (
         <FolderForm
@@ -92,6 +92,49 @@ export function Workspace() {
         <Section title={folders && folders.length > 0 ? 'Unfiled' : 'All experiments'} items={unfiled} />
       )}
     </main>
+  );
+}
+
+/** "New experiment": pick a protocol from the library, or paste a new one. */
+function TemplatePicker({ onDone }: { onDone: () => void }) {
+  const templates = useLiveQuery(() => listTemplates(db), []);
+  const [chosen, setChosen] = useState<ProtocolTemplate | null>(null);
+
+  return (
+    <section aria-label="Start an experiment" className="flex flex-col gap-3 rounded-xl border border-slate-300 p-4 dark:border-slate-700">
+      <h2 className="text-lg font-semibold">Start from a protocol</h2>
+
+      {templates === undefined && <p className="text-slate-500">Loading protocols…</p>}
+
+      {templates?.length === 0 && <p className="text-slate-600 dark:text-slate-400">The library is empty.</p>}
+
+      {chosen ? (
+        <StartExperimentForm template={chosen} onDone={() => setChosen(null)} />
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {templates?.map((t) => (
+            <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="font-medium">{t.title}</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t.category}</span>
+              </div>
+              <button type="button" className={`${BUTTON} bg-teal-700 px-5 text-white active:bg-teal-800`} onClick={() => setChosen(t)}>
+                Start
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Link to="/library/new" className={`${BUTTON} bg-teal-700 px-5 text-white active:bg-teal-800`}>
+          Paste a new protocol
+        </Link>
+        <button type="button" className={BUTTON_SECONDARY} onClick={onDone}>
+          Close
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -201,10 +244,10 @@ function Cards({ items, emptyText }: { items: ExperimentSummary[]; emptyText: st
   return (
     <ul className="grid gap-3 sm:grid-cols-2">
       {items.map(({ experiment, lastStepTitle }) => (
-        <li key={experiment.id}>
+        <li key={experiment.id} className="flex items-stretch gap-2">
           <Link
             to={`/experiment/${experiment.id}`}
-            className="flex min-h-12 flex-col gap-2 rounded-xl border border-slate-300 p-4 active:bg-slate-100 dark:border-slate-700 dark:active:bg-slate-800"
+            className="flex min-h-12 flex-1 flex-col gap-2 rounded-xl border border-slate-300 p-4 active:bg-slate-100 dark:border-slate-700 dark:active:bg-slate-800"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="text-lg font-medium">{experiment.name}</span>
@@ -219,8 +262,23 @@ function Cards({ items, emptyText }: { items: ExperimentSummary[]; emptyText: st
               {lastStepTitle ? `Last step: ${lastStepTitle}` : 'No steps yet'}
             </span>
           </Link>
+          <DeleteExperimentButton id={experiment.id} name={experiment.name} />
         </li>
       ))}
     </ul>
+  );
+}
+
+function DeleteExperimentButton({ id, name }: { id: string; name: string }) {
+  async function remove() {
+    const ok = window.confirm(
+      `Delete the experiment “${name}”? Its steps, timers and recorded data will be deleted. The protocol stays in the library.`,
+    );
+    if (ok) await deleteExperiment(id, db);
+  }
+  return (
+    <button type="button" className={`${BUTTON_SECONDARY} shrink-0 self-start`} onClick={() => void remove()}>
+      Delete
+    </button>
   );
 }

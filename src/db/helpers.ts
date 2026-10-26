@@ -5,9 +5,11 @@ import type {
   Folder,
   Procedure,
   RunState,
+  Step,
   StepRecord,
   Timer,
 } from '../types';
+import { getTemplate } from './templates';
 
 export const DEFAULT_EXPERIMENT_NAME = 'Untitled experiment';
 export const DEFAULT_FOLDER_NAME = 'New folder';
@@ -43,7 +45,22 @@ export function getExperiment(id: string, database: LabCompanionDB = defaultDb):
 
 export async function updateExperiment(
   id: string,
-  changes: Partial<Pick<Experiment, 'name' | 'status' | 'procedureId' | 'lastOpenedAt' | 'notes' | 'folderId' | 'startedAt' | 'endedAt'>>,
+  changes: Partial<
+    Pick<
+      Experiment,
+      | 'name'
+      | 'status'
+      | 'procedureId'
+      | 'templateId'
+      | 'lastOpenedAt'
+      | 'notes'
+      | 'folderId'
+      | 'startedAt'
+      | 'endedAt'
+      | 'safetyChecklist'
+      | 'safetyConfirmedAt'
+    >
+  >,
   database: LabCompanionDB = defaultDb,
 ): Promise<void> {
   await database.experiments.update(id, { ...changes, updatedAt: Date.now() });
@@ -96,6 +113,82 @@ export async function listExperimentSummaries(database: LabCompanionDB = default
       const step = procedure?.steps[runState?.currentStepIndex ?? 0];
       return { experiment, lastStepTitle: step?.title };
     }),
+  );
+}
+
+/**
+ * Copies template steps with fresh ids. Timers are keyed by step id, so two runs of the same
+ * template must not share step ids or one run's timers would show up in the other.
+ */
+function snapshotSteps(steps: Step[]): Step[] {
+  return steps.map((step) => {
+    const stepId = newId();
+    return {
+      ...structuredClone(step),
+      id: stepId,
+      timers: step.timers.map((timer) => ({ ...structuredClone(timer), id: newId(), stepId })),
+    };
+  });
+}
+
+/**
+ * Starts a run from a template. The template's steps are copied into a new procedure snapshot,
+ * so later edits to the template never change this run. A blank run title falls back to
+ * "<template> – <date>".
+ */
+export async function startExperimentFromTemplate(
+  templateId: string,
+  runTitle: string,
+  database: LabCompanionDB = defaultDb,
+): Promise<Experiment> {
+  return database.transaction('rw', database.templates, database.experiments, database.procedures, async () => {
+    const template = await getTemplate(templateId, database);
+    if (!template) throw new Error(`Template ${templateId} not found`);
+
+    const now = Date.now();
+    const experimentId = newId();
+    const procedure: Procedure = {
+      id: newId(),
+      experimentId,
+      title: template.title,
+      steps: snapshotSteps(template.steps),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const experiment: Experiment = {
+      id: experimentId,
+      name: runTitle.trim() || `${template.title} – ${new Date(now).toLocaleDateString()}`,
+      status: 'draft',
+      folderId: null,
+      templateId: template.id,
+      procedureId: procedure.id,
+      safetyChecklist: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    await database.procedures.add(procedure);
+    await database.experiments.add(experiment);
+    return experiment;
+  });
+}
+
+/**
+ * Deletes an experiment with everything it owns: its procedure snapshot, run state, timers and
+ * step records. The template it came from is not touched.
+ */
+export async function deleteExperiment(id: string, database: LabCompanionDB = defaultDb): Promise<void> {
+  await database.transaction(
+    'rw',
+    [database.experiments, database.procedures, database.experimentRunStates, database.timers, database.stepRecords],
+    async () => {
+      const procedures = await database.procedures.where('experimentId').equals(id).toArray();
+      const stepIds = new Set(procedures.flatMap((p) => p.steps.map((s) => s.id)));
+      await database.timers.filter((t) => t.experimentId === id || stepIds.has(t.stepId)).delete();
+      await database.stepRecords.where('experimentId').equals(id).delete();
+      await database.procedures.where('experimentId').equals(id).delete();
+      await database.experimentRunStates.delete(id);
+      await database.experiments.delete(id);
+    },
   );
 }
 

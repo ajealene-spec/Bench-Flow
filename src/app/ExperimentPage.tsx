@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { db } from '../db';
 import {
+  deleteExperiment,
   getExperiment,
   getProcedureForExperiment,
   listFolders,
@@ -17,6 +18,7 @@ import { RecordedDataSummary } from '../features/data/RecordedDataSummary';
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-teal-700 text-white active:bg-teal-800`;
 const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
+const BUTTON_DANGER = `${BUTTON} border border-rose-300 bg-white text-rose-800 active:bg-rose-50 dark:border-rose-700 dark:bg-slate-800 dark:text-rose-200`;
 const INPUT =
   'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
 
@@ -28,6 +30,7 @@ const STATUS_LABEL: Record<ExperimentStatus, string> = {
 
 export default function ExperimentPage() {
   const { id = '' } = useParams();
+  const navigate = useNavigate();
   const loaded = useLiveQuery(async () => ({ experiment: await getExperiment(id, db) }), [id]);
   const folders = useLiveQuery(() => listFolders(db), []);
   const procedure = useLiveQuery(() => getProcedureForExperiment(id, db), [id]);
@@ -66,9 +69,29 @@ export default function ExperimentPage() {
         <Link to={`/experiment/${experiment.id}/run`} className={BUTTON_PRIMARY}>
           Continue run
         </Link>
-        <Link to={`/experiment/${experiment.id}/import`} className={BUTTON_SECONDARY}>
-          Re-import procedure
-        </Link>
+        {experiment.templateId ? (
+          <Link to={`/library/${experiment.templateId}`} className={BUTTON_SECONDARY}>
+            Edit template
+          </Link>
+        ) : (
+          <span className="self-center text-sm text-slate-600 dark:text-slate-400">
+            No template. This run keeps its own steps.
+          </span>
+        )}
+        <button
+          type="button"
+          className={BUTTON_DANGER}
+          onClick={async () => {
+            const ok = window.confirm(
+              `Delete the experiment “${experiment.name}”? Its steps, timers and recorded data will be deleted. The protocol stays in the library.`,
+            );
+            if (!ok) return;
+            await deleteExperiment(experiment.id, db);
+            navigate('/');
+          }}
+        >
+          Delete experiment
+        </button>
       </section>
 
       <label className="flex flex-col gap-1">
@@ -162,7 +185,7 @@ function BackLink() {
       to="/"
       className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-teal-700 underline dark:text-teal-300"
     >
-      Back to workspace
+      Back to experiments
     </Link>
   );
 }

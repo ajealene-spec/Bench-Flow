@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getExperiment, getProcedureForExperiment, newId, saveProcedure, updateExperiment } from '../../db/helpers';
-import type { Experiment, Procedure, Step } from '../../types';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { newId } from '../../db/helpers';
+import { createTemplate } from '../../db/templates';
+import type { Step } from '../../types';
 import { extractPdfText } from './pdfText';
 import { getParserStatus, parseProcedure, type ParseOutcome } from './parseProcedure';
 
@@ -37,8 +38,13 @@ function withDuration(step: Step, sec: number | undefined): Step {
   return { ...step, durationSec: sec, timers: [timer, ...rest] };
 }
 
-function blankStep(): Step {
+export function blankStep(): Step {
   return { id: newId(), title: '', instructions: '', timers: [], reagents: [], dataFields: [], cautions: [] };
+}
+
+/** Trims titles and points each timer at its step, ready to store. */
+export function prepareSteps(steps: Step[]): Step[] {
+  return steps.map((s) => ({ ...s, title: s.title.trim(), timers: s.timers.map((t) => ({ ...t, stepId: s.id })) }));
 }
 
 interface ReviewState {
@@ -47,10 +53,9 @@ interface ReviewState {
   outcome: ParseOutcome;
 }
 
+/** Creates a protocol template from pasted text or a PDF. Route: /library/new. */
 export default function ImportPage() {
-  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [experiment, setExperiment] = useState<Experiment | null | undefined>(undefined);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState<'pdf' | 'parse' | 'save' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,30 +64,13 @@ export default function ImportPage() {
 
   useEffect(() => {
     let alive = true;
-    getExperiment(id).then((found) => {
-      if (alive) setExperiment(found ?? null);
-    });
     void getParserStatus().then((ready) => {
       if (alive) setAiReady(ready);
     });
     return () => {
       alive = false;
     };
-  }, [id]);
-
-  if (experiment === undefined) {
-    return <main className="p-6 text-slate-600 dark:text-slate-400">Loading…</main>;
-  }
-  if (experiment === null) {
-    return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
-        <Link to="/" className="inline-flex min-h-12 items-center text-teal-700 underline dark:text-teal-300">
-          Back to workspace
-        </Link>
-        <h1 className="text-2xl font-semibold">Experiment not found</h1>
-      </main>
-    );
-  }
+  }, []);
 
   async function handlePdf(file: File) {
     setBusy('pdf');
@@ -123,25 +111,14 @@ export default function ImportPage() {
     setBusy('save');
     setError(null);
     try {
-      const existing = await getProcedureForExperiment(experiment!.id);
-      const now = Date.now();
-      const procedure: Procedure = {
-        id: existing?.id ?? newId(),
-        experimentId: experiment!.id,
-        title: review.title.trim() || experiment!.name,
-        steps: review.steps.map((s) => ({ ...s, title: s.title.trim(), timers: s.timers.map((t) => ({ ...t, stepId: s.id })) })),
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      };
-      await saveProcedure(procedure);
-      const typedTitle = review.title.trim();
-      await updateExperiment(experiment!.id, {
-        procedureId: procedure.id,
-        ...(typedTitle ? { name: typedTitle } : {}),
+      const template = await createTemplate({
+        title: review.title,
+        steps: prepareSteps(review.steps),
+        sourceText: text,
       });
-      navigate(`/experiment/${experiment!.id}/run`);
+      navigate(`/library/${template.id}`);
     } catch {
-      setError('Could not save the procedure. Please try again.');
+      setError('Could not save the protocol. Please try again.');
       setBusy(null);
     }
   }
@@ -149,11 +126,10 @@ export default function ImportPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-1">
-        <Link to="/" className="inline-flex min-h-12 w-fit items-center text-teal-700 underline dark:text-teal-300">
-          Back to workspace
+        <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-teal-700 underline dark:text-teal-300">
+          Back to library
         </Link>
-        <h1 className="text-2xl font-semibold">Import procedure</h1>
-        <p className="text-slate-600 dark:text-slate-400">{experiment.name}</p>
+        <h1 className="text-2xl font-semibold">New protocol</h1>
       </header>
 
       {error && (
@@ -218,8 +194,21 @@ export default function ImportPage() {
         </section>
       ) : (
         <ReviewSection
-          review={review}
+          title={review.title}
+          steps={review.steps}
           busy={busy === 'save'}
+          saveLabel="Save protocol"
+          titleLabel="Protocol title"
+          titlePlaceholder="Name this protocol"
+          statusNote={
+            <>
+              <span className="font-semibold">
+                {review.outcome.parser === 'ai' ? 'Parsed with Claude AI.' : 'Parsed with the local parser.'}
+              </span>{' '}
+              {review.outcome.note && <span>{review.outcome.note} </span>}
+              Check every step before you start.
+            </>
+          }
           onTitle={(title) => setReview({ ...review, title })}
           onStepsChange={(steps) => setReview({ ...review, steps })}
           onBack={() => setReview(null)}
@@ -230,19 +219,37 @@ export default function ImportPage() {
   );
 }
 
-interface ReviewSectionProps {
-  review: ReviewState;
+export interface ReviewSectionProps {
+  title: string;
+  steps: Step[];
   busy: boolean;
+  saveLabel: string;
+  titleLabel: string;
+  titlePlaceholder?: string;
+  statusNote?: ReactNode;
   onTitle: (title: string) => void;
   onStepsChange: (steps: Step[]) => void;
-  onBack: () => void;
+  /** Shown as a Back button when given (the import review). */
+  onBack?: () => void;
   onSave: () => void;
 }
 
-function ReviewSection({ review, busy, onTitle, onStepsChange, onBack, onSave }: ReviewSectionProps) {
-  const { steps, outcome } = review;
+/** Step editor shared by the import review and the template editor. */
+export function ReviewSection({
+  title,
+  steps,
+  busy,
+  saveLabel,
+  titleLabel,
+  titlePlaceholder,
+  statusNote,
+  onTitle,
+  onStepsChange,
+  onBack,
+  onSave,
+}: ReviewSectionProps) {
   const hasBlankTitle = steps.some((s) => !s.title.trim());
-  const canSave = steps.length > 0 && !hasBlankTitle && !busy;
+  const canSave = !busy && !hasBlankTitle;
 
   function updateStep(index: number, next: Step) {
     onStepsChange(steps.map((s, i) => (i === index ? next : s)));
@@ -258,21 +265,15 @@ function ReviewSection({ review, busy, onTitle, onStepsChange, onBack, onSave }:
 
   return (
     <section className="flex flex-col gap-4">
-      <p role="status" className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">
-        <span className="font-semibold">
-          {outcome.parser === 'ai' ? 'Parsed with Claude AI.' : 'Parsed with the local parser.'}
-        </span>{' '}
-        {outcome.note && <span>{outcome.note} </span>}
-        Check every step before you start.
-      </p>
+      {statusNote && <p role="status" className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">{statusNote}</p>}
 
       <label className="flex flex-col gap-1">
-        <span className="font-medium">Procedure title</span>
+        <span className="font-medium">{titleLabel}</span>
         <input
           type="text"
-          value={review.title}
+          value={title}
           onChange={(e) => onTitle(e.target.value)}
-          placeholder="Defaults to the experiment name"
+          placeholder={titlePlaceholder}
           className={FIELD}
         />
       </label>
@@ -293,20 +294,18 @@ function ReviewSection({ review, busy, onTitle, onStepsChange, onBack, onSave }:
         ))}
       </ol>
 
-      <button
-        type="button"
-        className={BUTTON_SECONDARY}
-        onClick={() => onStepsChange([...steps, blankStep()])}
-      >
+      <button type="button" className={BUTTON_SECONDARY} onClick={() => onStepsChange([...steps, blankStep()])}>
         Add step
       </button>
 
       <div className="sticky bottom-0 -mx-4 flex flex-wrap gap-3 border-t border-slate-200 bg-white/95 p-4 backdrop-blur sm:-mx-6 sm:px-6 dark:border-slate-700 dark:bg-slate-950/95">
-        <button type="button" className={BUTTON_SECONDARY} onClick={onBack} disabled={busy}>
-          Back to text
-        </button>
+        {onBack && (
+          <button type="button" className={BUTTON_SECONDARY} onClick={onBack} disabled={busy}>
+            Back to text
+          </button>
+        )}
         <button type="button" className={`${BUTTON_PRIMARY} flex-1 sm:flex-none`} disabled={!canSave} onClick={onSave}>
-          {busy ? 'Saving…' : 'Save and start'}
+          {busy ? 'Saving…' : saveLabel}
         </button>
         {hasBlankTitle && <p className="w-full text-sm text-rose-700 dark:text-rose-300">Every step needs a title.</p>}
       </div>

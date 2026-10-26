@@ -77,6 +77,29 @@ async function parseCounter(page) {
   return { cur: Number(m[1]), total: Number(m[2]) };
 }
 
+// New protocol → paste → parse → save → Start experiment from the library → run page.
+async function createAndStartRun(page, protocolTitle, runTitle) {
+  await page.goto(BASE + '/');
+  await page.getByRole('button', { name: 'New experiment' }).click();
+  await page.getByRole('link', { name: 'Paste a new protocol' }).click();
+  await page.waitForURL(/\/library\/new$/);
+  await page.locator('#procedure-text').fill(PROC);
+  await page.getByRole('button', { name: 'Parse steps' }).click();
+  await page.getByRole('status').filter({ hasText: 'Parsed with' }).waitFor();
+  await page.getByLabel('Protocol title').fill(protocolTitle);
+  await page.getByRole('button', { name: 'Save protocol' }).click();
+  await page.waitForURL(/\/library\/(?!new$)[^/]+$/);
+  await page.getByRole('heading', { name: 'Edit protocol' }).waitFor();
+  await page.getByRole('link', { name: 'Back to library' }).click();
+  await page.waitForURL(/\/library$/);
+  const card = page.locator('li').filter({ hasText: protocolTitle });
+  await card.getByRole('button', { name: 'Start experiment' }).click();
+  await card.getByLabel('Run title').fill(runTitle);
+  await card.getByRole('button', { name: 'Start run' }).click();
+  await page.waitForURL(/\/run$/);
+  return page.url();
+}
+
 async function runViewport(browser, vp) {
   const ctx = await browser.newContext({
     viewport: { width: vp.width, height: vp.height },
@@ -97,9 +120,10 @@ async function runViewport(browser, vp) {
     await shot('01-workspace-empty');
     return 'heading visible';
   });
-  await check(vp, 'a2', 'New experiment creates experiment and opens import', async () => {
+  await check(vp, 'a2', 'New experiment offers a picker with Paste a new protocol', async () => {
     await page.getByRole('button', { name: 'New experiment' }).click();
-    await page.waitForURL(/\/experiment\/[^/]+\/import$/);
+    await page.getByRole('link', { name: 'Paste a new protocol' }).click();
+    await page.waitForURL(/\/library\/new$/);
     await page.locator('#procedure-text').waitFor();
     return page.url();
   });
@@ -137,9 +161,22 @@ async function runViewport(browser, vp) {
     if (!/gloves/i.test(body)) throw new Error('caution text not present on review');
     return 'caution text present';
   });
-  await check(vp, 'b5', 'Edit step title, save lands on run page', async () => {
+  await check(vp, 'b5', 'Edit step title and protocol title, save creates a template', async () => {
     await page.getByLabel('Title', { exact: true }).first().fill('Prepare lysis buffer (QA edit)');
-    await page.getByRole('button', { name: 'Save and start' }).click();
+    await page.getByLabel('Protocol title').fill('QA Western blot');
+    await page.getByRole('button', { name: 'Save protocol' }).click();
+    await page.waitForURL(/\/library\/(?!new$)[^/]+$/);
+    await page.getByRole('heading', { name: 'Edit protocol' }).waitFor();
+    await shot('02b-template-saved');
+    return page.url();
+  });
+  await check(vp, 'b6', 'Start experiment from the library opens the run', async () => {
+    await page.getByRole('link', { name: 'Back to library' }).click();
+    await page.waitForURL(/\/library$/);
+    const card = page.locator('li').filter({ hasText: 'QA Western blot' });
+    await card.getByRole('button', { name: 'Start experiment' }).click();
+    await card.getByLabel('Run title').fill('QA run');
+    await card.getByRole('button', { name: 'Start run' }).click();
     await page.waitForURL(/\/run$/);
     await page.getByRole('heading', { name: 'Prepare lysis buffer (QA edit)' }).waitFor();
     return page.url();
@@ -230,7 +267,7 @@ async function runViewport(browser, vp) {
     return `${c.cur}/${c.total} ${h}`;
   });
   await check(vp, 'd5', 'Timer tray visible on workspace page', async () => {
-    await page.getByRole('link', { name: 'Workspace' }).click();
+    await page.getByRole('link', { name: 'Experiments', exact: true }).click();
     await page.waitForURL(BASE + '/');
     const tray = page.getByRole('region', { name: 'Running timers' });
     await tray.waitFor();
@@ -240,10 +277,9 @@ async function runViewport(browser, vp) {
 
   // e. Finish all steps, experiment shows done
   await check(vp, 'e1', 'Complete all steps', async () => {
-    await page.getByRole("link", { name: /Prepare lysis|Untitled experiment/ }).first().click();
+    await page.getByRole('link', { name: 'QA run' }).first().click();
     await page.waitForURL(/\/experiment\/[^/]+$/);
-    await page.getByRole("link", { name: "Continue run" }).click();
-    await page.waitForURL(/\/run$/);|Untitled experiment/ }).first().click();
+    await page.getByRole('link', { name: 'Continue run' }).click();
     await page.waitForURL(/\/run$/);
     await openStepList(page);
     for (let i = 0; i < 4; i++) {
@@ -256,7 +292,7 @@ async function runViewport(browser, vp) {
     return 'progress 4/4';
   });
   await check(vp, 'e2', 'Workspace shows experiment as Done', async () => {
-    await page.getByRole('link', { name: 'Workspace' }).click();
+    await page.getByRole('link', { name: 'Experiments', exact: true }).click();
     await page.waitForURL(BASE + '/');
     const card = page.locator('ul li a').filter({ hasText: 'Done' });
     await card.first().waitFor();
@@ -273,8 +309,8 @@ async function runViewport(browser, vp) {
     return 'see g3a/g3b';
   });
   await check(vp, 'g4', 'Import page touch targets and overflow', async () => {
-    await page.getByRole('button', { name: 'New experiment' }).click();
-    await page.waitForURL(/\/import$/);
+    await page.goto(BASE + '/library/new');
+    await page.locator('#procedure-text').waitFor();
     const small0 = await touchAudit(page);
     const of0 = await horizontalOverflow(page);
     await page.locator('#procedure-text').fill(PROC);
@@ -302,15 +338,7 @@ async function runOffline(browser) {
   page.on('pageerror', (e) => consoleErrors.push({ vp: 'offline', text: 'pageerror: ' + e.message.slice(0, 300) }));
 
   await check(vp, 'f1', 'Preview build loads online and creates an experiment', async () => {
-    await page.goto(BASE + '/');
-    await page.getByRole('button', { name: 'New experiment' }).click();
-    await page.waitForURL(/\/import$/);
-    await page.locator('#procedure-text').fill(PROC);
-    await page.getByRole('button', { name: 'Parse steps' }).click();
-    await page.getByRole('status').filter({ hasText: 'Parsed with' }).waitFor();
-    await page.getByRole('button', { name: 'Save and start' }).click();
-    await page.waitForURL(/\/run$/);
-    return page.url();
+    return createAndStartRun(page, 'Offline protocol', 'Offline run');
   });
   await check(vp, 'f2', 'Service worker active and controlling page', async () => {
     await page.goto(BASE + '/');
