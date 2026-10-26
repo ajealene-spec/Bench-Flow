@@ -1,0 +1,34 @@
+import type { Timer } from '../../types';
+import { formatRemaining } from './timeMath';
+import { requestNotificationPermission, unlockAlarmAudio } from './alarm';
+import { startStepTimer } from './timerActions';
+
+/** "Start timer" buttons for a step's timer definitions. */
+export function StepTimerButtons({ timers }: { timers: Timer[] }) {
+  if (timers.length === 0) return null;
+
+  async function handleStart(template: Timer) {
+    // Taps are user gestures: unlock audio and ask for notifications here, once.
+    unlockAlarmAudio();
+    await requestNotificationPermission();
+    await startStepTimer(template);
+  }
+
+  return (
+    <section aria-label="Step timers" className="flex flex-col gap-2">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Timers</h3>
+      <div className="flex flex-wrap gap-3">
+        {timers.map((timer) => (
+          <button
+            key={timer.id}
+            type="button"
+            onClick={() => void handleStart(timer)}
+            className="min-h-16 rounded-xl border-2 border-teal-700 px-5 text-left font-medium text-teal-800 active:bg-teal-50 dark:border-teal-400 dark:text-teal-200 dark:active:bg-teal-900/40"
+          >
+            Start timer: {timer.label} ({formatRemaining(timer.durationSec)})
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
