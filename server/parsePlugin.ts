@@ -1,11 +1,11 @@
 import { loadEnv, type Plugin } from 'vite';
-import { extractJson, validateParsedProcedure } from '../src/features/import/validateSteps';
+import { parseAiSteps } from '../src/features/import/aiSchema';
 import { clipForModel, SYSTEM_PROMPT } from '../src/features/import/parsePrompt';
 
 /**
  * Dev-server endpoint that turns lab text into structured steps with the Claude Messages API.
  *   GET  /api/parse  -> { configured: boolean }
- *   POST /api/parse  body { text } -> { title?, steps, parser: 'ai' }
+ *   POST /api/parse  body { text } -> { aiSteps, parser: 'ai' } (aiSteps are validated; the client maps them to Steps)
  * The API key is read from ANTHROPIC_API_KEY (.env or the shell) and never leaves the server.
  */
 
@@ -116,19 +116,12 @@ async function handleParse(req: Req, res: Res, env: Record<string, string>): Pro
     const model = env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
     const modelText = await callClaude(apiKey, model, clipForModel(text));
 
-    let parsed: unknown;
-    try {
-      parsed = extractJson(modelText);
-    } catch {
-      send(res, 422, { error: 'model_output_not_json' });
-      return;
-    }
-    const result = validateParsedProcedure(parsed);
+    const result = parseAiSteps(modelText);
     if (!result.ok) {
       send(res, 422, { error: 'model_output_invalid', message: result.error });
       return;
     }
-    send(res, 200, { title: result.title, steps: result.steps, hazards: result.hazards, parser: 'ai' });
+    send(res, 200, { aiSteps: result.steps, parser: 'ai' });
   } catch (err) {
     const status = (err as { status?: number }).status ?? 500;
     console.error('[parse] failed:', (err as Error).message);

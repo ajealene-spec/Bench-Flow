@@ -78,11 +78,12 @@ describe('AI input limits and prompt', () => {
     expect(clipForModel('short text')).toBe('short text');
   });
 
-  it('asks for timers, cautions and data fields and forbids caution titles', () => {
-    expect(SYSTEM_PROMPT).toMatch(/timers/);
-    expect(SYSTEM_PROMPT).toMatch(/cautions/);
-    expect(SYSTEM_PROMPT).toMatch(/dataFields/);
-    expect(SYSTEM_PROMPT).toMatch(/never start with "Caution"/);
-    expect(SYSTEM_PROMPT).toMatch(/Skip introductions/);
+  it('asks for a JSON array with step_number, duration and variables, and skips materials', () => {
+    expect(SYSTEM_PROMPT).toMatch(/Return ONLY a JSON array/);
+    expect(SYSTEM_PROMPT).toMatch(/step_number/);
+    expect(SYSTEM_PROMPT).toMatch(/instruction_text/);
+    expect(SYSTEM_PROMPT).toMatch(/"duration"/);
+    expect(SYSTEM_PROMPT).toMatch(/"variables"/);
+    expect(SYSTEM_PROMPT).toMatch(/materials lists/);
   });
 });

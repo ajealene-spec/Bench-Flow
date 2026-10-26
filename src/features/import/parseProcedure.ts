@@ -1,11 +1,12 @@
 import type { Hazard, MaterialItem, ProtocolPhase, Step } from '../../types';
-import { detectHazards, mergeHazards, sanitizeHazards } from './hazards';
+import { mapAiSteps, validateAiSteps, type AiStep } from './aiSchema';
+import { detectHazards } from './hazards';
 import { detectMaterials, parseLocal } from './localParse';
 
 export interface ParseOutcome {
   title?: string;
   steps: Step[];
-  /** Rule hits merged with the AI's hazards (AI names are matched to the rule list). */
+  /** Rule hits from the original pasted text, linked to the steps that use them. */
   hazards: Hazard[];
   /** Phases from "Day N" / "Phase N" headings, when found. */
   phases?: ProtocolPhase[];
@@ -29,6 +30,39 @@ export async function getParserStatus(): Promise<boolean | null> {
   }
 }
 
+/**
+ * Builds the outcome from AI steps. Hazards, phases and materials come from the ORIGINAL pasted text
+ * (materials are kept out of the steps but still feed the Materials card).
+ */
+function parseWithAi(text: string, aiSteps: AiStep[]): ParseOutcome {
+  const steps = mapAiSteps(aiSteps);
+  const local = parseLocal(text);
+  // Rule hits are found on the whole pasted text; each hazard is then linked to the steps that mention it.
+  const source: Step = {
+    id: 'source',
+    title: '',
+    instructions: text,
+    timers: [],
+    reagents: [],
+    dataFields: [],
+    cautions: [],
+  };
+  const perStep = detectHazards(steps);
+  const hazards = detectHazards([source]).map((h) => ({
+    ...h,
+    stepIds: perStep.find((p) => p.id === h.id)?.stepIds ?? [],
+  }));
+  return {
+    title: local.title,
+    steps,
+    hazards,
+    parser: 'ai',
+    note: '',
+    phases: local.phases,
+    materials: detectMaterials(text),
+  };
+}
+
 /** Tries the AI parser when online and configured; otherwise falls back to the local parser. */
 export async function parseProcedure(text: string): Promise<ParseOutcome> {
   let note = '';
@@ -48,10 +82,10 @@ export async function parseProcedure(text: string): Promise<ParseOutcome> {
           body: JSON.stringify({ text }),
         });
         if (res.ok) {
-          const data = (await res.json()) as { title?: string; steps: Step[]; hazards?: unknown };
-          if (Array.isArray(data.steps) && data.steps.length > 0) {
-            const hazards = mergeHazards(detectHazards(data.steps), sanitizeHazards(data.hazards, data.steps));
-            return { title: data.title, steps: data.steps, hazards, parser: 'ai', note: '', materials: detectMaterials(text) };
+          const data = (await res.json()) as { aiSteps?: unknown };
+          const checked = validateAiSteps(data.aiSteps);
+          if (checked.ok) {
+            return parseWithAi(text, checked.steps);
           }
         }
         note = 'The AI parser could not read this text, so the local parser was used.';
