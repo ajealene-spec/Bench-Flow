@@ -98,7 +98,7 @@ export default function ReportPage() {
   if (data === undefined) return <main className="p-6 text-text-muted">Loading report…</main>;
   if (data === null) {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
+      <main className="mx-auto flex max-w-7xl flex-col gap-4 p-4 sm:p-6">
         <Link to="/" className="inline-flex min-h-12 w-fit items-center text-accent-text underline">
           Back to experiments
         </Link>

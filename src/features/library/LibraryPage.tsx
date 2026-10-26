@@ -34,7 +34,7 @@ export default function LibraryPage() {
     .map((c) => ({ category: c, items: visible.filter((t) => t.category === c) }));
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:max-w-5xl">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 sm:p-6">
       <PageHeader
         title="Protocol Library"
         subtitle="Reusable protocols, grouped by category. Start a run from any of them."

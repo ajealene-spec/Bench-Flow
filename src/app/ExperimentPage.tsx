@@ -53,7 +53,7 @@ export default function ExperimentPage() {
   const experiment = loaded.experiment;
   if (!experiment) {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
+      <main className="mx-auto flex max-w-7xl flex-col gap-4 p-4 sm:p-6">
         <BackLink />
         <h1 className="text-2xl font-semibold">Experiment not found</h1>
       </main>
@@ -61,7 +61,7 @@ export default function ExperimentPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 pb-10 sm:p-6">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 pb-10 sm:p-6">
       <BackLink />
 
       <header className="flex flex-col gap-2">

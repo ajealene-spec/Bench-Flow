@@ -25,7 +25,7 @@ export default function TemplatePage() {
   if (template === undefined) return <main className="p-6 text-text-muted">Loading protocol…</main>;
   if (template === null) {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
+      <main className="mx-auto flex max-w-7xl flex-col gap-4 p-4 sm:p-6">
         <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent-text underline">
           Back to library
         </Link>
@@ -76,7 +76,7 @@ function TemplateEditor({ template, categories }: { template: ProtocolTemplate; 
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <Link to="/library" className="inline-flex min-h-12 items-center text-accent-text underline">
           Back to library

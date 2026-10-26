@@ -132,7 +132,7 @@ export default function CalendarPage() {
   }, [items]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 pb-12 sm:p-6 md:max-w-5xl">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 p-4 pb-12 sm:p-6">
       <div className="flex flex-col gap-3">
         <PageHeader title="Calendar" subtitle="Runs, timers and tasks by day." />
         <div className="flex flex-wrap items-center gap-2">

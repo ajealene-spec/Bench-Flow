@@ -24,7 +24,7 @@ export function AppNav() {
   const moreActive = moreItems.some((r) => pathname === r.path || pathname.startsWith(`${r.path}/`));
 
   return (
-    <nav aria-label="Main" className="mx-auto flex w-full max-w-5xl flex-nowrap items-center gap-2 px-4 pt-4">
+    <nav aria-label="Main" className="mx-auto flex w-full max-w-7xl flex-nowrap items-center gap-2 px-4 pt-4">
       <div className="min-w-0 shrink-0">
         <BrandWordmark />
       </div>

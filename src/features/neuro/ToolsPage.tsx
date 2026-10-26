@@ -30,7 +30,7 @@ export default function ToolsPage() {
   // Tools that fit the survey answers come first. Without answers the order is unchanged.
   const tiles = orderToolTiles(TOOL_TILES, { field: settings?.field ?? null, techniques: settings?.techniques ?? [] });
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4">
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4">
       <PageHeader title="Bench tools" subtitle="Calculators for neuro and molecular work. Check every number against your protocol." />
       <ul className="grid gap-3 sm:grid-cols-2">
         {tiles.map((t) => (

@@ -30,7 +30,7 @@ export default function AnimalsPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 p-4 pb-12 sm:p-6">
+    <main className="mx-auto flex max-w-7xl flex-col gap-8 p-4 pb-12 sm:p-6">
       <PageHeader title="Animals" subtitle="Cages, animals, weights, surgery and post-op checks." />
 
       <section aria-label="Cages" className="flex flex-col gap-4">

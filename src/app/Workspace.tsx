@@ -52,7 +52,7 @@ export function Workspace() {
   const unfiledCount = countIn((id) => id === null);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 p-4 pb-12 sm:p-6 md:max-w-4xl lg:max-w-6xl">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-8 p-4 pb-12 sm:p-6">
       <PageHeader title="Command Center" subtitle={greetingFor(new Date().getHours(), settings?.userName)} />
 
       <PersonalizeCard />

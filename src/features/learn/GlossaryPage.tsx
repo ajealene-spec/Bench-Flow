@@ -68,7 +68,7 @@ export default function GlossaryPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4">
       <PageHeader title="Glossary" subtitle="Plain-language definitions for terms used in protocols. Add your own below." />
       <label className="flex flex-col gap-1 text-base font-medium">
         Search terms

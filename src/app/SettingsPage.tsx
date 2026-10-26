@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const settings = useLiveQuery(() => getSettings(db), []);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-6 p-4 pb-12 sm:p-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col gap-6 p-4 pb-12 sm:p-6">
       <PageHeader title="Settings" subtitle="Appearance, your name, the AI key and the starter content." />
 
       {settings === undefined ? (

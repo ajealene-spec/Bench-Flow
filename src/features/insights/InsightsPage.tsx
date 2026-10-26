@@ -40,7 +40,7 @@ export default function InsightsPage() {
   });
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 pb-12 sm:p-6 md:max-w-4xl">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 pb-12 sm:p-6">
       <Link to="/" className="inline-flex min-h-12 w-fit items-center rounded-lg px-3 font-medium text-accent-text underline">
         Back to Command Center
       </Link>

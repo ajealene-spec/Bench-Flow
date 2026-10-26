@@ -178,7 +178,7 @@ export default function ExperimentsPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 pb-32 sm:p-6 md:max-w-5xl md:pb-12 lg:max-w-6xl">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 pb-32 sm:p-6 md:pb-12">
       <PageHeader
         title="Experiments"
         subtitle="Every run, with its status, folder and recorded data."

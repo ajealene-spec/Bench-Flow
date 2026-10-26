@@ -156,7 +156,7 @@ export default function RunPage() {
 
   if (loaded === null) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 sm:p-6">
+      <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 p-4 sm:p-6">
         <BackLink />
         <h1 className="text-2xl font-semibold">No procedure yet</h1>
         <p className="text-text-muted">Import or write a procedure for this experiment before running it.</p>
@@ -218,7 +218,7 @@ export default function RunPage() {
 
   if (total === 0) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 sm:p-6">
+      <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 p-4 sm:p-6">
         <BackLink />
         <h1 className="text-2xl font-semibold">{procedure.title}</h1>
         <p className="text-text-muted">This procedure has no steps.</p>
@@ -329,7 +329,7 @@ export default function RunPage() {
         };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-5 p-4 pb-10 sm:p-6 lg:max-w-5xl">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-5 p-4 pb-10 sm:p-6">
       {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

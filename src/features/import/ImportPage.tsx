@@ -137,7 +137,7 @@ export default function ImportPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-1">
         <Link to="/library" className="inline-flex min-h-12 w-fit items-center text-accent-text underline">
           Back to library

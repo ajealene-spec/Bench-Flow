@@ -85,7 +85,9 @@ export function FocusMode(props: FocusModeProps) {
         </ul>
       )}
 
-      <StepText step={step} experimentId={experimentId} textClassName="text-2xl leading-relaxed" />
+      <div className="max-w-prose">
+        <StepText step={step} experimentId={experimentId} textClassName="text-2xl leading-relaxed" />
+      </div>
       <StepAids step={step} protocolTitle={protocolTitle} />
 
       {step.cautions.length > 0 && (

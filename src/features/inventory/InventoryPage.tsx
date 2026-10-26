@@ -49,14 +49,14 @@ export default function InventoryPage() {
 
   if (editing !== null) {
     return (
-      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4">
         <InventoryForm item={editing === 'new' ? undefined : editing} onDone={() => setEditing(null)} />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4">
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4">
       <PageHeader
         title="Inventory"
         subtitle="Reagents and antibodies with lot numbers and expiry dates."

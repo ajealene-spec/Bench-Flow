@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../../db';
 import { demoReportPath } from '../../content/seed';
 import { useToast } from '../../app/feedback';
-import { CARD, EYEBROW, EnterLink } from './introShared';
-import { HeroNetwork } from './HeroNetwork';
+import { BAND, CARD, EYEBROW, EnterLink, INNER } from './introShared';
+import { HeroHelix } from './HeroNetwork';
 import { HowItWorksSection } from './HowItWorksSection';
 import { NeuroSection } from './NeuroSection';
 import { OpenScienceSection } from './OpenScienceSection';
@@ -49,7 +49,7 @@ const SECTIONS = [
   { id: 'hero', label: 'Top' },
   { id: 'problem', label: 'The problem' },
   { id: 'how', label: 'How it works' },
-  { id: 'neuro', label: 'Built for neuroscience' },
+  { id: 'tools', label: 'Tools for the bench' },
   { id: 'open', label: 'Open science' },
   { id: 'enter', label: 'Enter the lab' },
 ];
@@ -73,7 +73,7 @@ export default function IntroPage() {
     <div className="bg-page text-text">
       <div id="intro-progress" className="intro-progress" aria-hidden="true" />
 
-      <nav aria-label="Page sections" className="fixed right-2 top-1/2 z-20 hidden -translate-y-1/2 flex-col lg:flex">
+      <nav aria-label="Page sections" className="fixed right-2 top-1/2 z-20 hidden -translate-y-1/2 flex-col xl:flex">
         {SECTIONS.map((s) => (
           <a
             key={s.id}
@@ -87,20 +87,22 @@ export default function IntroPage() {
         ))}
       </nav>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-12 sm:px-6">
-        <section id="hero" data-section="hero" aria-labelledby="hero-title" className="grid items-center gap-10 pb-12 pt-10 md:grid-cols-2 md:pt-16">
-          <div className="flex flex-col text-center md:text-left">
-            <span className={`${EYEBROW} mb-6`}>Free and open source</span>
-            <h1 id="hero-title" className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              Bench Flow — the open lab notebook for every bench.
-            </h1>
-            <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, offline-first, built for reproducible neuroscience.</p>
-            <div className="mt-8 flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
-              <EnterLink className="border-2 border-transparent leading-6" />
-              <DemoButton />
+      <main className="flex w-full flex-col">
+        <section id="hero" data-section="hero" aria-labelledby="hero-title" className="pb-12 pt-10 md:pb-16 md:pt-16">
+          <div className={`${INNER} grid items-center gap-10 md:grid-cols-2`}>
+            <div className="flex flex-col text-center md:text-left">
+              <span className={`${EYEBROW} mb-6`}>Free and open source</span>
+              <h1 id="hero-title" className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+                Bench Flow — the open lab notebook for every bench.
+              </h1>
+              <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, offline-first, built for reproducible neuroscience.</p>
+              <div className="mt-8 flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
+                <EnterLink className="border-2 border-transparent leading-6" />
+                <DemoButton />
+              </div>
             </div>
+            <HeroHelix reduced={reduced} />
           </div>
-          <HeroNetwork reduced={reduced} />
         </section>
 
         <ProblemSection />
@@ -108,20 +110,24 @@ export default function IntroPage() {
         <NeuroSection />
         <OpenScienceSection />
 
-        <section id="enter" data-section="enter" aria-labelledby="enter-title" className="py-20">
-          <div data-reveal className={`${CARD} flex flex-col items-center gap-6 text-center sm:p-10`}>
-            <h2 id="enter-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Your notebook is ready when you are.
-            </h2>
-            <p className="max-w-xl text-text-muted">Nothing is required to start. Your notes stay in this browser, and the network is optional.</p>
-            <EnterLink />
+        <section id="enter" data-section="enter" aria-labelledby="enter-title" className={BAND}>
+          <div className={INNER}>
+            <div data-reveal className={`${CARD} flex flex-col items-center gap-6 text-center sm:p-10`}>
+              <h2 id="enter-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Your notebook is ready when you are.
+              </h2>
+              <p className="max-w-xl text-text-muted">Nothing is required to start. Your notes stay in this browser, and the network is optional.</p>
+              <EnterLink />
+            </div>
           </div>
         </section>
 
-        <footer className="flex flex-col items-center gap-2 border-t border-border pt-6 text-center text-sm text-text-muted">
-          <p>
-            MIT licensed. <a className="text-accent-text underline" href={REPO_URL} target="_blank" rel="noreferrer">Source on GitHub</a>
-          </p>
+        <footer className={`${INNER} pb-12`}>
+          <div className="flex flex-col items-center gap-2 border-t border-border pt-6 text-center text-sm text-text-muted">
+            <p>
+              MIT licensed. <a className="text-accent-text underline" href={REPO_URL} target="_blank" rel="noreferrer">Source on GitHub</a>
+            </p>
+          </div>
         </footer>
       </main>
     </div>

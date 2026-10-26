@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 export function Placeholder({ title }: { title: string }) {
   const { id } = useParams();
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 sm:p-6">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 p-4 sm:p-6">
       <Link
         to="/"
         className="inline-flex min-h-12 items-center rounded-lg px-3 font-medium text-accent-text underline"

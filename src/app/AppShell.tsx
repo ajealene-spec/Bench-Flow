@@ -36,7 +36,7 @@ export function AppShell() {
         Skip to main content
       </a>
       <AppNav />
-      <div className="mx-auto w-full max-w-3xl px-4 pt-4">
+      <div className="mx-auto w-full max-w-7xl px-4 pt-4">
         <TimerTray />
       </div>
       <div id="main-content" tabIndex={-1} className="outline-none">
