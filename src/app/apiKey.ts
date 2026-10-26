@@ -1,4 +1,5 @@
 import { getSettings } from '../db/settings';
+import { apiUrl } from './apiBase';
 import type { LabCompanionDB } from '../db';
 
 /** Header that carries the user's own Anthropic key to the app's /api routes. Matches server/handlers/apiKey.ts. */
@@ -27,7 +28,7 @@ export async function testApiKey(key: string): Promise<KeyTestResult> {
   const headers = keyHeaderFor(key);
   if (!headers[API_KEY_HEADER]) return 'missing';
   try {
-    const res = await fetch('/api/test-key', { method: 'POST', headers });
+    const res = await fetch(apiUrl('/api/test-key'), { method: 'POST', headers });
     if (res.status === 503) return 'missing';
     if (!res.ok) return 'unavailable';
     const data = (await res.json()) as { ok?: unknown };

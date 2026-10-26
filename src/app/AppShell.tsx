@@ -31,7 +31,8 @@ export function AppShell() {
   const location = useLocation();
 
   return (
-    <>
+    // safe-top keeps the nav under the status bar and notch; safe-bottom keeps the last content above the home bar.
+    <div className="safe-top safe-bottom">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
@@ -45,6 +46,6 @@ export function AppShell() {
           <Outlet />
         </div>
       </div>
-    </>
+    </div>
   );
 }

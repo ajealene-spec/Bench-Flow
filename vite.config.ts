@@ -14,6 +14,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registration is done in src/main.tsx, so it can be skipped inside the native app.
+      injectRegister: null,
       includeAssets: ['icon.svg', 'icons/*.png'],
       manifest: {
         name: 'Bench Flow',

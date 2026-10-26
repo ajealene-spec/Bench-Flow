@@ -7,6 +7,7 @@ import {
   type TroubleshootResult,
 } from './assistPrompts';
 import { apiKeyHeaders } from '../../app/apiKey';
+import { apiUrl } from '../../app/apiBase';
 import { validateExplanationResponse } from '../learn/explanations';
 import type { ExplainResult } from '../learn/explainPrompts';
 
@@ -15,7 +16,7 @@ export type AssistCall<T> = { ok: true; value: T } | { ok: false; error: string 
 /** Whether the dev server has an API key. False when the server is unreachable. */
 export async function fetchAssistConfigured(): Promise<boolean> {
   try {
-    const res = await fetch('/api/assist', { method: 'GET', headers: await apiKeyHeaders() });
+    const res = await fetch(apiUrl('/api/assist'), { method: 'GET', headers: await apiKeyHeaders() });
     if (!res.ok) return false;
     const data = (await res.json()) as { configured?: unknown };
     return data.configured === true;
@@ -26,7 +27,7 @@ export async function fetchAssistConfigured(): Promise<boolean> {
 
 async function post(path: string, body: unknown): Promise<{ status: number; data: unknown } | { error: string }> {
   try {
-    const res = await fetch(path, {
+    const res = await fetch(apiUrl(path), {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(await apiKeyHeaders()) },
       body: JSON.stringify(body),

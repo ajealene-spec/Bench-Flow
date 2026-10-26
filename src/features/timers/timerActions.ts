@@ -3,7 +3,13 @@ import { deleteTimer as deleteTimerRow, newId, saveTimer } from '../../db/helper
 import type { Timer } from '../../types';
 import { logTimerRun } from '../data/timerRecords';
 import { logTimerStart, logTimerStop } from './timerEvents';
-import { finishTimer, isExpired, pauseTimer, resetTimer, startTimer } from './timeMath';
+import { finishTimer, isExpired, pauseTimer, remainingSec, resetTimer, startTimer } from './timeMath';
+import { cancelNativeTimerAlert, scheduleNativeTimerAlert } from './nativeTimerAlerts';
+
+/** End time for a running timer, in epoch ms. */
+function endsAtOf(timer: Timer, now: number): number {
+  return now + remainingSec(timer, now) * 1000;
+}
 
 /*
  * Each run of a step timer is its own row in the `timers` table. Read-modify-write
@@ -38,20 +44,27 @@ export async function startStepTimer(template: Timer, database: LabCompanionDB =
   const running: Timer = { ...startTimer(row, now), firstStartedAt: now };
   await saveTimer(running, database);
   await logTimerStart(running, now, database);
+  void scheduleNativeTimerAlert(running, endsAtOf(running, now));
   return running;
 }
 
-export function pauseStepTimer(id: string, database: LabCompanionDB = defaultDb) {
-  return updateRow(id, (t, now) => pauseTimer(t, now), database);
+export async function pauseStepTimer(id: string, database: LabCompanionDB = defaultDb) {
+  const paused = await updateRow(id, (t, now) => pauseTimer(t, now), database);
+  void cancelNativeTimerAlert(id);
+  return paused;
 }
 
-export function resumeStepTimer(id: string, database: LabCompanionDB = defaultDb) {
-  return updateRow(id, (t, now) => ({ ...startTimer(t, now), firstStartedAt: t.firstStartedAt ?? now }), database);
+export async function resumeStepTimer(id: string, database: LabCompanionDB = defaultDb) {
+  const resumed = await updateRow(id, (t, now) => ({ ...startTimer(t, now), firstStartedAt: t.firstStartedAt ?? now }), database);
+  if (resumed?.status === 'running') void scheduleNativeTimerAlert(resumed, endsAtOf(resumed, Date.now()));
+  return resumed;
 }
 
-export function resetStepTimer(id: string, database: LabCompanionDB = defaultDb) {
+export async function resetStepTimer(id: string, database: LabCompanionDB = defaultDb) {
   // A reset discards the run in progress, so it is not logged when dismissed.
-  return updateRow(id, (t) => ({ ...resetTimer(t), firstStartedAt: undefined }), database);
+  const reset = await updateRow(id, (t) => ({ ...resetTimer(t), firstStartedAt: undefined }), database);
+  void cancelNativeTimerAlert(id);
+  return reset;
 }
 
 /**
@@ -64,6 +77,7 @@ export async function dismissStepTimer(id: string, database: LabCompanionDB = de
     await logTimerRun(current, Date.now(), database);
     await logTimerStop(current, Date.now(), database);
   }
+  void cancelNativeTimerAlert(id);
   return deleteTimerRow(id, database);
 }
 
@@ -84,5 +98,6 @@ export async function finishIfExpired(id: string, database: LabCompanionDB = def
     await logTimerRun(finished, Date.now(), database);
     await logTimerStop(finished, Date.now(), database);
   }
+  if (finished) void cancelNativeTimerAlert(id);
   return finished;
 }

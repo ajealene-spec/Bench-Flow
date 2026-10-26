@@ -32,6 +32,9 @@ export default function SettingsPage() {
           <ApiKeyCard savedKey={settings.apiKey} />
         </>
       )}
+      <p className="text-sm text-text-muted">
+        <Link to="/privacy" className="text-accent-text underline">Privacy policy</Link>
+      </p>
     </main>
   );
 }

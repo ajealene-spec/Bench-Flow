@@ -1,4 +1,5 @@
 import type { Timer } from '../../types';
+import { hapticTimerDone } from './nativeTimerAlerts';
 
 /*
  * Alarm side effects: Web Audio beeps, vibration and a Notification. Every
@@ -78,6 +79,7 @@ export function alertTimerDone(timer: Pick<Timer, 'id' | 'label'>): void {
   playAlarm();
   vibrate();
   notifyTimerDone(timer);
+  void hapticTimerDone();
 }
 
 /**

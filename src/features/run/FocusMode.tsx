@@ -62,7 +62,7 @@ export function FocusMode(props: FocusModeProps) {
   if (motion.index !== index) setMotion({ index, dir: index > motion.index ? 'next' : 'prev' });
 
   return (
-    <section aria-label="Focus mode" className="flex flex-col gap-6">
+    <section aria-label="Focus mode" className="safe-x flex flex-col gap-6">
       <div key={step.id} className={`flex flex-col gap-6 ${motion.dir === 'next' ? 'step-enter-next' : 'step-enter-prev'}`}>
       <div className="flex flex-col gap-2">
         <p className="flex flex-wrap items-center gap-3 text-xl font-semibold text-text-muted">

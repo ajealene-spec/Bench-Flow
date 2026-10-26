@@ -16,6 +16,7 @@ import { FirstVisitRedirect } from './FirstVisitRedirect';
 import GlossaryPage from '../features/learn/GlossaryPage';
 import SharedPage from '../features/share/SharedPage';
 import ExperimentsPage from '../features/experiments/ExperimentsPage';
+import PrivacyPage from './PrivacyPage';
 
 /**
  * Where a route appears in the navigation.
@@ -70,6 +71,7 @@ export const featureRoutes: FeatureRoute[] = [
   { path: '/shared', element: <SharedPage /> },
   { path: '/animals', element: <LazyRoute><AnimalsPage /></LazyRoute>, nav: { label: 'Animals', group: 'records' } },
   { path: '/glossary', element: <GlossaryPage />, nav: { label: 'Glossary', group: 'app' } },
+  { path: '/privacy', element: <PrivacyPage />, nav: { label: 'Privacy', group: 'app' } },
   { path: '/tools', element: <LazyRoute><ToolsPage /></LazyRoute>, nav: { label: 'Bench tools', group: 'app' } },
   { path: '/insights', element: <LazyRoute><InsightsPage /></LazyRoute>, nav: { label: 'Insights', group: 'records' } },
 ];

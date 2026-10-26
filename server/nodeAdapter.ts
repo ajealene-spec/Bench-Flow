@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { corsHeaders } from './handlers/cors';
 import { DEFAULT_MODEL, type ApiHandler, type ServerEnv } from './handlers/types';
 
 /**
@@ -24,6 +25,15 @@ export function createNodeListener(handler: ApiHandler, resolveEnv: () => Server
         return readStream(req, maxBytes);
       },
     };
+
+    // CORS for the native app shells (see cors.ts). Preflight gets an empty 204 before any handler runs.
+    const cors = corsHeaders(apiRequest.header('origin'));
+    for (const [name, value] of Object.entries(cors)) res.setHeader(name, value);
+    if (apiRequest.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
 
     try {
       const result = await handler(apiRequest, resolveEnv());

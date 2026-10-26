@@ -3,6 +3,7 @@ import { mapAiSteps, validateAiSteps, type AiStep } from './aiSchema';
 import { detectHazards } from './hazards';
 import { detectMaterials, parseLocal } from './localParse';
 import { apiKeyHeaders } from '../../app/apiKey';
+import { apiUrl } from '../../app/apiBase';
 
 export interface ParseOutcome {
   title?: string;
@@ -22,7 +23,7 @@ export interface ParseOutcome {
 export async function getParserStatus(): Promise<boolean | null> {
   if (!navigator.onLine) return null;
   try {
-    const res = await fetch('/api/parse', { headers: await apiKeyHeaders() });
+    const res = await fetch(apiUrl('/api/parse'), { headers: await apiKeyHeaders() });
     if (!res.ok) return null;
     const info = (await res.json()) as { configured?: boolean };
     return Boolean(info.configured);
@@ -72,12 +73,12 @@ export async function parseProcedure(text: string): Promise<ParseOutcome> {
     note = 'You are offline, so the local parser was used.';
   } else {
     try {
-      const status = await fetch('/api/parse', { headers: await apiKeyHeaders() });
+      const status = await fetch(apiUrl('/api/parse'), { headers: await apiKeyHeaders() });
       const info = status.ok ? ((await status.json()) as { configured?: boolean }) : {};
       if (!info.configured) {
         note = 'No Anthropic API key is set, so the local parser was used.';
       } else {
-        const res = await fetch('/api/parse', {
+        const res = await fetch(apiUrl('/api/parse'), {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...(await apiKeyHeaders()) },
           body: JSON.stringify({ text }),
