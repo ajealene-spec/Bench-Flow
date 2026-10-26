@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { db } from '../../db';
-import { getLab, getProcedureForLab, getRunState, saveRunState, setLabStatus, updateLab } from '../../db/helpers';
+import { getProcedureForExperiment, getRunState, markRunStarted, saveRunState, setExperimentStatus, updateExperiment } from '../../db/helpers';
 import type { Procedure } from '../../types';
 import { StepTimerButtons } from '../timers/StepTimerButtons';
 import {
@@ -26,15 +26,11 @@ export default function RunPage() {
   const [loaded, setLoaded] = useState<Loaded | null | undefined>(undefined);
   const [listOpen, setListOpen] = useState(false);
 
-  // Restore exact position on open, then mark the lab as started.
+  // Restore exact position on open, then mark the experiment as started.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [procedure, saved, lab] = await Promise.all([
-        getProcedureForLab(id, db),
-        getRunState(id, db),
-        getLab(id, db),
-      ]);
+      const [procedure, saved] = await Promise.all([getProcedureForExperiment(id, db), getRunState(id, db)]);
       if (cancelled) return;
       if (!procedure) {
         setLoaded(null);
@@ -43,8 +39,8 @@ export default function RunPage() {
       const state = restoreRunState(id, saved, procedure);
       setLoaded({ procedure, state });
       await saveRunState(state, db);
-      if (lab?.status === 'draft') await setLabStatus(id, 'in_progress', db);
-      await updateLab(id, { lastOpenedAt: Date.now() }, db);
+      await markRunStarted(id, db);
+      await updateExperiment(id, { lastOpenedAt: Date.now() }, db);
     })();
     return () => {
       cancelled = true;
@@ -60,9 +56,9 @@ export default function RunPage() {
       <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 p-4 sm:p-6">
         <BackLink />
         <h1 className="text-2xl font-semibold">No procedure yet</h1>
-        <p className="text-slate-600 dark:text-slate-400">Import or write a procedure for this lab before running it.</p>
+        <p className="text-slate-600 dark:text-slate-400">Import or write a procedure for this experiment before running it.</p>
         <Link
-          to={`/lab/${id}/import`}
+          to={`/experiment/${id}/import`}
           className="inline-flex min-h-16 items-center justify-center rounded-2xl bg-teal-700 px-6 text-lg font-semibold text-white"
         >
           Go to import
@@ -86,7 +82,7 @@ export default function RunPage() {
         <BackLink />
         <h1 className="text-2xl font-semibold">{procedure.title}</h1>
         <p className="text-slate-600 dark:text-slate-400">This procedure has no steps.</p>
-        <Link to={`/lab/${id}/import`} className="underline text-teal-700 dark:text-teal-300">
+        <Link to={`/experiment/${id}/import`} className="underline text-teal-700 dark:text-teal-300">
           Edit procedure
         </Link>
       </main>
@@ -102,7 +98,7 @@ export default function RunPage() {
   function handleMarkComplete() {
     const { state: next, finished } = completeCurrentStep(state, procedure);
     commit(next);
-    if (finished) void setLabStatus(id, 'done', db);
+    if (finished) void setExperimentStatus(id, 'done', db);
   }
 
   return (

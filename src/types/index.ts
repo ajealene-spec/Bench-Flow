@@ -1,12 +1,26 @@
-export type LabStatus = 'draft' | 'in_progress' | 'done';
+export type ExperimentStatus = 'draft' | 'in_progress' | 'done';
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'done';
 
-export interface Lab {
+/** A user-defined group for experiments. Deleting a folder moves its experiments to "Unfiled". */
+export interface Folder {
   id: string;
   name: string;
-  status: LabStatus;
+  createdAt: number;
+}
+
+export interface Experiment {
+  id: string;
+  name: string;
+  status: ExperimentStatus;
   procedureId?: string;
+  /** null means unfiled. */
+  folderId: string | null;
+  notes?: string;
+  /** Set the first time the run is started. */
+  startedAt?: number;
+  /** Set when the last step completes; cleared when the experiment is reopened. */
+  endedAt?: number;
   createdAt: number;
   updatedAt: number;
   lastOpenedAt?: number;
@@ -20,6 +34,22 @@ export interface Timer {
   startedAt?: number;
   pausedRemainingSec?: number;
   status: TimerStatus;
+}
+
+/** One recorded measurement or timer run, attached to a step of an experiment. */
+export interface StepRecord {
+  id: string;
+  experimentId: string;
+  stepId: string;
+  kind: 'number' | 'timer';
+  label: string;
+  value?: number;
+  unit?: string;
+  startedAt?: number;
+  stoppedAt?: number;
+  elapsedSec?: number;
+  note?: string;
+  createdAt: number;
 }
 
 export interface Reagent {
@@ -48,7 +78,7 @@ export interface Step {
 
 export interface Procedure {
   id: string;
-  labId: string;
+  experimentId: string;
   title: string;
   steps: Step[];
   createdAt: number;
@@ -56,7 +86,7 @@ export interface Procedure {
 }
 
 export interface RunState {
-  labId: string;
+  experimentId: string;
   currentStepIndex: number;
   completedStepIds: string[];
   updatedAt: number;

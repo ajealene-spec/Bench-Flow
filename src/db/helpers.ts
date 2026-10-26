@@ -1,8 +1,19 @@
 import { db as defaultDb, type LabCompanionDB } from './index';
-import type { Lab, LabStatus, Procedure, RunState, Timer } from '../types';
+import type {
+  Experiment,
+  ExperimentStatus,
+  Folder,
+  Procedure,
+  RunState,
+  StepRecord,
+  Timer,
+} from '../types';
 
-export interface LabSummary {
-  lab: Lab;
+export const DEFAULT_EXPERIMENT_NAME = 'Untitled experiment';
+export const DEFAULT_FOLDER_NAME = 'New folder';
+
+export interface ExperimentSummary {
+  experiment: Experiment;
   lastStepTitle?: string;
 }
 
@@ -10,75 +21,178 @@ export function newId(): string {
   return crypto.randomUUID();
 }
 
-export async function createLab(name: string, database: LabCompanionDB = defaultDb): Promise<Lab> {
+// ---------- Experiments ----------
+
+export async function createExperiment(name: string, database: LabCompanionDB = defaultDb): Promise<Experiment> {
   const now = Date.now();
-  const lab: Lab = {
+  const experiment: Experiment = {
     id: newId(),
-    name: name.trim() || 'Untitled lab',
+    name: name.trim() || DEFAULT_EXPERIMENT_NAME,
     status: 'draft',
+    folderId: null,
     createdAt: now,
     updatedAt: now,
   };
-  await database.labs.add(lab);
-  return lab;
+  await database.experiments.add(experiment);
+  return experiment;
 }
 
-export function getLab(id: string, database: LabCompanionDB = defaultDb): Promise<Lab | undefined> {
-  return database.labs.get(id);
+export function getExperiment(id: string, database: LabCompanionDB = defaultDb): Promise<Experiment | undefined> {
+  return database.experiments.get(id);
 }
 
-export async function updateLab(
+export async function updateExperiment(
   id: string,
-  changes: Partial<Pick<Lab, 'name' | 'status' | 'procedureId' | 'lastOpenedAt'>>,
+  changes: Partial<Pick<Experiment, 'name' | 'status' | 'procedureId' | 'lastOpenedAt' | 'notes' | 'folderId' | 'startedAt' | 'endedAt'>>,
   database: LabCompanionDB = defaultDb,
 ): Promise<void> {
-  await database.labs.update(id, { ...changes, updatedAt: Date.now() });
+  await database.experiments.update(id, { ...changes, updatedAt: Date.now() });
 }
 
-export async function setLabStatus(
+/** Renames an experiment. A blank name falls back to the default name. */
+export function renameExperiment(id: string, name: string, database: LabCompanionDB = defaultDb): Promise<void> {
+  return updateExperiment(id, { name: name.trim() || DEFAULT_EXPERIMENT_NAME }, database);
+}
+
+/**
+ * Sets the status. Finishing stamps endedAt; any other status clears it, so a reopened
+ * experiment does not keep a stale end date.
+ */
+export async function setExperimentStatus(
   id: string,
-  status: LabStatus,
+  status: ExperimentStatus,
   database: LabCompanionDB = defaultDb,
 ): Promise<void> {
-  await updateLab(id, { status }, database);
+  await updateExperiment(id, { status, endedAt: status === 'done' ? Date.now() : undefined }, database);
 }
 
-/** All labs, most recently updated first. */
-export async function listLabs(database: LabCompanionDB = defaultDb): Promise<Lab[]> {
-  const labs = await database.labs.toArray();
-  return labs.sort((a, b) => b.updatedAt - a.updatedAt);
+/** Called when the run page opens. Sets startedAt the first time and moves a draft to in progress. */
+export async function markRunStarted(id: string, database: LabCompanionDB = defaultDb): Promise<void> {
+  await database.transaction('rw', database.experiments, async () => {
+    const experiment = await database.experiments.get(id);
+    if (!experiment) return;
+    const changes: Partial<Experiment> = {};
+    if (experiment.startedAt === undefined) changes.startedAt = Date.now();
+    if (experiment.status === 'draft') changes.status = 'in_progress';
+    if (Object.keys(changes).length > 0) await updateExperiment(id, changes, database);
+  });
 }
 
-/** Labs with the title of the step the run is currently on, for the workspace list. */
-export async function listLabSummaries(database: LabCompanionDB = defaultDb): Promise<LabSummary[]> {
-  const labs = await listLabs(database);
+/** All experiments, most recently updated first. */
+export async function listExperiments(database: LabCompanionDB = defaultDb): Promise<Experiment[]> {
+  const experiments = await database.experiments.toArray();
+  return experiments.sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+/** Experiments with the title of the step the run is currently on, for the workspace list. */
+export async function listExperimentSummaries(database: LabCompanionDB = defaultDb): Promise<ExperimentSummary[]> {
+  const experiments = await listExperiments(database);
   return Promise.all(
-    labs.map(async (lab) => {
+    experiments.map(async (experiment) => {
       const [procedure, runState] = await Promise.all([
-        getProcedureForLab(lab.id, database),
-        getRunState(lab.id, database),
+        getProcedureForExperiment(experiment.id, database),
+        getRunState(experiment.id, database),
       ]);
       const step = procedure?.steps[runState?.currentStepIndex ?? 0];
-      return { lab, lastStepTitle: step?.title };
+      return { experiment, lastStepTitle: step?.title };
     }),
   );
 }
+
+// ---------- Folders ----------
+
+/** All folders, by name. */
+export async function listFolders(database: LabCompanionDB = defaultDb): Promise<Folder[]> {
+  const folders = await database.folders.toArray();
+  return folders.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function createFolder(name: string, database: LabCompanionDB = defaultDb): Promise<Folder> {
+  const folder: Folder = { id: newId(), name: name.trim() || DEFAULT_FOLDER_NAME, createdAt: Date.now() };
+  await database.folders.add(folder);
+  return folder;
+}
+
+export async function renameFolder(id: string, name: string, database: LabCompanionDB = defaultDb): Promise<void> {
+  await database.folders.update(id, { name: name.trim() || DEFAULT_FOLDER_NAME });
+}
+
+/** Deletes a folder. Its experiments move to Unfiled; experiments are never deleted. */
+export async function deleteFolder(id: string, database: LabCompanionDB = defaultDb): Promise<void> {
+  await database.transaction('rw', database.folders, database.experiments, async () => {
+    await database.experiments.where('folderId').equals(id).modify({ folderId: null, updatedAt: Date.now() });
+    await database.folders.delete(id);
+  });
+}
+
+/** Moves an experiment into a folder, or back to Unfiled with null. */
+export function setExperimentFolder(
+  experimentId: string,
+  folderId: string | null,
+  database: LabCompanionDB = defaultDb,
+): Promise<void> {
+  return updateExperiment(experimentId, { folderId }, database);
+}
+
+// ---------- Procedures and run state ----------
 
 export async function saveProcedure(procedure: Procedure, database: LabCompanionDB = defaultDb): Promise<void> {
   await database.procedures.put({ ...procedure, updatedAt: Date.now() });
 }
 
-export function getProcedureForLab(labId: string, database: LabCompanionDB = defaultDb): Promise<Procedure | undefined> {
-  return database.procedures.where('labId').equals(labId).first();
+export function getProcedureForExperiment(
+  experimentId: string,
+  database: LabCompanionDB = defaultDb,
+): Promise<Procedure | undefined> {
+  return database.procedures.where('experimentId').equals(experimentId).first();
 }
 
-export function getRunState(labId: string, database: LabCompanionDB = defaultDb): Promise<RunState | undefined> {
-  return database.runStates.get(labId);
+export function getRunState(experimentId: string, database: LabCompanionDB = defaultDb): Promise<RunState | undefined> {
+  return database.experimentRunStates.get(experimentId);
 }
 
 export async function saveRunState(state: Omit<RunState, 'updatedAt'>, database: LabCompanionDB = defaultDb): Promise<void> {
-  await database.runStates.put({ ...state, updatedAt: Date.now() });
+  await database.experimentRunStates.put({ ...state, updatedAt: Date.now() });
 }
+
+// ---------- Step records ----------
+
+export async function addStepRecord(
+  input: Omit<StepRecord, 'id' | 'createdAt'>,
+  database: LabCompanionDB = defaultDb,
+): Promise<StepRecord> {
+  const record: StepRecord = { ...input, id: newId(), createdAt: Date.now() };
+  await database.stepRecords.add(record);
+  return record;
+}
+
+/** Every record for an experiment, oldest first. */
+export async function listStepRecords(experimentId: string, database: LabCompanionDB = defaultDb): Promise<StepRecord[]> {
+  return database.stepRecords.where('experimentId').equals(experimentId).sortBy('createdAt');
+}
+
+/** Records for one step of an experiment, oldest first. */
+export async function listStepRecordsForStep(
+  experimentId: string,
+  stepId: string,
+  database: LabCompanionDB = defaultDb,
+): Promise<StepRecord[]> {
+  return database.stepRecords.where('[experimentId+stepId]').equals([experimentId, stepId]).sortBy('createdAt');
+}
+
+export async function updateStepRecord(
+  id: string,
+  changes: Partial<Pick<StepRecord, 'kind' | 'label' | 'value' | 'unit' | 'startedAt' | 'stoppedAt' | 'elapsedSec' | 'note'>>,
+  database: LabCompanionDB = defaultDb,
+): Promise<void> {
+  await database.stepRecords.update(id, changes);
+}
+
+export async function deleteStepRecord(id: string, database: LabCompanionDB = defaultDb): Promise<void> {
+  await database.stepRecords.delete(id);
+}
+
+// ---------- Timers ----------
 
 export async function saveTimer(timer: Timer, database: LabCompanionDB = defaultDb): Promise<void> {
   await database.timers.put(timer);

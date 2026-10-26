@@ -1,10 +1,10 @@
 import type { Procedure } from '../../types';
 
 /** A three-step procedure with timers, reagents and cautions, for tests and demos. */
-export function fixtureProcedure(labId = 'lab-fixture'): Procedure {
+export function fixtureProcedure(experimentId = 'experiment-fixture'): Procedure {
   return {
     id: 'proc-fixture',
-    labId,
+    experimentId,
     title: 'Western blot',
     createdAt: 0,
     updatedAt: 0,

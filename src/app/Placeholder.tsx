@@ -11,7 +11,7 @@ export function Placeholder({ title }: { title: string }) {
         Back to workspace
       </Link>
       <h1 className="text-2xl font-semibold">{title}</h1>
-      <p className="text-slate-600 dark:text-slate-400">Lab {id} — coming in a later phase.</p>
+      <p className="text-slate-600 dark:text-slate-400">Experiment {id} — coming in a later phase.</p>
     </main>
   );
 }

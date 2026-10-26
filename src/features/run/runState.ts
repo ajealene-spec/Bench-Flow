@@ -5,21 +5,21 @@ export type RunStateInput = Omit<RunState, 'updatedAt'>;
 const unique = (ids: string[]) => [...new Set(ids)];
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
-export function freshRunState(labId: string): RunStateInput {
-  return { labId, currentStepIndex: 0, completedStepIds: [] };
+export function freshRunState(experimentId: string): RunStateInput {
+  return { experimentId, currentStepIndex: 0, completedStepIds: [] };
 }
 
 /**
  * Rebuilds run state from storage. Tolerates a procedure that changed since the
  * last save: out-of-range indexes are clamped and unknown step ids are dropped.
  */
-export function restoreRunState(labId: string, saved: RunState | undefined, procedure: Procedure): RunStateInput {
-  if (!saved || saved.labId !== labId) return freshRunState(labId);
+export function restoreRunState(experimentId: string, saved: RunState | undefined, procedure: Procedure): RunStateInput {
+  if (!saved || saved.experimentId !== experimentId) return freshRunState(experimentId);
   const last = Math.max(0, procedure.steps.length - 1);
   const known = new Set(procedure.steps.map((s) => s.id));
   const index = Number.isInteger(saved.currentStepIndex) ? clamp(saved.currentStepIndex, 0, last) : 0;
   return {
-    labId,
+    experimentId,
     currentStepIndex: index,
     completedStepIds: unique(saved.completedStepIds.filter((id) => known.has(id))),
   };

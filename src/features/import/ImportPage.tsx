@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getLab, getProcedureForLab, newId, saveProcedure, updateLab } from '../../db/helpers';
-import type { Lab, Procedure, Step } from '../../types';
+import { getExperiment, getProcedureForExperiment, newId, saveProcedure, updateExperiment } from '../../db/helpers';
+import type { Experiment, Procedure, Step } from '../../types';
 import { extractPdfText } from './pdfText';
 import { parseProcedure, type ParseOutcome } from './parseProcedure';
 
@@ -50,7 +50,7 @@ interface ReviewState {
 export default function ImportPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [lab, setLab] = useState<Lab | null | undefined>(undefined);
+  const [experiment, setExperiment] = useState<Experiment | null | undefined>(undefined);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState<'pdf' | 'parse' | 'save' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,24 +58,24 @@ export default function ImportPage() {
 
   useEffect(() => {
     let alive = true;
-    getLab(id).then((found) => {
-      if (alive) setLab(found ?? null);
+    getExperiment(id).then((found) => {
+      if (alive) setExperiment(found ?? null);
     });
     return () => {
       alive = false;
     };
   }, [id]);
 
-  if (lab === undefined) {
+  if (experiment === undefined) {
     return <main className="p-6 text-slate-600 dark:text-slate-400">Loading…</main>;
   }
-  if (lab === null) {
+  if (experiment === null) {
     return (
       <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6">
         <Link to="/" className="inline-flex min-h-12 items-center text-teal-700 underline dark:text-teal-300">
           Back to workspace
         </Link>
-        <h1 className="text-2xl font-semibold">Lab not found</h1>
+        <h1 className="text-2xl font-semibold">Experiment not found</h1>
       </main>
     );
   }
@@ -119,19 +119,23 @@ export default function ImportPage() {
     setBusy('save');
     setError(null);
     try {
-      const existing = await getProcedureForLab(lab!.id);
+      const existing = await getProcedureForExperiment(experiment!.id);
       const now = Date.now();
       const procedure: Procedure = {
         id: existing?.id ?? newId(),
-        labId: lab!.id,
-        title: review.title.trim() || lab!.name,
+        experimentId: experiment!.id,
+        title: review.title.trim() || experiment!.name,
         steps: review.steps.map((s) => ({ ...s, title: s.title.trim(), timers: s.timers.map((t) => ({ ...t, stepId: s.id })) })),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
       await saveProcedure(procedure);
-      await updateLab(lab!.id, { procedureId: procedure.id });
-      navigate(`/lab/${lab!.id}/run`);
+      const typedTitle = review.title.trim();
+      await updateExperiment(experiment!.id, {
+        procedureId: procedure.id,
+        ...(typedTitle ? { name: typedTitle } : {}),
+      });
+      navigate(`/experiment/${experiment!.id}/run`);
     } catch {
       setError('Could not save the procedure. Please try again.');
       setBusy(null);
@@ -145,7 +149,7 @@ export default function ImportPage() {
           Back to workspace
         </Link>
         <h1 className="text-2xl font-semibold">Import procedure</h1>
-        <p className="text-slate-600 dark:text-slate-400">{lab.name}</p>
+        <p className="text-slate-600 dark:text-slate-400">{experiment.name}</p>
       </header>
 
       {error && (
@@ -255,7 +259,7 @@ function ReviewSection({ review, busy, onTitle, onStepsChange, onBack, onSave }:
           type="text"
           value={review.title}
           onChange={(e) => onTitle(e.target.value)}
-          placeholder="Defaults to the lab name"
+          placeholder="Defaults to the experiment name"
           className={FIELD}
         />
       </label>

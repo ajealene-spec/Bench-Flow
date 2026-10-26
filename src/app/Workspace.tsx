@@ -1,69 +1,226 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../db';
-import { createLab, listLabSummaries } from '../db/helpers';
-import type { LabStatus } from '../types';
+import {
+  createExperiment,
+  createFolder,
+  deleteFolder,
+  listExperimentSummaries,
+  listFolders,
+  renameFolder,
+  type ExperimentSummary,
+} from '../db/helpers';
+import type { ExperimentStatus, Folder } from '../types';
+import { formatDate } from './format';
 
-const STATUS_LABEL: Record<LabStatus, string> = {
+const STATUS_LABEL: Record<ExperimentStatus, string> = {
   draft: 'Draft',
   in_progress: 'In progress',
   done: 'Done',
 };
 
-const STATUS_CLASS: Record<LabStatus, string> = {
+const STATUS_CLASS: Record<ExperimentStatus, string> = {
   draft: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
   in_progress: 'bg-amber-200 text-amber-900 dark:bg-amber-700 dark:text-amber-50',
   done: 'bg-emerald-200 text-emerald-900 dark:bg-emerald-700 dark:text-emerald-50',
 };
 
+const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 font-medium';
+const BUTTON_SECONDARY = `${BUTTON} border border-slate-300 bg-white text-slate-900 active:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100`;
+const INPUT =
+  'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+
 export function Workspace() {
   const navigate = useNavigate();
-  const summaries = useLiveQuery(() => listLabSummaries(db), []);
+  const summaries = useLiveQuery(() => listExperimentSummaries(db), []);
+  const folders = useLiveQuery(() => listFolders(db), []);
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
   async function handleCreate() {
-    const lab = await createLab('Untitled lab');
-    navigate(`/lab/${lab.id}/import`);
+    const experiment = await createExperiment('Untitled experiment');
+    navigate(`/experiment/${experiment.id}/import`);
   }
+
+  // Experiments whose folder was removed (for example on another device) fall back to Unfiled.
+  const folderIds = new Set(folders?.map((f) => f.id) ?? []);
+  const grouped = new Map<string | null, ExperimentSummary[]>();
+  for (const summary of summaries ?? []) {
+    const key = summary.experiment.folderId && folderIds.has(summary.experiment.folderId) ? summary.experiment.folderId : null;
+    grouped.set(key, [...(grouped.get(key) ?? []), summary]);
+  }
+  const unfiled = grouped.get(null) ?? [];
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:max-w-5xl">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Lab Companion</h1>
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="min-h-12 rounded-xl bg-teal-700 px-5 font-medium text-white active:bg-teal-800"
-        >
-          New lab
-        </button>
+        <div className="flex flex-col">
+          <span className="text-sm text-slate-500 dark:text-slate-400">Lab Companion</span>
+          <h1 className="text-2xl font-semibold">Experiments</h1>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setCreatingFolder((c) => !c)} className={BUTTON_SECONDARY}>
+            New folder
+          </button>
+          <button
+            type="button"
+            onClick={handleCreate}
+            className={`${BUTTON} bg-teal-700 px-5 text-white active:bg-teal-800`}
+          >
+            New experiment
+          </button>
+        </div>
       </header>
 
-      {summaries === undefined && <p className="text-slate-500">Loading labs…</p>}
-
-      {summaries?.length === 0 && (
-        <p className="text-slate-600 dark:text-slate-400">No labs yet. Tap “New lab” to start one.</p>
+      {creatingFolder && (
+        <FolderForm
+          onDone={() => setCreatingFolder(false)}
+        />
       )}
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {summaries?.map(({ lab, lastStepTitle }) => (
-          <li key={lab.id}>
-            <Link
-              to={lab.status === 'draft' ? `/lab/${lab.id}/import` : `/lab/${lab.id}/run`}
-              className="flex min-h-12 flex-col gap-2 rounded-xl border border-slate-300 p-4 active:bg-slate-100 dark:border-slate-700 dark:active:bg-slate-800"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-lg font-medium">{lab.name}</span>
-                <span className={`rounded-full px-3 py-1 text-sm ${STATUS_CLASS[lab.status]}`}>
-                  {STATUS_LABEL[lab.status]}
-                </span>
-              </div>
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {lastStepTitle ? `Last step: ${lastStepTitle}` : 'No steps yet'}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {summaries === undefined && <p className="text-slate-500">Loading experiments…</p>}
+
+      {summaries?.length === 0 && (
+        <p className="text-slate-600 dark:text-slate-400">No experiments yet. Tap “New experiment” to start one.</p>
+      )}
+
+      {folders?.map((folder) => (
+        <FolderSection key={folder.id} folder={folder} items={grouped.get(folder.id) ?? []} />
+      ))}
+
+      {summaries && summaries.length > 0 && (
+        <Section title={folders && folders.length > 0 ? 'Unfiled' : 'All experiments'} items={unfiled} />
+      )}
     </main>
+  );
+}
+
+function FolderForm({ onDone }: { onDone: () => void }) {
+  const [name, setName] = useState('');
+  async function submit() {
+    await createFolder(name);
+    onDone();
+  }
+  return (
+    <form
+      className="flex flex-col gap-2 rounded-xl border border-slate-300 p-4 sm:flex-row dark:border-slate-700"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+    >
+      <label className="flex flex-1 flex-col gap-1">
+        <span className="text-sm font-medium">Folder name</span>
+        <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      </label>
+      <div className="flex gap-2 sm:items-end">
+        <button type="submit" className={`${BUTTON} bg-teal-700 text-white active:bg-teal-800`}>
+          Create folder
+        </button>
+        <button type="button" className={BUTTON_SECONDARY} onClick={onDone}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function FolderSection({ folder, items }: { folder: Folder; items: ExperimentSummary[] }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(folder.name);
+
+  async function save() {
+    await renameFolder(folder.id, name);
+    setEditing(false);
+  }
+
+  async function remove() {
+    const ok = window.confirm(`Delete the folder “${folder.name}”? Its experiments will move to Unfiled.`);
+    if (ok) await deleteFolder(folder.id);
+  }
+
+  return (
+    <section aria-label={`Folder ${folder.name}`} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {editing ? (
+          <form
+            className="flex flex-1 flex-wrap gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void save();
+            }}
+          >
+            <label className="flex-1">
+              <span className="sr-only">Folder name</span>
+              <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            </label>
+            <button type="submit" className={`${BUTTON} bg-teal-700 text-white active:bg-teal-800`}>
+              Save
+            </button>
+            <button type="button" className={BUTTON_SECONDARY} onClick={() => setEditing(false)}>
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold">{folder.name}</h2>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className={BUTTON_SECONDARY}
+                onClick={() => {
+                  setName(folder.name);
+                  setEditing(true);
+                }}
+              >
+                Rename
+              </button>
+              <button type="button" className={BUTTON_SECONDARY} onClick={() => void remove()}>
+                Delete folder
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      <Cards items={items} emptyText="No experiments in this folder yet." />
+    </section>
+  );
+}
+
+function Section({ title, items }: { title: string; items: ExperimentSummary[] }) {
+  return (
+    <section aria-label={title} className="flex flex-col gap-3">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <Cards items={items} emptyText="Nothing unfiled." />
+    </section>
+  );
+}
+
+function Cards({ items, emptyText }: { items: ExperimentSummary[]; emptyText: string }) {
+  if (items.length === 0) return <p className="text-sm text-slate-500 dark:text-slate-400">{emptyText}</p>;
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {items.map(({ experiment, lastStepTitle }) => (
+        <li key={experiment.id}>
+          <Link
+            to={`/experiment/${experiment.id}`}
+            className="flex min-h-12 flex-col gap-2 rounded-xl border border-slate-300 p-4 active:bg-slate-100 dark:border-slate-700 dark:active:bg-slate-800"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-lg font-medium">{experiment.name}</span>
+              <span className={`rounded-full px-3 py-1 text-sm ${STATUS_CLASS[experiment.status]}`}>
+                {STATUS_LABEL[experiment.status]}
+              </span>
+            </div>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Started {formatDate(experiment.startedAt)} · Ended {formatDate(experiment.endedAt)}
+            </span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {lastStepTitle ? `Last step: ${lastStepTitle}` : 'No steps yet'}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
