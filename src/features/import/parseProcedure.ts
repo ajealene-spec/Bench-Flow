@@ -1,23 +1,14 @@
-import type { Hazard, MaterialItem, ProtocolPhase, Step } from '../../types';
-import { mapAiSteps, validateAiSteps, type AiStep } from './aiSchema';
-import { detectHazards } from './hazards';
-import { detectMaterials, parseLocal } from './localParse';
 import { apiKeyHeaders } from '../../app/apiKey';
 import { apiUrl } from '../../app/apiBase';
+import { mapAiProtocol, validateAiProtocol } from './aiSchema';
+import type { ProtocolDraft } from './draft';
+import { parseOffline } from './offlineParse';
 
-export interface ParseOutcome {
-  title?: string;
-  steps: Step[];
-  /** Rule hits from the original pasted text, linked to the steps that use them. */
-  hazards: Hazard[];
-  /** Phases from "Day N" / "Phase N" headings, when found. */
-  phases?: ProtocolPhase[];
-  /** Materials mentioned in the text. */
-  materials?: MaterialItem[];
-  parser: 'ai' | 'local';
-  /** Why the local parser was used, or empty when AI parsed the text. */
-  note: string;
-}
+/** The import result. Both readers produce this shape. */
+export type ParseOutcome = ProtocolDraft;
+
+export const AI_READER_LABEL = 'AI reader';
+export const OFFLINE_READER_LABEL = 'Offline reader — add an API key in Settings for best results';
 
 /** Whether the dev server has an Anthropic API key. Null when the server cannot be reached. */
 export async function getParserStatus(): Promise<boolean | null> {
@@ -32,79 +23,35 @@ export async function getParserStatus(): Promise<boolean | null> {
   }
 }
 
-/**
- * Builds the outcome from AI steps. Hazards, phases and materials come from the ORIGINAL pasted text
- * (materials are kept out of the steps but still feed the Materials card).
- */
-function parseWithAi(text: string, aiSteps: AiStep[]): ParseOutcome {
-  const steps = mapAiSteps(aiSteps);
-  const local = parseLocal(text);
-  // Rule hits are found on the whole pasted text; each hazard is then linked to the steps that mention it.
-  const source: Step = {
-    id: 'source',
-    title: '',
-    instructions: text,
-    timers: [],
-    reagents: [],
-    dataFields: [],
-    cautions: [],
-  };
-  const perStep = detectHazards(steps);
-  const hazards = detectHazards([source]).map((h) => ({
-    ...h,
-    stepIds: perStep.find((p) => p.id === h.id)?.stepIds ?? [],
-  }));
-  return {
-    title: local.title,
-    steps,
-    hazards,
-    parser: 'ai',
-    note: '',
-    phases: local.phases,
-    materials: detectMaterials(text),
-  };
+function offline(text: string, note: string): ParseOutcome {
+  return { ...parseOffline(text), note };
 }
 
-/** Tries the AI parser when online and configured; otherwise falls back to the local parser. */
+/**
+ * Uses the AI reader when online and configured. The server's answer is validated again here, with
+ * the pasted text as the source, so hazard quotes must appear in what the user pasted. Any failure
+ * falls back to the offline reader, and the note says why.
+ */
 export async function parseProcedure(text: string): Promise<ParseOutcome> {
-  let note = '';
+  if (!navigator.onLine) return offline(text, 'You are offline, so the offline reader was used.');
 
-  if (!navigator.onLine) {
-    note = 'You are offline, so the local parser was used.';
-  } else {
-    try {
-      const status = await fetch(apiUrl('/api/parse'), { headers: await apiKeyHeaders() });
-      const info = status.ok ? ((await status.json()) as { configured?: boolean }) : {};
-      if (!info.configured) {
-        note = 'No Anthropic API key is set, so the local parser was used.';
-      } else {
-        const res = await fetch(apiUrl('/api/parse'), {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', ...(await apiKeyHeaders()) },
-          body: JSON.stringify({ text }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { aiSteps?: unknown };
-          const checked = validateAiSteps(data.aiSteps);
-          if (checked.ok) {
-            return parseWithAi(text, checked.steps);
-          }
-        }
-        note = 'The AI parser could not read this text, so the local parser was used.';
-      }
-    } catch {
-      note = 'The AI parser is unreachable, so the local parser was used.';
+  try {
+    const status = await fetch(apiUrl('/api/parse'), { headers: await apiKeyHeaders() });
+    const info = status.ok ? ((await status.json()) as { configured?: boolean }) : {};
+    if (!info.configured) return offline(text, 'No Anthropic API key is set, so the offline reader was used.');
+
+    const res = await fetch(apiUrl('/api/parse'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(await apiKeyHeaders()) },
+      body: JSON.stringify({ text }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { protocol?: unknown };
+      const checked = validateAiProtocol(data.protocol, text);
+      if (checked.ok) return mapAiProtocol(checked.protocol, text);
     }
+    return offline(text, 'The AI reader could not read this text, so the offline reader was used.');
+  } catch {
+    return offline(text, 'The AI reader is unreachable, so the offline reader was used.');
   }
-
-  const local = parseLocal(text);
-  return {
-    title: local.title,
-    steps: local.steps,
-    hazards: detectHazards(local.steps),
-    parser: 'local',
-    note,
-    phases: local.phases,
-    materials: local.materials,
-  };
 }

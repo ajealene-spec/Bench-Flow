@@ -11,7 +11,7 @@ export interface Folder {
   parentId?: string;
 }
 
-export type HazardKind = 'chemical' | 'biological' | 'physical' | 'radiological';
+export type HazardKind = 'chemical' | 'biological' | 'physical' | 'radiological' | 'animal';
 
 /** A hazard identified for a protocol. The parser fills these in later; for now they are stored empty. */
 export interface Hazard {
@@ -21,6 +21,8 @@ export interface Hazard {
   reason: string;
   ppe: string[];
   stepIds: string[];
+  /** The sentence from the protocol text that triggered this hazard. Shown to the user for review. */
+  evidence?: string;
 }
 
 /** A named block of the protocol, such as "Day 1" or "Phase 2". Steps point at one with phaseId. */
@@ -34,10 +36,12 @@ export interface MaterialItem {
   id: string;
   name: string;
   kind: MaterialKind;
+  /** Amount as written in the text, such as "5 µM" or "10 mL". */
+  quantity?: string;
   checked?: boolean;
 }
 
-export type MaterialKind = 'consumable' | 'solution' | 'equipment';
+export type MaterialKind = 'consumable' | 'solution' | 'reagent' | 'equipment';
 
 /** Short overview shown above the steps. */
 export interface ProtocolOverview {

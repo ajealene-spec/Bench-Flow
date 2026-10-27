@@ -1,0 +1,21 @@
+Calcium imaging of APOE astrocytes with Fluo-4
+Purpose: to measure intracellular calcium responses of primary astrocytes carrying APOE3 or APOE4 to glutamate and alpha-synuclein.
+Materials
+- Matrigel
+- Laminin, 15 µL
+- Fluo-4 AM, 5 µM
+- Tris-HCl buffer
+- Glutamate, 5 µM
+- Alpha-synuclein (α-syn), 100 nM and 500 nM
+- FIJI (ImageJ) with the ROI manager
+- Fluorescence microscope with a 30 fps camera
+- Glass-bottom dishes
+Procedure
+1. Coat glass-bottom dishes with Matrigel and 15 µL laminin.
+2. Culture astrocytes until they reach 80% confluency.
+3. Load cells with 5 µM Fluo-4 AM for 1 h at 37 °C, then 30 min at room temperature.
+4. Wash twice with Tris-HCl buffer.
+5. Image at 30 fps. Record a 5 s baseline, then add the treatment, then image for 1 min.
+6. Treatments: Tris-HCl buffer (vehicle), 5 µM glutamate, α-syn 100 nM, α-syn 500 nM.
+7. Analyze in FIJI: draw ROIs around each cell, compute ΔF/F0 and the area under the curve (AUC).
+8. Compare treatments with t-tests.

@@ -1,0 +1,19 @@
+Transcardial perfusion and brain collection in mice
+Purpose: prepare fixed brain tissue from adult C57BL/6 mice for histology.
+Materials
+- Isoflurane
+- Ketamine/xylazine cocktail
+- Ice-cold PBS
+- 4% paraformaldehyde in PBS
+- Peristaltic pump
+- Surgical scissors and forceps
+- 25G butterfly needles
+- Sucrose solution, 30%
+Procedure
+1. Anesthetize the mouse with isoflurane until the toe pinch reflex is absent.
+2. Open the thoracic cavity and expose the heart.
+3. Insert the needle into the left ventricle and clamp the right atrium.
+4. Perfuse with ice-cold PBS for 5 min at 8 mL/min, then with 4% PFA for 10 min.
+5. Dissect the brain and post-fix in 4% PFA overnight at 4 °C.
+6. Transfer the brain to 30% sucrose for 48 h at 4 °C until it sinks.
+Caution: PFA is toxic. Dispose of sharps in the sharps container.

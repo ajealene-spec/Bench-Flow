@@ -1,0 +1,12 @@
+Immunohistochemistry on free-floating brain sections
+Day 1: Fixation and sectioning
+1. Post-fix 30 µm free-floating sections in 4% paraformaldehyde for 20 min.
+2. Wash sections 3 x 5 min in PBS.
+Day 2: Blocking and primary antibody
+1. Block sections in PBS with 0.3% Triton X-100 and 5% normal donkey serum for 1 h at room temperature.
+2. Incubate in primary antibody (rabbit anti-GFAP, 1:1000) in blocking solution overnight at 4 °C on a shaker.
+Day 3: Secondary antibody and mounting
+1. Wash 3 x 10 min in PBS.
+2. Incubate with Alexa Fluor 488 donkey anti-rabbit (1:500) for 2 h at room temperature in the dark.
+3. Counterstain with DAPI for 10 min.
+4. Mount the sections on slides with antifade mounting medium and coverslip.

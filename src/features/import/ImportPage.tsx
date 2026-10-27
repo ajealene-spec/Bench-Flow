@@ -7,7 +7,14 @@ import { extractPdfText } from './pdfText';
 import { pruneHazardSteps } from './hazards';
 import { detectVariables } from '../assist/detectVariables';
 import { StepText } from '../assist/StepText';
-import { getParserStatus, parseProcedure, type ParseOutcome } from './parseProcedure';
+import { CATEGORIES, isCategory, type ProtocolCategory } from './draft';
+import {
+  AI_READER_LABEL,
+  OFFLINE_READER_LABEL,
+  getParserStatus,
+  parseProcedure,
+  type ParseOutcome,
+} from './parseProcedure';
 import { ProtocolsIoExportButtons, ProtocolsIoImport } from './ProtocolsIoPanels';
 
 type Unit = 's' | 'min' | 'h';
@@ -58,6 +65,10 @@ export function prepareSteps(steps: Step[]): Step[] {
 
 interface ReviewState {
   title: string;
+  category: ProtocolCategory;
+  objective: string;
+  outputs: string;
+  totalTime: string;
   steps: Step[];
   hazards: Hazard[];
   outcome: ParseOutcome;
@@ -108,7 +119,16 @@ export default function ImportPage() {
         setError('No steps found. Try numbered lines or add more detail.');
         return;
       }
-      setReview({ title: outcome.title ?? '', steps: outcome.steps, hazards: outcome.hazards, outcome });
+      setReview({
+        title: outcome.title,
+        category: outcome.category,
+        objective: outcome.overview.objective,
+        outputs: outcome.overview.outputs,
+        totalTime: outcome.overview.totalTime,
+        steps: outcome.steps,
+        hazards: outcome.hazards,
+        outcome,
+      });
     } catch {
       setError('Parsing failed. Please try again.');
     } finally {
@@ -123,6 +143,8 @@ export default function ImportPage() {
     try {
       const template = await createTemplate({
         title: review.title,
+        category: review.category,
+        overview: { objective: review.objective, outputs: review.outputs, totalTime: review.totalTime },
         steps: prepareSteps(review.steps),
         hazards: pruneHazardSteps(review.hazards, review.steps.map((s) => s.id)),
         phases: review.outcome.phases,
@@ -155,10 +177,8 @@ export default function ImportPage() {
         <section className="flex flex-col gap-4">
           {aiReady === false && (
             <div role="note" className="rounded-xl border border-border-strong bg-surface-2 p-3 text-text">
-              <p className="font-semibold">For PDFs, add an Anthropic API key to .env for accurate steps.</p>
-              <p className="text-sm">
-                Add a line <code className="font-mono">ANTHROPIC_API_KEY=your-key</code> to a file named <code className="font-mono">.env</code> in the project folder, then restart <code className="font-mono">npm run dev</code>.
-              </p>
+              <p className="font-semibold">Using the offline reader.</p>
+              <p className="text-sm">Add an Anthropic API key in Settings for the best results on any format, including PDFs.</p>
             </div>
           )}
 
@@ -217,6 +237,13 @@ export default function ImportPage() {
             materials: review.outcome.materials,
           }}
         />
+        <OverviewFields
+          category={review.category}
+          objective={review.objective}
+          outputs={review.outputs}
+          totalTime={review.totalTime}
+          onChange={(next) => setReview({ ...review, ...next })}
+        />
         <ReviewSection
           title={review.title}
           steps={review.steps}
@@ -229,7 +256,7 @@ export default function ImportPage() {
           statusNote={
             <>
               <span className="font-semibold">
-                {review.outcome.parser === 'ai' ? 'Parsed with Claude AI.' : 'Parsed with the local parser.'}
+                {review.outcome.parser === 'ai' ? AI_READER_LABEL : OFFLINE_READER_LABEL}
               </span>{' '}
               {review.outcome.note && <span>{review.outcome.note} </span>}
               Check every step before you start.
@@ -483,7 +510,50 @@ const KIND_LABEL: Record<HazardKind, string> = {
   biological: 'Biological',
   physical: 'Physical',
   radiological: 'Radiological',
+  animal: 'Animal work',
 };
+
+interface OverviewFieldsProps {
+  category: ProtocolCategory;
+  objective: string;
+  outputs: string;
+  totalTime: string;
+  onChange: (next: Partial<Pick<ReviewState, 'category' | 'objective' | 'outputs' | 'totalTime'>>) => void;
+}
+
+/** Overview cards filled in by the reader: category, objective, expected output and total time. */
+function OverviewFields({ category, objective, outputs, totalTime, onChange }: OverviewFieldsProps) {
+  return (
+    <section aria-labelledby="overview-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h2 id="overview-heading" className="text-lg font-semibold">Overview</h2>
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Category</span>
+        <select
+          aria-label="Category"
+          value={category}
+          onChange={(e) => isCategory(e.target.value) && onChange({ category: e.target.value })}
+          className={FIELD}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Objective</span>
+        <textarea aria-label="Objective" value={objective} onChange={(e) => onChange({ objective: e.target.value })} rows={2} className={`${FIELD} min-h-20 py-2`} />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Expected output</span>
+        <textarea aria-label="Expected output" value={outputs} onChange={(e) => onChange({ outputs: e.target.value })} rows={2} className={`${FIELD} min-h-20 py-2`} />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Total time</span>
+        <input type="text" aria-label="Total time" value={totalTime} onChange={(e) => onChange({ totalTime: e.target.value })} className={FIELD} />
+      </label>
+    </section>
+  );
+}
 
 interface SafetyBoxProps {
   hazards: Hazard[];
@@ -520,7 +590,7 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
       <p className="text-sm">
         {hazards.length === 0
           ? 'No hazards were detected. Add any that are missing.'
-          : 'Hazards found in this protocol, with the protective equipment to wear. Remove any false positives.'}
+          : 'Hazards found in this protocol, with the sentence each came from and the protective equipment to wear. Dismiss any false positives.'}
       </p>
 
       {hazards.length > 0 && (
@@ -539,12 +609,17 @@ export function SafetyBox({ hazards, steps, onChange }: SafetyBoxProps) {
                   <button
                     type="button"
                     className={`${BUTTON_SECONDARY} border-rose-300 text-rose-800 dark:border-rose-700 dark:text-rose-200`}
-                    aria-label={`Remove hazard ${h.name}`}
+                    aria-label={`Dismiss hazard ${h.name}`}
                     onClick={() => remove(h.id)}
                   >
-                    Remove
+                    Dismiss
                   </button>
                 </div>
+                {h.evidence && (
+                  <blockquote className="border-l-4 border-border-strong pl-3 text-sm italic text-text-muted">
+                    From the text: “{h.evidence}”
+                  </blockquote>
+                )}
                 {h.reason && <p className="text-sm">{h.reason}</p>}
                 {h.ppe.length > 0 && (
                   <div className="text-sm">

@@ -78,12 +78,13 @@ describe('AI input limits and prompt', () => {
     expect(clipForModel('short text')).toBe('short text');
   });
 
-  it('asks for a JSON array with step_number, duration and variables, and skips materials', () => {
-    expect(SYSTEM_PROMPT).toMatch(/Return ONLY a JSON array/);
+  it('asks for one JSON object with the full protocol: steps, phases, materials and hazards with evidence', () => {
+    expect(SYSTEM_PROMPT).toMatch(/Return ONLY one JSON object/);
     expect(SYSTEM_PROMPT).toMatch(/step_number/);
     expect(SYSTEM_PROMPT).toMatch(/instruction_text/);
     expect(SYSTEM_PROMPT).toMatch(/"duration"/);
     expect(SYSTEM_PROMPT).toMatch(/"variables"/);
-    expect(SYSTEM_PROMPT).toMatch(/materials lists/);
+    expect(SYSTEM_PROMPT).toMatch(/"evidence"/);
+    expect(SYSTEM_PROMPT).toMatch(/"phases"/);
   });
 });

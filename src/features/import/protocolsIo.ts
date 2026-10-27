@@ -134,6 +134,7 @@ export function exportProtocolsIoJson(source: ExportSource): string {
 const KIND_HEADINGS: Record<MaterialKind, string> = {
   consumable: 'Consumables',
   solution: 'Solutions',
+  reagent: 'Reagents',
   equipment: 'Equipment',
 };
 

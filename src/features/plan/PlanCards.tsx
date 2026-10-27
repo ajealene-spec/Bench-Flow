@@ -19,6 +19,7 @@ export const EMPTY_OVERVIEW: ProtocolOverview = { objective: '', totalTime: '', 
 const KIND_LABEL: Record<MaterialKind, string> = {
   consumable: 'Consumable',
   solution: 'Solution',
+  reagent: 'Reagent',
   equipment: 'Equipment',
 };
 

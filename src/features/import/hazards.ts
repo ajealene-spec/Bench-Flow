@@ -19,6 +19,29 @@ export interface HazardRule {
   aliases: string[];
   /** Patterns tested against step text. Any match flags the step. */
   patterns: RegExp[];
+  /** Animal hazards only count when the text names animals or animal surgery (see hasAnimalContext). */
+  animal?: boolean;
+}
+
+/** Words that show a protocol works on live animals. Antibody host names (mouse anti-, goat anti-rabbit) are removed first. */
+const ANIMAL_CONTEXT_RE =
+  /\b(?:mice|mouse|rats?|murine|animals?|guinea[\s-]pigs?|rabbits?|zebrafish|in vivo|surgery|surgical|transcardial|intracardiac|intraperitoneal|euthani[sz]\w*|sacrific\w*|IACUC)\b/i;
+
+const HOST_NAME = '(?:mouse|rat|rabbit|goat|donkey|chicken|guinea[\\s-]pig|sheep|human)';
+/** "donkey anti-rabbit" and "mouse anti-GFAP" name the antibody host, not an animal in the experiment. */
+const ANTIBODY_HOST_RE = new RegExp(
+  `\\b(?:${HOST_NAME}[\\s-]+)?anti[\\s-]+${HOST_NAME}\\b|\\b${HOST_NAME}(?=\\s+(?:anti-|monoclonal|polyclonal|igg|igm|secondary|host)\\b)`,
+  'gi',
+);
+
+/** Removes antibody host names so "mouse anti-GFAP" does not read as an animal. */
+export function stripAntibodyHosts(text: string): string {
+  return text.replace(ANTIBODY_HOST_RE, ' ');
+}
+
+/** True when the text names animals, animal surgery or in vivo work. */
+export function hasAnimalContext(text: string): boolean {
+  return ANIMAL_CONTEXT_RE.test(stripAntibodyHosts(text));
 }
 
 const GLOVES = 'Nitrile gloves';
@@ -130,7 +153,7 @@ export const HAZARD_RULES: HazardRule[] = [
     reason: 'DNA stain that may be mutagenic. Read the safety data sheet for the specific product.',
     ppe: [GLOVES, COAT, 'UV-blocking eye protection when imaging under UV'],
     aliases: ['SYBR', 'SYBR Safe', 'SYBR Gold', 'SYBR Green'],
-    patterns: [/\bSYBR\b/],
+    patterns: [/\bSYBR\b(?!\s+Green)/],
   },
   {
     id: 'chloroform',
@@ -221,6 +244,7 @@ export const HAZARD_RULES: HazardRule[] = [
     ppe: [COAT, GLOVES, GOGGLES, HOOD, 'Sharps container for needles and blades'],
     aliases: ['perfusion', 'transcardial perfusion', 'intracardiac perfusion'],
     patterns: [/\bperfus(?:ion|e|ed|es|ing)\b/i, /\btranscardial\b/i, /\bintracardiac\b/i],
+    animal: true,
   },
   {
     id: 'anesthetic',
@@ -238,18 +262,20 @@ export const HAZARD_RULES: HazardRule[] = [
       /\banaesthe(?:sia|tic|tize|tized|tizing)\b/i,
       /\banesthe(?:sia|tic|tize|tized|tizing)\b/i,
     ],
+    animal: true,
   },
   {
     id: 'live-animals',
     name: 'Live animals (in vivo work)',
-    kind: 'biological',
+    kind: 'animal',
     reason: 'Animal work needs an approved protocol, trained handlers and humane endpoints.',
     ppe: [COAT, GLOVES, 'Follow the animal care protocol (IACUC or equivalent)'],
     aliases: ['live animals', 'mice', 'rats', 'in vivo'],
     patterns: [
-      /(?<!anti[\s-])\b(?:mice|mouse|rats?|guinea\s+pigs?|rabbits?|zebrafish|animals?)\b(?![\s-]*(?:anti|igg|igm|antibod\w*|secondary|monoclonal|polyclonal|hrp|ap\b))/i,
+      /\b(?:mice|mouse|rats?|guinea\s+pigs?|rabbits?|zebrafish|animals?)\b/i,
       /\bin\s+vivo\b/i,
     ],
+    animal: true,
   },
   {
     id: 'human-samples',
@@ -353,7 +379,9 @@ function stepText(step: Step): string[] {
 /** Runs the offline rule list over the steps. One hazard per rule, with the step ids where it appears. */
 export function detectHazards(steps: Step[]): Hazard[] {
   const hazards: Hazard[] = [];
+  const animalContext = hasAnimalContext(steps.map((s) => stepText(s).join(' ')).join(' '));
   for (const rule of HAZARD_RULES) {
+    if (rule.animal && !animalContext) continue;
     const stepIds = steps
       .filter((step) => stepText(step).some((text) => rule.patterns.some((p) => p.test(text))))
       .map((step) => step.id);
@@ -370,7 +398,42 @@ export function detectHazards(steps: Step[]): Hazard[] {
   return hazards;
 }
 
-const KINDS: HazardKind[] = ['chemical', 'biological', 'physical', 'radiological'];
+/** Splits text into sentences; a line break also ends a sentence. */
+export function splitSentences(text: string): string[] {
+  return text
+    .split(/\n+|(?<=[.!?])\s+(?=\S)/)
+    .map((s) => s.replace(/^\s*(?:[-*•·–]|\d{1,2}[.)]|[a-z][.)]|step\s+\d{1,3}\s*[:.)]?)\s+/i, '').trim())
+    .filter(Boolean);
+}
+
+const EVIDENCE_MAX = 240;
+
+/**
+ * Hazards found in free text (before steps exist). Each hazard carries the first sentence that
+ * triggered it as evidence. Animal rules need animal words in the text.
+ */
+export function detectHazardsInText(text: string): Hazard[] {
+  const sentences = splitSentences(text);
+  const animalContext = hasAnimalContext(text);
+  const hazards: Hazard[] = [];
+  for (const rule of HAZARD_RULES) {
+    if (rule.animal && !animalContext) continue;
+    const hit = sentences.find((s) => rule.patterns.some((p) => p.test(stripAntibodyHosts(s))));
+    if (!hit) continue;
+    hazards.push({
+      id: rule.id,
+      name: rule.name,
+      kind: rule.kind,
+      reason: rule.reason,
+      ppe: [...rule.ppe],
+      stepIds: [],
+      evidence: hit.length > EVIDENCE_MAX ? `${hit.slice(0, EVIDENCE_MAX - 1)}…` : hit,
+    });
+  }
+  return hazards;
+}
+
+const KINDS: HazardKind[] = ['chemical', 'biological', 'physical', 'radiological', 'animal'];
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 

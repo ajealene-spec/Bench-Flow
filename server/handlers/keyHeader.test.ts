@@ -25,12 +25,28 @@ function request(method: string, headers: Record<string, string> = {}, body = ''
 
 const PARSE_BODY = JSON.stringify({ text: '1. Add 10 uL of buffer to each tube.' });
 
+/** A valid one-step protocol, so the first answer passes validation and the handler makes one upstream call. */
+const VALID_PROTOCOL = {
+  title: 'Add buffer',
+  category: 'Other',
+  objective: '',
+  expectedOutput: '',
+  totalTime: { value: null, unit: null, display: 'Not stated' },
+  phases: [],
+  materials: [],
+  hazards: [],
+  steps: [
+    { step_number: 1, phase: null, title: 'Add buffer', instruction_text: 'Add 10 uL of buffer to each tube.', duration: null, variables: [] },
+  ],
+};
+
 let fetchMock: MockInstance<typeof fetch>;
 let consoleSpies: Array<MockInstance<(...args: unknown[]) => void>>;
 
 beforeEach(() => {
-  fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify({ content: [{ type: 'text', text: 'not json' }] }), { status: 200 }),
+  // A fresh Response per call: a Response body can be read only once.
+  fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+    new Response(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(VALID_PROTOCOL) }] }), { status: 200 }),
   );
   consoleSpies = [
     vi.spyOn(console, 'log'),

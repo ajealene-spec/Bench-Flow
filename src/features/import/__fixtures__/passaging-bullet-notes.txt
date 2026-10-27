@@ -1,0 +1,12 @@
+Passaging HEK293T cells
+Notes from Monday, adapted from our lab wiki
+- Warm DMEM + 10% FBS and trypsin to 37 °C in the water bath
+- Aspirate medium from the flask, wash once with 5 mL PBS
+- Add 1 mL 0.25% trypsin-EDTA, rock the flask, incubate 3 min at 37 °C
+- Check under the microscope, cells should be detached
+- Neutralize with 4 mL warm medium and pipette up and down
+- Spin at 300 g for 5 min, aspirate the supernatant
+- Resuspend the pellet in 10 mL fresh medium and count cells
+- Seed 1.5 x 10^6 cells into a new T75 flask with 15 mL medium
+- Put back in the 37 °C incubator, 5% CO2
+Note: do not let cells sit in trypsin longer than 5 min or they clump.
