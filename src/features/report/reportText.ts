@@ -3,6 +3,7 @@ import { groupRecordsByStep, SUMMARY_HEADERS, summaryRows, toCSV } from '../data
 import { formatElapsed, formatTimestamp } from '../data/time';
 import type { Report } from './buildReport';
 import type { ExecutionLog } from './buildExecutionLog';
+import { withSampleJsonNote } from '../tour/sampleNotice';
 
 const DASH = '—';
 
@@ -116,7 +117,12 @@ export function reportToEventsCSV(events: ExecutionEvent[]): string {
   return toCSV(headers, rows);
 }
 
-/** The report as JSON. Pass the execution log and events to include them alongside the report. */
-export function reportToJSON(report: Report, extra?: { executionLog?: ExecutionLog; events?: ExecutionEvent[] }): string {
-  return JSON.stringify({ ...report, ...extra }, null, 2);
+/**
+ * The report as JSON. Pass the execution log and events to include them alongside the report.
+ * `sample: true` puts the sample-data notice as the first field.
+ */
+export function reportToJSON(report: Report, extra?: { executionLog?: ExecutionLog; events?: ExecutionEvent[]; sample?: boolean }): string {
+  const { sample, ...rest } = extra ?? {};
+  const body = { ...report, ...rest };
+  return JSON.stringify(sample ? withSampleJsonNote(body) : body, null, 2);
 }

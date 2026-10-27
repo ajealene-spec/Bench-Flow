@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { SAMPLE_LABEL } from './sampleData';
+import { SampleCaption } from './SampleBanner';
 
 export const TOUR_CARD = 'flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4 shadow-card sm:p-6';
 
@@ -27,6 +28,7 @@ export function StepFrame({ number, total, title, blurb, children }: { number: n
           {title}
         </h2>
         <p className="max-w-3xl text-lg leading-relaxed text-text-muted">{blurb}</p>
+        <SampleCaption />
       </header>
       {children}
     </section>

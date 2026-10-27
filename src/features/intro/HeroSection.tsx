@@ -79,13 +79,16 @@ export function HeroSection({ reduced }: { reduced: boolean }) {
               {HERO_COPY.primary}
               <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
-            <Link
-              to="/demo"
-              className="group inline-flex min-h-12 items-center gap-2 rounded-md px-1 text-base font-medium leading-6 text-accent-text underline-offset-4 hover:underline"
-            >
-              {HERO_COPY.secondary}
-              <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
+            <div className="flex flex-col gap-1">
+              <Link
+                to="/demo"
+                className="group inline-flex min-h-12 items-center gap-2 rounded-md px-1 text-base font-medium leading-6 text-accent-text underline-offset-4 hover:underline"
+              >
+                {HERO_COPY.secondary}
+                <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
+              <p className="px-1 text-base text-text-muted">Uses sample data, not real results.</p>
+            </div>
           </div>
         </div>
 

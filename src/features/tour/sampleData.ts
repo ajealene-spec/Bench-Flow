@@ -1,3 +1,4 @@
+import { SAMPLE_NOTICE } from './sampleNotice';
 /*
  * SAMPLE data for the guided tour and the demo experiment. Every number here is generated for
  * demonstration from a fixed seed. Nothing in this file is a real measurement or a result.
@@ -5,7 +6,7 @@
 
 export const SAMPLE_LABEL = 'Sample data';
 /** Caption shown on every chart of sample results. */
-export const SAMPLE_CAPTION = 'Sample data for demonstration — not real results.';
+export const SAMPLE_CAPTION = SAMPLE_NOTICE;
 
 export const DEMO_TEMPLATE_TITLE = 'Fluo-4 calcium imaging in APOE3 vs APOE4 astrocytes';
 export const DEMO_TEMPLATE_CATEGORY = 'Calcium imaging';

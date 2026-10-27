@@ -8,6 +8,7 @@ import { StepDeviation, StepRecord } from './StepRecord';
 import { StepResults } from './StepResults';
 import { StepMethods, StepScore } from './StepReport';
 import { StepFrame, SampleChip } from './tourShared';
+import { SampleBanner } from './SampleBanner';
 import { useTourReducedMotion } from './useTourMotion';
 import './tour.css';
 
@@ -124,6 +125,7 @@ export default function TourPage() {
               </button>
             </div>
           </div>
+          <SampleBanner compact />
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between text-sm text-text-muted">
               <span>{atEnd ? 'Tour complete' : `Step ${index + 1} of ${total}`}</span>

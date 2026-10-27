@@ -21,6 +21,8 @@ import {
 } from './insightsData';
 import { loadInsightsRuns } from './loadInsights';
 import { PageHeader } from '../../app/ui';
+import { isDemoExperiment } from '../tour/sampleNotice';
+import { SampleBanner } from '../tour/SampleBanner';
 
 /** Charts drawn from recorded data across runs of the same protocol. Descriptions are written for screen readers too. */
 export default function InsightsPage() {
@@ -97,7 +99,12 @@ export default function InsightsPage() {
               <p className="text-lg">No runs match these filters.</p>
             </section>
           ) : (
-            <Sections runs={selected} />
+            <>
+              {selected.some((r) => isDemoExperiment({ name: r.name })) && (
+                <SampleBanner note="The selected runs include the demo experiment. Its numbers are sample data, so the charts below are not real results." />
+              )}
+              <Sections runs={selected} />
+            </>
           )}
         </>
       )}

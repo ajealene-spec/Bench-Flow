@@ -4,6 +4,7 @@ import { logEvent, type ExecutionEventInput } from '../db/executionLog';
 import { createInventoryItem, linkInventoryUsage } from '../db/inventory';
 import type { Procedure, RunValue, StepRecord } from '../types';
 import { STARTER_TEMPLATES } from './protocols';
+import { DEMO_EXPERIMENT_NAME } from '../features/tour/sampleNotice';
 import {
   CELL_METRIC_UNIT,
   FLUO4_ACTUAL_UM,
@@ -18,7 +19,8 @@ import {
   sampleCellLabel,
 } from '../features/tour/sampleData';
 
-export const DEMO_EXPERIMENT_NAME = 'Example: Fluo-4 calcium imaging in APOE3 vs APOE4 astrocytes';
+/** The demo marker: `isDemoExperiment` matches this seeded name. See features/tour/sampleNotice.ts. */
+export { DEMO_EXPERIMENT_NAME, isDemoExperiment } from '../features/tour/sampleNotice';
 const DEMO_TEMPLATE_TITLE = 'Fluo-4 AM calcium imaging in iPSC-derived astrocytes';
 /** The demo this app seeded before. Removed on the next seed, but only when it is still untouched. */
 const LEGACY_DEMO_NAME = 'Example: IF staining of mouse hippocampus';

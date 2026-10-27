@@ -5,6 +5,7 @@ import type { ExecutionLog } from './buildExecutionLog';
 import type { Report } from './buildReport';
 import { reportToCSV, reportToEventsCSV } from './reportText';
 import type { ZipEntry } from './zip';
+import { isDemoExperiment, SAMPLE_NOTICE, SAMPLE_PACKAGE_NOTES, withSampleMethods } from '../tour/sampleNotice';
 
 export const PACKAGE_SCHEMA = 'lab-companion-research-package/1';
 
@@ -123,11 +124,12 @@ export function protocolToMarkdown(title: string, procedure: Procedure | undefin
 }
 
 /** Plain-language README that tells a future reader what is in the package. */
-function readme(input: ResearchPackageInput, title: string): string {
+function readme(input: ResearchPackageInput, title: string, sample: boolean): string {
   const { report } = input;
   return [
     `# Research package: ${title}`,
     '',
+    ...(sample ? [`> ${SAMPLE_NOTICE}`, ''] : []),
     `Exported by Bench Flow on ${new Date(input.generatedAt).toISOString()}.`,
     '',
     '## Contents',
@@ -163,6 +165,7 @@ function readme(input: ResearchPackageInput, title: string): string {
 export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
   const { experiment, executionLog, events, procedure, template, records } = input;
   const title = experiment.name;
+  const sample = isDemoExperiment(experiment);
   const license = licenseOption(template?.license ?? DEFAULT_LICENSE);
   const creatorList: PackageCreator[] = (
     input.creators && input.creators.length > 0
@@ -228,6 +231,7 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
     relatedIdentifiers,
     version: '1',
     language: 'en',
+    ...(sample ? { notes: SAMPLE_PACKAGE_NOTES } : {}),
   };
 
   const zenodo: Record<string, unknown> = {
@@ -265,7 +269,7 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
   });
 
   const files: ZipEntry[] = [
-    { path: 'README.md', data: readme(input, title) },
+    { path: 'README.md', data: readme(input, title, sample) },
     { path: 'protocol.json', data: JSON.stringify(protocolJson, null, 2) },
     { path: 'protocol.md', data: protocolToMarkdown(protocolTitle, procedure, template) },
     { path: 'execution-log.json', data: JSON.stringify(executionLog, null, 2) },
@@ -275,7 +279,14 @@ export function buildResearchPackage(input: ResearchPackageInput): ZipEntry[] {
       path: 'reagents.csv',
       data: csv(['Name', 'Kind', 'Vendor', 'Catalog number', 'Lot number', 'Expires', 'RRID', 'Steps'], reagentRows),
     },
-    { path: 'methods.txt', data: executionLog.methodsText || 'No steps were performed, so there is no Methods text.' },
+    {
+      path: 'methods.txt',
+      data: executionLog.methodsText
+        ? sample
+          ? withSampleMethods(executionLog.methodsText)
+          : executionLog.methodsText
+        : 'No steps were performed, so there is no Methods text.',
+    },
     { path: 'metadata.json', data: JSON.stringify(metadata, null, 2) },
     { path: '.zenodo.json', data: JSON.stringify(zenodo, null, 2) },
   ];

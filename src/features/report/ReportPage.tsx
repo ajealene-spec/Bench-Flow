@@ -18,6 +18,8 @@ import { useObjectUrl } from '../data/photos/objectUrl';
 import { buildExecutionLog, type ReagentLot } from './buildExecutionLog';
 import { buildReport, type ReportAnimal } from './buildReport';
 import { reportToCSV, reportToEventsCSV, reportToJSON, reportToMarkdown } from './reportText';
+import { isDemoExperiment, withSampleCsvNote, withSampleMethods } from '../tour/sampleNotice';
+import { SampleBanner } from '../tour/SampleBanner';
 import type { ReportData } from './reportData';
 import { ResearchPackageButton } from './ResearchPackageButton';
 import { useToast } from '../../app/feedback';
@@ -124,6 +126,10 @@ function ReportView({ data }: { data: ReportData }) {
   const [message, setMessage] = useState('');
 
   const fileBase = slugify(report.title);
+  // The demo run is sample data: every export and the printed page say so.
+  const sample = isDemoExperiment({ name: report.title });
+  const methodsText = sample && executionLog.methodsText ? withSampleMethods(executionLog.methodsText) : executionLog.methodsText;
+  const sampleCsv = (csv: string) => (sample ? withSampleCsvNote(csv) : csv);
 
   const copyText = async () => {
     try {
@@ -144,13 +150,13 @@ function ReportView({ data }: { data: ReportData }) {
         <button type="button" className={BUTTON} onClick={() => window.print()}>
           Download PDF
         </button>
-        <button type="button" className={BUTTON} onClick={() => downloadFile(`${fileBase}-records.csv`, '﻿' + reportToCSV(procedure, records), 'text/csv')}>
+        <button type="button" className={BUTTON} onClick={() => downloadFile(`${fileBase}-records.csv`, sampleCsv('﻿' + reportToCSV(procedure, records)), 'text/csv')}>
           Download CSV
         </button>
-        <button type="button" className={BUTTON} onClick={() => downloadFile(`${fileBase}-events.csv`, '\ufeff' + reportToEventsCSV(events), 'text/csv')}>
+        <button type="button" className={BUTTON} onClick={() => downloadFile(`${fileBase}-events.csv`, sampleCsv('\ufeff' + reportToEventsCSV(events)), 'text/csv')}>
           Download events CSV
         </button>
-        <button type="button" className={BUTTON} onClick={() => downloadFile(`${fileBase}-report.json`, reportToJSON(report, { executionLog, events }), 'application/json')}>
+        <button type="button" className={BUTTON} onClick={() => downloadFile(`${fileBase}-report.json`, reportToJSON(report, { executionLog, events, sample }), 'application/json')}>
           Download JSON
         </button>
         <button type="button" className={BUTTON} onClick={copyText}>
@@ -172,6 +178,7 @@ function ReportView({ data }: { data: ReportData }) {
         <div className="print-footer hidden print:block" aria-hidden="true">
           Generated with Bench Flow · {formatTimestamp(Date.now())}
         </div>
+        {sample && <SampleBanner className="mb-4 print-sample-banner" />}
         <header>
           <p className="text-sm uppercase tracking-wide text-text-muted">Experiment report</p>
           <h1 className="t-h1 mt-1">{report.title}</h1>
@@ -338,12 +345,12 @@ function ReportView({ data }: { data: ReportData }) {
           <div className="report-row mt-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-semibold">Methods</h3>
-              <button type="button" className={`${BUTTON} no-print`} onClick={() => copyMethods(executionLog.methodsText, setMessage)}>
+              <button type="button" className={`${BUTTON} no-print`} onClick={() => copyMethods(methodsText, setMessage)}>
                 Copy Methods
               </button>
             </div>
             <p className="mt-2 text-base leading-relaxed">
-              {executionLog.methodsText || 'No steps were performed, so there is no Methods text.'}
+              {methodsText || 'No steps were performed, so there is no Methods text.'}
             </p>
           </div>
         </section>
@@ -437,6 +444,11 @@ function ReportView({ data }: { data: ReportData }) {
           </footer>
         )}
       </article>
+      {sample && (
+        <div className="print-sample-watermark hidden print:flex" aria-hidden="true">
+          <span>SAMPLE DATA</span>
+        </div>
+      )}
 
       <section className="no-print mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-card p-4 text-text" aria-label="Run comments">
         <CommentThread targetType="experiment" targetId={report.experimentId} label="this run" />

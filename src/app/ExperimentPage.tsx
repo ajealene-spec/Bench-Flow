@@ -26,6 +26,8 @@ import { ScheduleExperimentButton } from '../features/calendar/ScheduleExperimen
 import { RepeatOfNote, RunAgainPanel } from '../features/experiments/RunAgainPanel';
 import { TagEditor } from '../features/experiments/TagEditor';
 import { ReproducibilityBadge } from '../features/insights/ReproducibilityBadge';
+import { isDemoExperiment } from '../features/tour/sampleNotice';
+import { SampleBanner } from '../features/tour/SampleBanner';
 
 const BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-base font-medium';
 const BUTTON_PRIMARY = `${BUTTON} bg-accent text-white active:bg-accent-hover`;
@@ -63,6 +65,7 @@ export default function ExperimentPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 p-4 pb-10 sm:p-6">
       <BackLink />
+      {isDemoExperiment(experiment) && <SampleBanner />}
 
       <header className="flex flex-col gap-2">
         <NameField key={experiment.id} experimentId={experiment.id} initial={experiment.name} />

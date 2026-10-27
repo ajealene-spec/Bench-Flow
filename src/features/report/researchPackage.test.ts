@@ -280,3 +280,20 @@ describe('research package additions', () => {
     expect(text(entries.get('photos/index.csv'))).toContain('photos/thumbnails/photo-01.jpg');
   });
 });
+
+describe('sample data notes', () => {
+  it('marks a demo package in the README, metadata.json and methods.txt', async () => {
+    const { DEMO_EXPERIMENT_NAME } = await import('../tour/sampleNotice');
+    const files = readZip(buildZip(buildResearchPackage(input({ experiment: { ...experiment, name: DEMO_EXPERIMENT_NAME } })), new Date(2026, 2, 13)));
+    expect(text(files.get('README.md'))).toContain('Sample data — for demonstration only');
+    expect(JSON.parse(text(files.get('metadata.json'))).notes).toBe('Sample data, not real results');
+    expect(text(files.get('methods.txt'))).toMatch(/^\[SAMPLE DATA — NOT REAL RESULTS\] /);
+  });
+
+  it('leaves a normal run unmarked', () => {
+    const files = readZip(buildZip(buildResearchPackage(input()), new Date(2026, 2, 13)));
+    expect(JSON.parse(text(files.get('metadata.json'))).notes).toBeUndefined();
+    expect(text(files.get('README.md'))).not.toContain('Sample data');
+    expect(text(files.get('methods.txt'))).not.toContain('[SAMPLE DATA');
+  });
+});

@@ -29,6 +29,7 @@ import { formatDate } from '../../app/format';
 import { EmptyState } from '../../app/EmptyState';
 import type { Experiment, ExperimentStatus, Folder, Procedure, StepRecord } from '../../types';
 import { PageHeader } from '../../app/ui';
+import { isDemoExperiment, withSampleCsvNote } from '../tour/sampleNotice';
 
 const STATUS_LABEL: Record<ExperimentStatus, string> = { draft: 'Draft', in_progress: 'In progress', done: 'Done' };
 
@@ -292,7 +293,9 @@ export default function ExperimentsPage() {
               };
             });
             const stamp = new Date().toISOString().slice(0, 10);
-            downloadText(`experiments-${stamp}.csv`, '﻿' + buildExperimentsCsv(inputs));
+            const csv = '﻿' + buildExperimentsCsv(inputs);
+            const hasSample = inputs.some((i) => isDemoExperiment(i.experiment));
+            downloadText(`experiments-${stamp}.csv`, hasSample ? withSampleCsvNote(csv) : csv);
             setMessage(`Downloaded a CSV for ${inputs.length} experiment${inputs.length === 1 ? '' : 's'}.`);
           }}
           onDelete={async () => {
@@ -362,7 +365,12 @@ function ExperimentCard({
       <div className="flex min-w-0 flex-1 flex-col gap-2 py-2 pr-2">
         <Link to={`/experiment/${e.id}`} className="flex min-h-12 flex-col justify-center gap-1 rounded-lg active:bg-surface-2">
           <span className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-lg font-medium text-text">{e.name}</span>
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-lg font-medium text-text">{e.name}</span>
+              {isDemoExperiment(e) && (
+                <span className="rounded-full border border-border bg-surface-2 px-3 py-1 text-sm font-medium text-text-muted">Sample</span>
+              )}
+            </span>
             <span className="rounded-full bg-surface-2 px-3 py-1 text-sm text-text">{STATUS_LABEL[e.status]}</span>
           </span>
           <span className="text-sm text-text-muted">
