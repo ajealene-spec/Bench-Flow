@@ -1,8 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../app/feedback';
-import { BAND, CARD, EYEBROW, EnterLink, INNER } from './introShared';
-import { HeroHelix } from './HeroNetwork';
+import { BAND, CARD, EnterLink, INNER } from './introShared';
+import { HeroSection } from './HeroSection';
 import { HowItWorksSection } from './HowItWorksSection';
 import { MissionSection } from './MissionSection';
 import { NeuroSection } from './NeuroSection';
@@ -10,37 +7,6 @@ import { OpenScienceSection } from './OpenScienceSection';
 import { ProblemSection } from './ProblemSection';
 import { useActiveAnchor, usePrefersReducedMotion, useRevealOnScroll, useScrollFrame } from './introHooks';
 import './intro.css';
-
-/** Loads the starter content if needed, then opens the demo experiment's report. */
-function DemoButton() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [busy, setBusy] = useState(false);
-
-  async function openDemo() {
-    setBusy(true);
-    try {
-      const path: string | null = '/demo';
-      if (path) navigate(path);
-      else toast('Could not open the demo experiment. Try again from the Protocol Library.', { tone: 'error' });
-    } catch {
-      toast('Could not open the demo experiment. Try again from the Protocol Library.', { tone: 'error' });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => void openDemo()}
-      disabled={busy}
-      className={`${HERO_BUTTON} border-border bg-surface text-text shadow-card active:bg-surface-2 disabled:opacity-60`}
-    >
-      {busy ? 'Opening the tour…' : 'Take the 2-minute tour'}
-    </button>
-  );
-}
 
 export const REPO_URL = 'https://github.com/ajealene-spec/Bench-Flow';
 
@@ -53,9 +19,6 @@ const SECTIONS = [
   { id: 'open', label: 'Open science' },
   { id: 'enter', label: 'Enter the lab' },
 ];
-
-/** Shared button sizing so the hero buttons match in height, padding, border width and line height. */
-const HERO_BUTTON = 'inline-flex min-h-12 items-center justify-center rounded-xl border-2 px-6 text-base font-semibold leading-6';
 
 /** Landing page at /intro. Works without onboarding and without the network. */
 export default function IntroPage() {
@@ -88,22 +51,7 @@ export default function IntroPage() {
       </nav>
 
       <main className="flex w-full flex-col">
-        <section id="hero" data-section="hero" aria-labelledby="hero-title" className="pb-12 pt-10 md:pb-16 md:pt-16">
-          <div className={`${INNER} grid items-center gap-10 md:grid-cols-2`}>
-            <div className="flex flex-col text-center md:text-left">
-              <span className={`${EYEBROW} mb-6`}>Free and open source</span>
-              <h1 id="hero-title" className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-                Bench Flow — the open lab notebook for every bench.
-              </h1>
-              <p className="mt-5 text-lg leading-relaxed text-text-muted">Free, works offline, built for reproducible research.</p>
-              <div className="mt-8 flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
-                <EnterLink className="border-2 border-transparent leading-6" />
-                <DemoButton />
-              </div>
-            </div>
-            <HeroHelix reduced={reduced} />
-          </div>
-        </section>
+        <HeroSection reduced={reduced} />
 
         <MissionSection reduced={reduced} />
         <ProblemSection />

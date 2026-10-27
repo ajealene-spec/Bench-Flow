@@ -39,7 +39,7 @@ const PAIR_LIST = Array.from({ length: PAIRS }, (_, i) => {
 });
 
 /** Animated DNA double helix, decorative. Reduced motion shows the static frame. */
-export function HeroHelix({ reduced }: { reduced: boolean }) {
+export function HeroHelix({ reduced, className = 'mx-auto h-auto w-full max-w-[220px]' }: { reduced: boolean; className?: string }) {
   const artRef = useRef<HTMLDivElement>(null);
 
   // A light parallax on scroll, transform only, with no React re-render.
@@ -51,7 +51,7 @@ export function HeroHelix({ reduced }: { reduced: boolean }) {
 
   return (
     <div ref={artRef} className="will-change-transform" aria-hidden="true">
-      <svg viewBox="0 0 240 320" className="mx-auto h-auto w-full max-w-[220px]" focusable="false">
+      <svg viewBox="0 0 240 320" className={className} focusable="false">
         {PAIR_LIST.map((p) => (
           <g key={p.key}>
             <line

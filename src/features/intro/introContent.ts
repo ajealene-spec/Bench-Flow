@@ -56,3 +56,21 @@ export const ORGANIZED: Feature[] = [
   { title: 'Standard IDs', body: 'Unique IDs (RRIDs) for antibodies, animals and software.' },
   { title: 'Easy to reuse', body: 'Licensed and versioned, with methods written out.' },
 ];
+
+/** Hero copy. The headline is two lines on purpose: the second line is set on its own row. */
+export const HERO_COPY = {
+  tagline: 'Free and open source',
+  headlineLines: ['The open lab notebook', 'for every bench.'],
+  description:
+    'Turn any protocol into guided steps, log what really happens at the bench, and export methods anyone can reproduce. Free for everyone, from first-year students to PIs.',
+  primary: 'Enter the lab',
+  secondary: 'Take the 2-minute tour',
+  scroll: 'Scroll to discover',
+};
+
+/** Hero stats. Each one must be true of the shipped app; the tests check the values. */
+export const HERO_STATS: { value: string; label: string }[] = [
+  { value: '16', label: 'starter protocols' },
+  { value: '100%', label: 'works offline' },
+  { value: '$0', label: 'free & MIT licensed' },
+];

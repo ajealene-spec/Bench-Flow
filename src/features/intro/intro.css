@@ -45,3 +45,26 @@ html.reveal-armed [data-reveal]:not(.reveal-in) {
   border-color: var(--accent-text);
   transform: scale(1.25);
 }
+
+/* Hero entrance: rise 18px and un-blur, staggered with the --d delay. Fill mode keeps the start frame hidden until it runs. */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+.hero-rise {
+  animation: hero-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise {
+    animation: none;
+  }
+}

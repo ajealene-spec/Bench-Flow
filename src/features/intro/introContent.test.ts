@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOW_STEPS, MISSION_PILLARS, MISSION_SENTENCE, OPEN_ITEMS, ORGANIZED, PROBLEMS, TOOLS } from './introContent';
+import { HERO_COPY, HERO_STATS, HOW_STEPS, MISSION_PILLARS, MISSION_SENTENCE, OPEN_ITEMS, ORGANIZED, PROBLEMS, TOOLS } from './introContent';
 
 const ALL_TEXT = JSON.stringify({ MISSION_SENTENCE, MISSION_PILLARS, PROBLEMS, HOW_STEPS, TOOLS, OPEN_ITEMS, ORGANIZED });
 
@@ -47,5 +47,21 @@ describe('intro copy', () => {
       expect(new Set(titles).size).toBe(titles.length);
       for (const item of list) expect(item.body.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('hero copy', () => {
+  it('keeps the headline, tagline and CTA labels as specified', () => {
+    expect(HERO_COPY.tagline).toBe('Free and open source');
+    expect(HERO_COPY.headlineLines).toEqual(['The open lab notebook', 'for every bench.']);
+    expect(HERO_COPY.primary).toBe('Enter the lab');
+    expect(HERO_COPY.secondary).toBe('Take the 2-minute tour');
+    expect(HERO_COPY.scroll).toBe('Scroll to discover');
+  });
+
+  it('describes the app with true, checkable facts only', () => {
+    expect(HERO_COPY.description).toMatch(/first-year students to PIs/);
+    expect(HERO_STATS.map((s) => s.value)).toEqual(['16', '100%', '$0']);
+    expect(HERO_STATS.map((s) => s.label)).toEqual(['starter protocols', 'works offline', 'free & MIT licensed']);
   });
 });
