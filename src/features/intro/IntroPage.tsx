@@ -1,7 +1,6 @@
-import { BAND, CARD, EnterLink, INNER } from './introShared';
+import { BAND, BODY, CARD, EnterLink, INNER, SECTION_HEADER, SECTION_TITLE, EYEBROW } from './introShared';
 import { HeroSection } from './HeroSection';
 import { HowItWorksSection } from './HowItWorksSection';
-import { MissionSection } from './MissionSection';
 import { NeuroSection } from './NeuroSection';
 import { OpenScienceSection } from './OpenScienceSection';
 import { ProblemSection } from './ProblemSection';
@@ -12,7 +11,6 @@ export const REPO_URL = 'https://github.com/ajealene-spec/Bench-Flow';
 
 const SECTIONS = [
   { id: 'hero', label: 'Top' },
-  { id: 'mission', label: 'Mission' },
   { id: 'problem', label: 'The problem' },
   { id: 'how', label: 'How it works' },
   { id: 'tools', label: 'Tools for the bench' },
@@ -53,26 +51,30 @@ export default function IntroPage() {
       <main className="flex w-full flex-col">
         <HeroSection reduced={reduced} />
 
-        <MissionSection reduced={reduced} />
         <ProblemSection />
-        <HowItWorksSection />
+        <HowItWorksSection reduced={reduced} />
         <NeuroSection />
         <OpenScienceSection />
 
         <section id="enter" data-section="enter" aria-labelledby="enter-title" className={BAND}>
           <div className={INNER}>
-            <div data-reveal className={`${CARD} flex flex-col items-center gap-6 text-center sm:p-10`}>
-              <h2 id="enter-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Your notebook is ready when you are.
-              </h2>
-              <p className="max-w-xl text-text-muted">Nothing is required to start. Your notes stay in this browser, and the network is optional.</p>
-              <EnterLink />
+            <div data-reveal className={`${CARD} gap-8 sm:p-10`}>
+              <div className={SECTION_HEADER}>
+                <p className={EYEBROW}>Get started</p>
+                <h2 id="enter-title" className={SECTION_TITLE}>
+                  Your notebook is ready when you are.
+                </h2>
+                <p className={BODY}>Nothing is required to start. Your notes stay in this browser, and the network is optional.</p>
+              </div>
+              <div>
+                <EnterLink />
+              </div>
             </div>
           </div>
         </section>
 
         <footer className={`${INNER} pb-12`}>
-          <div className="flex flex-col items-center gap-2 border-t border-border pt-6 text-center text-sm text-text-muted">
+          <div className={`flex flex-col gap-2 border-t border-border pt-6 ${BODY}`}>
             <p>
               MIT licensed. <a className="text-accent-text underline" href={REPO_URL} target="_blank" rel="noreferrer">Source on GitHub</a>
             </p>

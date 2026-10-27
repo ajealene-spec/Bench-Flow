@@ -1,16 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { HERO_COPY, HERO_STATS, HOW_STEPS, MISSION_PILLARS, MISSION_SENTENCE, OPEN_ITEMS, ORGANIZED, PROBLEMS, TOOLS } from './introContent';
+import { HERO_COPY, HERO_STATS, HOW_STEPS, OPEN_ITEMS, ORGANIZED, PROBLEMS, TOOLS } from './introContent';
 
-const ALL_TEXT = JSON.stringify({ MISSION_SENTENCE, MISSION_PILLARS, PROBLEMS, HOW_STEPS, TOOLS, OPEN_ITEMS, ORGANIZED });
+const ALL_TEXT = JSON.stringify({ PROBLEMS, HOW_STEPS, TOOLS, OPEN_ITEMS, ORGANIZED });
 
 describe('intro copy', () => {
-  it('states the mission in one sentence with three pillars', () => {
-    expect(MISSION_SENTENCE).toMatch(/free and open to everyone/i);
-    expect(MISSION_SENTENCE).toMatch(/first-year students/);
-    expect(MISSION_SENTENCE).toMatch(/professional researchers/);
-    expect(MISSION_PILLARS).toEqual(['Free for everyone', 'Learn as you work', 'Share openly']);
-  });
-
   it('states three problems, each paired with a solution', () => {
     expect(PROBLEMS).toHaveLength(3);
     for (const card of PROBLEMS) {

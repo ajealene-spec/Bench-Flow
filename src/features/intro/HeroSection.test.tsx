@@ -34,7 +34,7 @@ describe('HeroSection', () => {
       expect(html).toContain(stat.label.replace(/&/g, '&amp;'));
     }
     expect(html).toContain(HERO_COPY.scroll);
-    expect(html).toContain('href="#mission"');
+    expect(html).toContain('href="#problem"');
   });
 
   it('keeps the helix decorative, and the entrance animation is class-based so reduced motion can switch it off', () => {

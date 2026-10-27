@@ -13,20 +13,10 @@
   will-change: transform;
 }
 
-/* Reveal on scroll. The reveal-in class is added by useRevealOnScroll. */
-/* Content is visible by default. Only once the reveal observer is armed (html.reveal-armed) do unrevealed blocks hide,
-   so a slow script never leaves the page faded. The transition is short so sections settle quickly. */
-[data-reveal] {
-  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
-  transition-delay: var(--reveal-delay, 0ms);
-}
+/* Reveal on scroll. The reveal-in class is added by useRevealOnScroll. Until the observer is armed
+   (html.reveal-armed), everything is visible, so a slow script never leaves the page faded. */
 html.reveal-armed [data-reveal]:not(.reveal-in) {
   opacity: 0;
-  transform: translate3d(0, 10px, 0);
-}
-[data-reveal].reveal-in {
-  opacity: 1;
-  transform: none;
 }
 
 /* Dot navigation on wide screens. Each target is a 48px square even though the dot is small. */
@@ -46,7 +36,9 @@ html.reveal-armed [data-reveal]:not(.reveal-in) {
   transform: scale(1.25);
 }
 
-/* Hero entrance: rise 18px and un-blur, staggered with the --d delay. Fill mode keeps the start frame hidden until it runs. */
+/* Hero entrance and section reveal share one blur-rise: rise 18px and un-blur, staggered by a delay.
+   Backwards fill holds the start frame during the delay, then hands control back to the element's own style,
+   so card hover transforms keep working after the entrance. */
 @keyframes hero-rise {
   from {
     opacity: 0;
@@ -59,12 +51,14 @@ html.reveal-armed [data-reveal]:not(.reveal-in) {
     filter: blur(0);
   }
 }
-.hero-rise {
-  animation: hero-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: var(--d, 0s);
+.hero-rise,
+[data-reveal].reveal-in {
+  animation: hero-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: var(--d, var(--reveal-delay, 0s));
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-rise {
+  .hero-rise,
+  [data-reveal].reveal-in {
     animation: none;
   }
 }

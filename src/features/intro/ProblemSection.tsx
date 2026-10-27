@@ -1,12 +1,21 @@
 import { PROBLEMS } from './introContent';
-import { BAND, CARD, EYEBROW, INNER, SECTION_TITLE } from './introShared';
+import { BAND, BODY, CARD, CARD_TITLE, EYEBROW, INNER, SECTION_HEADER, SECTION_TITLE } from './introShared';
 
-/** The problem, then the fix: three cards, each a plain problem on the left and the Bench Flow answer on the right. */
+/** Down arrow between the problem and the fix. Stroke uses currentColor, so it follows the accent in both themes. */
+function ArrowDown() {
+  return (
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false" className="text-accent-text">
+      <path d="M10 4v11m-4-4 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** The problem, then the fix: three cards, each a plain problem above the Bench Flow answer. */
 export function ProblemSection() {
   return (
     <section id="problem" data-section="problem" aria-labelledby="problem-title" className={BAND}>
-      <div className={`${INNER} flex flex-col gap-10`}>
-        <div data-reveal className="max-w-3xl">
+      <div className={`${INNER} flex flex-col gap-12`}>
+        <div data-reveal className={SECTION_HEADER}>
           <p className={EYEBROW}>The problem</p>
           <h2 id="problem-title" className={SECTION_TITLE}>
             The details that make an experiment repeatable are easy to lose.
@@ -15,22 +24,15 @@ export function ProblemSection() {
 
         <ul className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {PROBLEMS.map((card, i) => (
-            <li
-              key={card.problem}
-              data-reveal
-              style={{ ['--reveal-delay' as string]: `${i * 120}ms` }}
-              className={`${CARD} flex flex-col gap-4`}
-            >
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold uppercase tracking-wide text-text-muted">Problem</p>
-                <p className="text-lg text-text-muted">{card.problem}</p>
+            <li key={card.problem} data-reveal style={{ ['--reveal-delay' as string]: `${i * 120}ms` }} className={CARD}>
+              <div className="flex flex-col gap-2">
+                <p className={EYEBROW}>Problem</p>
+                <p className={BODY}>{card.problem}</p>
               </div>
-              <span aria-hidden="true" className="text-2xl leading-none text-accent-text">
-                ↓
-              </span>
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Bench Flow</p>
-                <p className="text-lg font-semibold text-text">{card.solution}</p>
+              <div className="mt-auto flex flex-col gap-3">
+                <ArrowDown />
+                <p className={EYEBROW}>Bench Flow</p>
+                <p className={CARD_TITLE}>{card.solution}</p>
               </div>
             </li>
           ))}

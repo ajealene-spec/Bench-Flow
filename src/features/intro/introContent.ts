@@ -5,12 +5,6 @@ export interface ProblemCard {
   solution: string;
 }
 
-/** The mission sentence is set large under the Mission heading. Pillars are the three short promises below it. */
-export const MISSION_SENTENCE =
-  'Free and open to everyone, from first-year students to professional researchers, to promote learning and open science communication.';
-
-export const MISSION_PILLARS = ['Free for everyone', 'Learn as you work', 'Share openly'];
-
 export const PROBLEMS: ProblemCard[] = [
   { problem: 'Protocols live in PDFs and memory', solution: 'Turn any protocol into guided steps' },
   { problem: 'Changes at the bench go unrecorded', solution: 'Every change is logged automatically' },

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { markIntroSeen } from '../../app/introRedirect';
-import { EYEBROW, INNER } from './introShared';
+import { BODY, EYEBROW, INNER, STAT } from './introShared';
+import { CountUp } from './CountUp';
 import { HeroHelix } from './HeroNetwork';
 import { HERO_COPY, HERO_STATS } from './introContent';
 
@@ -63,7 +64,7 @@ export function HeroSection({ reduced }: { reduced: boolean }) {
           </h1>
 
           <p
-            className={`${RISE} mt-6 max-w-2xl text-lg leading-relaxed text-text-muted sm:text-xl`}
+            className={`${RISE} mt-6 max-w-2xl ${BODY}`}
             style={{ ['--d' as string]: '0.2s' }}
           >
             {HERO_COPY.description}
@@ -73,14 +74,14 @@ export function HeroSection({ reduced }: { reduced: boolean }) {
             <Link
               to="/"
               onClick={() => markIntroSeen()}
-              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-accent px-8 text-base font-semibold leading-6 text-on-accent shadow-card active:bg-accent-hover"
+              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-accent px-8 text-base font-medium leading-6 text-on-accent shadow-card active:bg-accent-hover"
             >
               {HERO_COPY.primary}
               <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
             <Link
               to="/demo"
-              className="group inline-flex min-h-12 items-center gap-2 rounded-md px-1 text-base font-semibold leading-6 text-accent-text underline-offset-4 hover:underline"
+              className="group inline-flex min-h-12 items-center gap-2 rounded-md px-1 text-base font-medium leading-6 text-accent-text underline-offset-4 hover:underline"
             >
               {HERO_COPY.secondary}
               <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
@@ -95,14 +96,16 @@ export function HeroSection({ reduced }: { reduced: boolean }) {
                 key={stat.label}
                 className={`flex flex-col gap-1 py-4 md:px-8 md:py-0 ${i === 0 ? 'md:pl-0' : ''} ${i > 0 ? 'border-t border-border md:border-l md:border-t-0' : ''}`}
               >
-                <dt className="order-2 text-sm text-text-muted">{stat.label}</dt>
-                <dd className="order-1 text-3xl font-semibold tracking-tight text-accent-text">{stat.value}</dd>
+                <dt className={`order-2 ${BODY}`}>{stat.label}</dt>
+                <dd className={`order-1 ${STAT} text-accent-text`}>
+                  <CountUp value={stat.value} reduced={reduced} />
+                </dd>
               </div>
             ))}
           </dl>
 
           <a
-            href="#mission"
+            href="#problem"
             className="group inline-flex min-h-12 items-center gap-2 self-start rounded-md px-1 text-base font-medium text-text-muted hover:text-text md:self-auto"
           >
             {HERO_COPY.scroll}
